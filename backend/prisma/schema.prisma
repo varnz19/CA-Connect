@@ -1,0 +1,330 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  CLIENT
+}
+
+enum ServiceStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum DocumentStatus {
+  REQUESTED
+  UPLOADED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum AppointmentStatus {
+  REQUESTED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  REJECTED
+  RESCHEDULED
+}
+
+enum NotificationType {
+  DOCUMENT_UPLOADED
+  APPOINTMENT_BOOKED
+  APPOINTMENT_CONFIRMED
+  APPOINTMENT_REJECTED
+  APPOINTMENT_CANCELLED
+  INVOICE_GENERATED
+  INVOICE_PAID
+  INVOICE_VIEWED
+  MESSAGE_RECEIVED
+  SERVICE_UPDATED
+  DOCUMENT_APPROVED
+  DOCUMENT_REJECTED
+  PAYMENT_RECEIVED
+}
+
+enum AuditAction {
+  CLIENT_CREATED
+  CLIENT_UPDATED
+  CLIENT_DELETED
+  INVOICE_GENERATED
+  INVOICE_SENT
+  INVOICE_PAID
+  DOCUMENT_UPLOADED
+  DOCUMENT_APPROVED
+  DOCUMENT_REJECTED
+  APPOINTMENT_BOOKED
+  APPOINTMENT_UPDATED
+  SERVICE_ASSIGNED
+  SERVICE_UPDATED
+  MESSAGE_SENT
+  USER_LOGIN
+  PASSWORD_CHANGED
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  password         String
+  role             Role      @default(CLIENT)
+  firstName        String
+  lastName         String
+  phone            String?
+  avatar           String?
+  isActive         Boolean   @default(true)
+  refreshToken     String?
+  passwordResetToken String?
+  passwordResetExpiry DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relations
+  clientProfile    ClientProfile?
+  sentMessages     Message[]      @relation("SentMessages")
+  receivedMessages Message[]      @relation("ReceivedMessages")
+  notifications    Notification[]
+  auditLogs        AuditLog[]
+
+  @@map("users")
+}
+
+model ClientProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  clientCode   String   @unique
+  firmName     String?
+  address      String?
+  panNumber    String?
+  gstin        String?
+  gstState     String?
+  adminId      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  services     Service[]
+  invoices     Invoice[]
+  documentRequests DocumentRequest[]
+  appointments Appointment[]
+  conversations Conversation[]
+
+  @@map("client_profiles")
+}
+
+model Service {
+  id              String        @id @default(cuid())
+  clientProfileId String
+  name            String
+  description     String?
+  status          ServiceStatus @default(ACTIVE)
+  startDate       DateTime
+  dueDate         DateTime?
+  completedAt     DateTime?
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  clientProfile   ClientProfile @relation(fields: [clientProfileId], references: [id], onDelete: Cascade)
+
+  @@map("services")
+}
+
+model Invoice {
+  id              String        @id @default(cuid())
+  clientProfileId String
+  invoiceNumber   String        @unique
+  issueDate       DateTime      @default(now())
+  dueDate         DateTime
+  status          InvoiceStatus @default(PENDING)
+  subtotal        Float
+  taxRate         Float         @default(18)
+  cgst            Float
+  sgst            Float
+  igst            Float         @default(0)
+  total           Float
+  notes           String?
+  pdfUrl          String?
+  sentAt          DateTime?
+  paidAt          DateTime?
+  viewedAt        DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  clientProfile   ClientProfile @relation(fields: [clientProfileId], references: [id], onDelete: Cascade)
+  items           InvoiceItem[]
+
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  description String
+  quantity    Int     @default(1)
+  unitPrice   Float
+  amount      Float
+
+  // Relations
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_items")
+}
+
+model DocumentRequest {
+  id              String         @id @default(cuid())
+  clientProfileId String
+  name            String
+  description     String?
+  status          DocumentStatus @default(REQUESTED)
+  adminComment    String?
+  documents       Document[]
+  dueDate         DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  clientProfile   ClientProfile  @relation(fields: [clientProfileId], references: [id], onDelete: Cascade)
+
+  @@map("document_requests")
+}
+
+model Document {
+  id                String          @id @default(cuid())
+  documentRequestId String
+  fileName          String
+  fileUrl           String
+  fileType          String
+  fileSize          Int
+  uploadedAt        DateTime        @default(now())
+
+  // Relations
+  documentRequest   DocumentRequest @relation(fields: [documentRequestId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+model Appointment {
+  id              String            @id @default(cuid())
+  clientProfileId String
+  title           String
+  description     String?
+  requestedDate   DateTime
+  confirmedDate   DateTime?
+  duration        Int               @default(60) // in minutes
+  status          AppointmentStatus @default(REQUESTED)
+  notes           String?
+  meetingLink     String?
+  cancelledReason String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  clientProfile   ClientProfile     @relation(fields: [clientProfileId], references: [id], onDelete: Cascade)
+
+  @@map("appointments")
+}
+
+model Conversation {
+  id              String    @id @default(cuid())
+  clientProfileId String    @unique
+  lastMessageAt   DateTime?
+  createdAt       DateTime  @default(now())
+
+  // Relations
+  clientProfile   ClientProfile @relation(fields: [clientProfileId], references: [id], onDelete: Cascade)
+  messages        Message[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id             String    @id @default(cuid())
+  conversationId String
+  senderId       String
+  receiverId     String
+  content        String?
+  fileUrl        String?
+  fileName       String?
+  fileType       String?
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  // Relations
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id])
+  receiver       User         @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  @@map("messages")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  // Relations
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  userId     String
+  action     AuditAction
+  entity     String
+  entityId   String
+  details    Json?
+  ipAddress  String?
+  createdAt  DateTime    @default(now())
+
+  // Relations
+  user       User        @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model CalendarEvent {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  date        DateTime
+  type        String   // FILING_DEADLINE, TAX_DEADLINE, MEETING, REMINDER
+  clientId    String?
+  isGlobal    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("calendar_events")
+}
