@@ -3,6 +3,8 @@ import { prisma } from '../utils/prisma';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { AppError } from '../middleware/errorHandler';
 import { z } from 'zod';
+import { generateInvoicePdf } from '../services/pdf.service';
+
 
 const invoiceSchema = z.object({
   clientProfileId: z.string(),
@@ -183,9 +185,23 @@ export class InvoiceController {
 
   downloadPdf = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      // PDF generation is handled by generating HTML and converting server-side
-      // In production, use puppeteer or similar to generate PDF
-      res.json({ success: true, message: 'PDF generation endpoint - integrate with PDF service in Phase 3' });
+      const invoice = await prisma.invoice.findUnique({
+        where: { id: req.params.id },
+        include: {
+          items: true,
+          clientProfile: {
+            include: { user: true }
+          }
+        }
+      });
+
+      if (!invoice) throw new AppError('Invoice not found', 404);
+
+      const pdfBuffer = await generateInvoicePdf(invoice);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=invoice-${invoice.invoiceNumber.replace(/\//g, '_')}.pdf`);
+      res.send(pdfBuffer);
     } catch (error) {
       next(error);
     }

@@ -3,7 +3,9 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
-import { mockClientNotifications } from '../../utils/mockData';
+import { useNotifications } from '../../hooks/useQueries';
+import { useMutation } from '@tanstack/react-query';
+import { notificationService } from '../../services/notificationService';
 import { Notification, NotificationType } from '../../types';
 import { formatDistanceFromNow } from '../../utils/formatters';
 
@@ -24,14 +26,33 @@ const NOTIF_ICONS: Record<NotificationType, { icon: keyof typeof MaterialIcons.g
 };
 
 export default function ClientNotificationsScreen() {
-  const unreadCount = mockClientNotifications.filter((n) => !n.readAt).length;
+  const { data: notificationsRes, refetch } = useNotifications();
+  const [refreshing, setRefreshing] = React.useState(false);
+  const notificationsList = notificationsRes?.data || [];
+  const unreadCount = notificationsList.filter((n) => !n.readAt).length;
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
+
+  const markAllReadMutation = useMutation({
+    mutationFn: notificationService.markAllAsRead,
+    onSuccess: () => refetch(),
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: notificationService.markAsRead,
+    onSuccess: () => refetch(),
+  });
 
   const renderNotification = ({ item }: { item: Notification }) => {
     const config = NOTIF_ICONS[item.type] || { icon: 'notifications', color: Colors.primary };
     const isUnread = !item.readAt;
 
     return (
-      <TouchableOpacity activeOpacity={0.8}>
+      <TouchableOpacity activeOpacity={0.8} onPress={() => !item.readAt && markReadMutation.mutate(item.id)}>
         <View style={[styles.notifRow, isUnread && styles.unreadRow]}>
           {isUnread && <View style={styles.unreadIndicator} />}
           <View style={[styles.notifIcon, { backgroundColor: `${config.color}18` }]}>
@@ -50,15 +71,24 @@ export default function ClientNotificationsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Notifications</Text>
-        {unreadCount > 0 && <Text style={styles.subtitle}>{unreadCount} unread</Text>}
+        <View style={styles.headerLeft}>
+          <Text style={styles.title}>Notifications</Text>
+          {unreadCount > 0 && <Text style={styles.subtitle}>{unreadCount} unread</Text>}
+        </View>
+        {unreadCount > 0 && (
+          <TouchableOpacity style={styles.markAllBtn} onPress={() => markAllReadMutation.mutate()}>
+            <Text style={styles.markAllText}>Mark all read</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <FlatList
-        data={mockClientNotifications}
+        data={notificationsList}
         keyExtractor={(item) => item.id}
         renderItem={renderNotification}
         showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
@@ -69,12 +99,29 @@ export default function ClientNotificationsScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: Spacing.base,
     paddingTop: Spacing.base,
     paddingBottom: Spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
     backgroundColor: Colors.backgroundCard,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  markAllBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: BorderRadius.md,
+    backgroundColor: `${Colors.primary}12`,
+  },
+  markAllText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.sm,
+    color: Colors.primary,
   },
   title: {
     fontFamily: Typography.fontFamily.bold,

@@ -1,0 +1,88 @@
+import nodemailer from 'nodemailer';
+
+class EmailService {
+  private transporter: nodemailer.Transporter | null = null;
+
+  constructor() {
+    const host = process.env.SMTP_HOST;
+    const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+
+    if (host && user && pass) {
+      this.transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure: port === 465,
+        auth: { user, pass },
+      });
+    } else {
+      console.log('✉️ SMTP credentials not fully configured. Using fallback/console logging for mail delivery.');
+    }
+  }
+
+  private async getTransporter(): Promise<nodemailer.Transporter> {
+    if (this.transporter) return this.transporter;
+
+    // Fallback: Create ethereal test account for testing
+    try {
+      const testAccount = await nodemailer.createTestAccount();
+      this.transporter = nodemailer.createTransport({
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false,
+        auth: {
+          user: testAccount.user,
+          pass: testAccount.pass,
+        },
+      });
+      return this.transporter;
+    } catch (err) {
+      // Return a dummy transporter that logs to console
+      return {
+        sendMail: async (options: any) => {
+          console.log(`✉️ DUMMY EMAIL TO [${options.to}]: Subject: ${options.subject}\nBody:\n${options.text}`);
+          return { messageId: 'dummy-id' };
+        },
+      } as any;
+    }
+  }
+
+  async sendPasswordReset(email: string, token: string): Promise<void> {
+    const transporter = await this.getTransporter();
+    const resetUrl = `http://localhost:8085/reset-password?token=${token}`;
+    const mailOptions = {
+      from: process.env.SMTP_FROM || '"CA Connect" <noreply@caconnect.in>',
+      to: email,
+      subject: 'Reset Password - CA Connect',
+      text: `You requested a password reset for your CA Connect account.\n\nPlease click on the following link or paste it into your browser to complete the process:\n\n${resetUrl}\n\nThis link is valid for 1 hour.`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2 style="color: #3b82f6; text-align: center;">CA Connect</h2>
+          <p>Hello,</p>
+          <p>You requested a password reset for your CA Connect account.</p>
+          <p>Please click the button below to reset your password. This link is valid for 1 hour.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Reset Password</a>
+          </div>
+          <p style="font-size: 12px; color: #64748b;">If the button above does not work, copy and paste this URL into your browser:</p>
+          <p style="font-size: 12px; color: #3b82f6; word-break: break-all;">${resetUrl}</p>
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="font-size: 11px; color: #94a3b8; text-align: center;">This is an automated email, please do not reply.</p>
+        </div>
+      `,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    if ('messageId' in info && info.messageId) {
+      const nodemailerUrl = nodemailer.getTestMessageUrl(info);
+      if (nodemailerUrl) {
+        console.log(`✉️ Fallback email sent. Preview URL: ${nodemailerUrl}`);
+      } else {
+        console.log(`✉️ Password reset email sent successfully to ${email}`);
+      }
+    }
+  }
+}
+
+export const emailService = new EmailService();

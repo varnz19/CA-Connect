@@ -18,7 +18,8 @@ import { AppButton } from '../../components/common/AppButton';
 import { AppEmpty } from '../../components/common/AppStates';
 import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
 import { useClients } from '../../hooks/useQueries';
-import { mockClients } from '../../utils/mockData';
+import { useMutation } from '@tanstack/react-query';
+import { clientService } from '../../services/clientService';
 import { User } from '../../types';
 
 export default function ClientsScreen() {
@@ -26,8 +27,8 @@ export default function ClientsScreen() {
   const [search, setSearch] = useState('');
   const { data: clientsData, isLoading, refetch } = useClients(search);
 
-  // Fallback to mockClients to keep the UI interactive under all conditions
-  const clientsList = clientsData?.data || mockClients;
+  // Use real data and fallback to empty array
+  const clientsList = clientsData?.data || [];
 
   const filtered = clientsList.filter((c) => {
     const q = search.toLowerCase();
@@ -48,13 +49,24 @@ export default function ClientsScreen() {
     setRefreshing(false);
   };
 
+  const deleteMutation = useMutation({
+    mutationFn: clientService.deleteClient,
+    onSuccess: () => {
+      refetch();
+      Alert.alert('Success', 'Client deleted successfully.');
+    },
+    onError: (err: any) => {
+      Alert.alert('Error', err.response?.data?.message || 'Failed to delete client.');
+    }
+  });
+
   const handleDelete = (client: User) => {
     Alert.alert(
       'Delete Client',
       `Are you sure you want to delete ${client.firstName} ${client.lastName}? This action cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => {} },
+        { text: 'Delete', style: 'destructive', onPress: () => deleteMutation.mutate(client.id) },
       ]
     );
   };

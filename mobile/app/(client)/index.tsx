@@ -16,12 +16,12 @@ import { AppBadge } from '../../components/common/AppBadge';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Typography, Spacing } from '../../constants/theme';
 import {
-  mockServices,
-  mockDocumentRequests,
-  mockAppointments,
-  mockClientNotifications,
-  mockInvoices,
-} from '../../utils/mockData';
+  useServices,
+  useInvoices,
+  useDocuments,
+  useAppointments,
+  useNotifications,
+} from '../../hooks/useQueries';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 
 export default function ClientDashboard() {
@@ -29,22 +29,34 @@ export default function ClientDashboard() {
   const router = useRouter();
   const [refreshing, setRefreshing] = React.useState(false);
 
-  const clientId = user?.clientProfile?.id || 'cp-001';
-  const clientServices = mockServices.filter((s) => s.clientProfileId === clientId && s.status === 'ACTIVE');
-  const clientDocs = mockDocumentRequests.filter(
-    (d) => d.clientProfileId === clientId && (d.status === 'REQUESTED' || d.status === 'REJECTED')
-  );
-  const clientApts = mockAppointments.filter(
-    (a) => a.clientProfileId === clientId && a.status === 'CONFIRMED'
-  );
-  const clientInvoices = mockInvoices.filter(
-    (i) => i.clientProfileId === clientId && i.status === 'PENDING'
-  );
-  const unreadNotifs = mockClientNotifications.filter((n) => !n.readAt).length;
+  const { data: servicesRes, refetch: refetchServices } = useServices();
+  const { data: invoicesRes, refetch: refetchInvoices } = useInvoices();
+  const { data: documentsRes, refetch: refetchDocuments } = useDocuments();
+  const { data: appointmentsRes, refetch: refetchAppointments } = useAppointments();
+  const { data: notificationsRes, refetch: refetchNotifications } = useNotifications();
 
-  const onRefresh = () => {
+  const clientServices = servicesRes?.data || [];
+  const clientDocs = (documentsRes?.data || []).filter(
+    (d) => d.status === 'REQUESTED' || d.status === 'REJECTED'
+  );
+  const clientApts = (appointmentsRes?.data || []).filter(
+    (a) => a.status === 'CONFIRMED'
+  );
+  const clientInvoices = (invoicesRes?.data || []).filter(
+    (i) => i.status === 'PENDING'
+  );
+  const unreadNotifs = (notificationsRes?.data || []).filter((n) => !n.readAt).length;
+
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1500);
+    await Promise.all([
+      refetchServices(),
+      refetchInvoices(),
+      refetchDocuments(),
+      refetchAppointments(),
+      refetchNotifications(),
+    ]);
+    setRefreshing(false);
   };
 
   return (

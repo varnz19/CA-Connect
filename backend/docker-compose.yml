@@ -14,5 +14,25 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: always
 
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: caconnect-api
+    ports:
+      - '3000:3000'
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/caconnect?schema=public
+      - PORT=3000
+      - NODE_ENV=production
+      - CLIENT_URL=*
+      - JWT_ACCESS_SECRET=super-secret-access-key-for-ca-connect-app
+      - JWT_REFRESH_SECRET=super-secret-refresh-key-for-ca-connect-app
+      - ADMIN_EMAIL=admin@caconnect.in
+      - ADMIN_DEFAULT_PASSWORD=Admin@123
+    depends_on:
+      - postgres
+    restart: always
+
 volumes:
   postgres_data:

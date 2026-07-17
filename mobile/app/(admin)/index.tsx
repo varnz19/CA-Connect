@@ -14,8 +14,17 @@ import { AppCard } from '../../components/common/AppCard';
 import { AppAvatar } from '../../components/common/AppAvatar';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
-import { mockAdminDashboard, mockAppointments, mockAdminNotifications } from '../../utils/mockData';
-import { formatRelativeTime } from '../../utils/formatters';
+import { mockAdminDashboard } from '../../utils/mockData';
+import {
+  useClients,
+  useDocuments,
+  useInvoices,
+  useAppointments,
+  useCalendarEvents,
+  useNotifications,
+} from '../../hooks/useQueries';
+import { format } from 'date-fns';
+import { formatRelativeTime, formatDate } from '../../utils/formatters';
 
 interface StatCardProps {
   icon: keyof typeof MaterialIcons.glyphMap;
@@ -42,12 +51,49 @@ export default function AdminDashboard() {
   const { user } = useAuthStore();
   const router = useRouter();
   const [refreshing, setRefreshing] = React.useState(false);
-  const stats = mockAdminDashboard;
-  const unreadNotifications = mockAdminNotifications.filter((n) => !n.readAt).length;
+  const { data: clientsRes, refetch: refetchClients } = useClients();
+  const { data: docsRes, refetch: refetchDocs } = useDocuments();
+  const { data: invoicesRes, refetch: refetchInvoices } = useInvoices();
+  const { data: appointmentsRes, refetch: refetchAppointments } = useAppointments();
+  const { data: calendarRes, refetch: refetchCalendar } = useCalendarEvents();
+  const { data: notificationsRes, refetch: refetchNotifications } = useNotifications();
 
-  const onRefresh = () => {
+  const totalClients = clientsRes?.total || clientsRes?.data?.length || 0;
+  const pendingDocuments = (docsRes?.data || []).filter((d) => d.status === 'REQUESTED' || d.status === 'UPLOADED').length;
+  const pendingInvoices = (invoicesRes?.data || []).filter((i) => i.status === 'PENDING').length;
+  const upcomingDeadlines = (calendarRes?.data || []).filter((e: any) => e.type === 'FILING_DEADLINE').length;
+  
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const formatEventDate = (dateStr: string) => {
+    try { return format(new Date(dateStr), 'yyyy-MM-dd'); } catch { return dateStr; }
+  };
+  
+  const todayAptsList = (appointmentsRes?.data || []).filter(
+    (a) => formatEventDate(a.confirmedDate || a.requestedDate) === todayStr
+  );
+  const todayAppointments = todayAptsList.length;
+
+  const stats = {
+    totalClients,
+    pendingDocuments,
+    pendingInvoices,
+    upcomingDeadlines,
+    todayAppointments,
+    recentActivities: mockAdminDashboard.recentActivities
+  };
+  const unreadNotifications = (notificationsRes?.data || []).filter((n) => !n.readAt).length;
+
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1500);
+    await Promise.all([
+      refetchClients(),
+      refetchDocs(),
+      refetchInvoices(),
+      refetchAppointments(),
+      refetchCalendar(),
+      refetchNotifications(),
+    ]);
+    setRefreshing(false);
   };
 
   return (
@@ -165,20 +211,23 @@ export default function AdminDashboard() {
             <Text style={styles.seeAll}>See all</Text>
           </TouchableOpacity>
         </View>
-        {mockAppointments
-          .filter((a) => a.status === 'CONFIRMED')
-          .slice(0, 2)
-          .map((apt) => (
-            <AppCard key={apt.id} style={styles.aptCard}>
+        {todayAptsList.slice(0, 3).map((apt) => (
+          <TouchableOpacity
+            key={apt.id}
+            activeOpacity={0.8}
+            onPress={() => router.push(`/(admin)/appointment-detail?id=${apt.id}` as any)}
+          >
+            <AppCard style={styles.aptCard}>
               <View style={styles.aptRow}>
                 <View style={styles.aptTimeBadge}>
-                  <Text style={styles.aptTime}>10:00</Text>
-                  <Text style={styles.aptAm}>AM</Text>
+                  <Text style={styles.aptTime}>
+                    {new Date(apt.confirmedDate || apt.requestedDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                  </Text>
                 </View>
                 <View style={styles.aptInfo}>
                   <Text style={styles.aptTitle}>{apt.title}</Text>
                   <Text style={styles.aptClient}>
-                    {apt.client?.firstName} {apt.client?.lastName}
+                    {apt.clientProfile?.user ? `${apt.clientProfile.user.firstName} ${apt.clientProfile.user.lastName}` : 'Client'}
                   </Text>
                 </View>
                 <View style={styles.aptDuration}>
@@ -187,8 +236,9 @@ export default function AdminDashboard() {
                 </View>
               </View>
             </AppCard>
-          ))}
-        {mockAppointments.filter((a) => a.status === 'CONFIRMED').length === 0 && (
+          </TouchableOpacity>
+        ))}
+        {todayAptsList.length === 0 && (
           <AppCard style={styles.emptyCard}>
             <Text style={styles.emptyText}>No appointments scheduled for today</Text>
           </AppCard>
@@ -199,7 +249,7 @@ export default function AdminDashboard() {
           <Text style={styles.sectionTitle}>Recent Activity</Text>
         </View>
         <AppCard style={styles.activityCard} noPadding>
-          {stats.recentActivities.map((activity, index) => (
+          {stats.recentActivities.map((activity: any, index: number) => (
             <View
               key={activity.id}
               style={[

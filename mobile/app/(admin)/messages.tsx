@@ -15,7 +15,6 @@ import { AppAvatar } from '../../components/common/AppAvatar';
 import { AppEmpty } from '../../components/common/AppStates';
 import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
 import { useConversations } from '../../hooks/useQueries';
-import { mockConversations } from '../../utils/mockData';
 import { Conversation } from '../../types';
 import { formatRelativeTime } from '../../utils/formatters';
 
@@ -32,7 +31,7 @@ export default function AdminMessagesScreen() {
     setRefreshing(false);
   };
 
-  const conversationsList = conversationsData?.data || mockConversations;
+  const conversationsList = conversationsData?.data || [];
 
   const sorted = [...conversationsList].sort(
     (a, b) =>
@@ -40,18 +39,20 @@ export default function AdminMessagesScreen() {
   );
 
   const renderConversation = ({ item }: { item: Conversation }) => {
-    const client = item.client;
-    const fullName = `${client.firstName} ${client.lastName}`;
+    const userProfile = item.client || item.clientProfile?.user;
+    if (!userProfile) return null;
+    const fullName = `${userProfile.firstName} ${userProfile.lastName}`;
     const hasUnread = (item.unreadCount ?? 0) > 0;
+    const firmName = item.clientProfile?.firmName;
 
     return (
       <TouchableOpacity
         activeOpacity={0.8}
-        onPress={() => router.push(`/(admin)/chat?conversationId=${item.id}&clientId=${client.id}` as any)}
+        onPress={() => router.push(`/(admin)/chat?conversationId=${item.id}&clientId=${userProfile.id}` as any)}
       >
         <View style={[styles.conversationRow, hasUnread && styles.unreadRow]}>
           <View style={styles.avatarWrapper}>
-            <AppAvatar name={fullName} size="md" uri={client.avatar} />
+            <AppAvatar name={fullName} size="md" uri={userProfile.avatar} />
             <View style={styles.onlineDot} />
           </View>
           <View style={styles.convInfo}>
@@ -61,8 +62,8 @@ export default function AdminMessagesScreen() {
                 <Text style={styles.timestamp}>{formatRelativeTime(item.lastMessageAt)}</Text>
               )}
             </View>
-            {client.clientProfile?.firmName && (
-              <Text style={styles.firmName}>{client.clientProfile.firmName}</Text>
+            {firmName && (
+              <Text style={styles.firmName}>{firmName}</Text>
             )}
             {item.lastMessage && (
               <Text

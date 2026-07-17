@@ -28,6 +28,20 @@ export interface ClientProfile {
   createdAt: string;
 }
 
+export interface ClientProfileResponse {
+  id: string;
+  firmName?: string;
+  clientCode?: string;
+  gstState?: string;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+    avatar?: string;
+  };
+}
+
 export type ServiceStatus = 'ACTIVE' | 'COMPLETED' | 'PAUSED' | 'CANCELLED';
 
 export interface Service {
@@ -43,6 +57,7 @@ export interface Service {
   createdAt: string;
   updatedAt: string;
   client?: User;
+  clientProfile?: ClientProfileResponse;
 }
 
 export type InvoiceStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
@@ -78,6 +93,7 @@ export interface Invoice {
   updatedAt: string;
   items: InvoiceItem[];
   client?: User;
+  clientProfile?: ClientProfileResponse;
 }
 
 export type DocumentStatus =
@@ -109,6 +125,7 @@ export interface DocumentRequest {
   createdAt: string;
   updatedAt: string;
   client?: User;
+  clientProfile?: ClientProfileResponse;
 }
 
 export type AppointmentStatus =
@@ -134,6 +151,7 @@ export interface Appointment {
   createdAt: string;
   updatedAt: string;
   client?: User;
+  clientProfile?: ClientProfileResponse;
 }
 
 export interface Message {
@@ -154,7 +172,8 @@ export interface Conversation {
   id: string;
   clientProfileId: string;
   lastMessageAt?: string;
-  client: User;
+  client?: User;
+  clientProfile?: ClientProfileResponse & { adminId?: string };
   lastMessage?: Message;
   unreadCount?: number;
 }

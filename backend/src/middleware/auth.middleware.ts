@@ -17,13 +17,18 @@ export const authenticate = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    let token = '';
     const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.query.token && typeof req.query.token === 'string') {
+      token = req.query.token;
+    }
+
+    if (!token) {
       res.status(401).json({ success: false, message: 'Access token required' });
       return;
     }
-
-    const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET!) as {
       id: string;
       email: string;

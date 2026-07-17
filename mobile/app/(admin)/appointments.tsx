@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { AppointmentCard } from '../../components/common/EntityCards';
 import { AppEmpty } from '../../components/common/AppStates';
 import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
-import { mockAppointments } from '../../utils/mockData';
+import { useAppointments } from '../../hooks/useQueries';
 import { AppointmentStatus } from '../../types';
 
 type FilterTab = 'ALL' | AppointmentStatus;
@@ -27,14 +27,23 @@ const FILTERS: { key: FilterTab; label: string }[] = [
 
 export default function AdminAppointmentsScreen() {
   const router = useRouter();
+  const { data: appointmentsRes, refetch } = useAppointments();
+  const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<FilterTab>('ALL');
+  const appointmentsList = appointmentsRes?.data || [];
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
 
   const filtered =
     filter === 'ALL'
-      ? mockAppointments
-      : mockAppointments.filter((a) => a.status === filter);
+      ? appointmentsList
+      : appointmentsList.filter((a) => a.status === filter);
 
-  const pendingCount = mockAppointments.filter((a) => a.status === 'REQUESTED').length;
+  const pendingCount = appointmentsList.filter((a) => a.status === 'REQUESTED').length;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -47,7 +56,7 @@ export default function AdminAppointmentsScreen() {
               <View>
                 <Text style={styles.title}>Appointments</Text>
                 <Text style={styles.subtitle}>
-                  {mockAppointments.length} total
+                  {appointmentsList.length} total
                   {pendingCount > 0 ? ` · ${pendingCount} pending review` : ''}
                 </Text>
               </View>
@@ -91,6 +100,8 @@ export default function AdminAppointmentsScreen() {
         )}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         ListEmptyComponent={
           <AppEmpty
             icon="event-available"

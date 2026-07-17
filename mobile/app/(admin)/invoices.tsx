@@ -17,7 +17,6 @@ import { AppEmpty } from '../../components/common/AppStates';
 import { InvoiceCard } from '../../components/common/EntityCards';
 import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
 import { useInvoices } from '../../hooks/useQueries';
-import { mockInvoices } from '../../utils/mockData';
 import { Invoice, InvoiceStatus } from '../../types';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -35,8 +34,8 @@ export default function InvoicesScreen() {
   const [filter, setFilter] = useState<FilterTab>('ALL');
   const { data: invoicesData, isLoading, refetch } = useInvoices(filter === 'ALL' ? undefined : filter);
 
-  // Fallback to mock data to keep UI always interactive
-  const invoicesList = invoicesData?.data || mockInvoices;
+  // Real API invoices array
+  const invoicesList = invoicesData?.data || [];
 
   const filtered = filter === 'ALL' ? invoicesList : invoicesList.filter((i) => i.status === filter);
 

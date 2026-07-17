@@ -15,30 +15,75 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { AppAvatar } from '../../components/common/AppAvatar';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
-import { mockMessages, mockAdminUser } from '../../utils/mockData';
 import { Message } from '../../types';
 import { format, parseISO } from 'date-fns';
 import * as DocumentPicker from 'expo-document-picker';
+import { useConversations, useMessages } from '../../hooks/useQueries';
+import { useMutation } from '@tanstack/react-query';
+import { messageService } from '../../services/messageService';
+import { socketService } from '../../services/socketService';
+import { useEffect } from 'react';
 
 export default function ClientMessagesScreen() {
   const { user } = useAuthStore();
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
   const listRef = useRef<FlatList>(null);
 
-  const sendMessage = () => {
-    if (!message.trim()) return;
-    const newMsg: Message = {
-      id: `msg-${Date.now()}`,
-      conversationId: 'conv-001',
-      senderId: user?.id || 'client-001',
-      receiverId: 'admin-001',
-      content: message.trim(),
-      createdAt: new Date().toISOString(),
+  const { data: conversationsRes } = useConversations();
+  const conversation = conversationsRes?.data?.[0];
+  const conversationId = conversation?.id;
+
+  const { data: messagesRes, refetch } = useMessages(conversationId || '');
+
+  useEffect(() => {
+    if (messagesRes?.data) {
+      setMessages(messagesRes.data);
+    }
+  }, [messagesRes?.data]);
+
+  useEffect(() => {
+    if (!conversationId) return;
+
+    socketService.joinConversation(conversationId);
+
+    const handleReceive = (newMsg: Message) => {
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === newMsg.id)) return prev;
+        return [...prev, newMsg];
+      });
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
     };
-    setMessages((prev) => [...prev, newMsg]);
-    setMessage('');
-    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+
+    const cleanup = socketService.onReceiveMessage(handleReceive);
+
+    return () => {
+      cleanup();
+    };
+  }, [conversationId]);
+
+  const sendMutation = useMutation({
+    mutationFn: messageService.sendMessage,
+    onSuccess: () => {
+      setMessage('');
+      refetch();
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+    },
+  });
+
+  const sendMessage = () => {
+    if (!message.trim() || !conversationId) return;
+    
+    // Receiver is the CA admin.
+    // If the conversation metadata contains admin details, use that.
+    // Otherwise fallback to default admin.
+    const receiverId = conversation?.clientProfile?.adminId || 'admin-user-id';
+
+    sendMutation.mutate({
+      conversationId,
+      receiverId,
+      content: message.trim(),
+    });
   };
 
   const handleAttach = async () => {
@@ -58,7 +103,7 @@ export default function ClientMessagesScreen() {
   };
 
   const isMyMessage = (senderId: string) =>
-    senderId === user?.id || senderId === 'client-001';
+    senderId === user?.id;
 
   const renderMessage = ({ item, index }: { item: Message; index: number }) => {
     const isMe = isMyMessage(item.senderId);
@@ -79,7 +124,7 @@ export default function ClientMessagesScreen() {
         <View style={[styles.bubbleWrapper, isMe && styles.myWrapper]}>
           {!isMe && (
             <AppAvatar
-              name={`${mockAdminUser.firstName} ${mockAdminUser.lastName}`}
+              name="Admin CA"
               size="xs"
             />
           )}
@@ -114,10 +159,10 @@ export default function ClientMessagesScreen() {
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
-        <AppAvatar name={`${mockAdminUser.firstName} ${mockAdminUser.lastName}`} size="sm" />
+        <AppAvatar name="Admin CA" size="sm" />
         <View style={styles.headerInfo}>
-          <Text style={styles.headerName}>CA Priya Sharma</Text>
-          <Text style={styles.headerSub}>Your Chartered Accountant</Text>
+          <Text style={styles.headerName}>CA Admin Portal</Text>
+          <Text style={styles.headerSub}>Your Assigned Chartered Accountant</Text>
         </View>
         <View style={styles.onlineIndicator}>
           <View style={styles.onlineDot} />

@@ -162,6 +162,34 @@ export class AppointmentController {
 export class MessageController {
   getConversations = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
+      if (req.user?.role === 'CLIENT') {
+        const clientProfile = await prisma.clientProfile.findUnique({
+          where: { userId: req.user.id }
+        });
+        if (clientProfile) {
+          const exists = await prisma.conversation.findUnique({
+            where: { clientProfileId: clientProfile.id }
+          });
+          if (!exists) {
+            await prisma.conversation.create({
+              data: { clientProfileId: clientProfile.id }
+            });
+          }
+        }
+      } else if (req.user?.role === 'ADMIN') {
+        const clientProfiles = await prisma.clientProfile.findMany();
+        for (const cp of clientProfiles) {
+          const exists = await prisma.conversation.findUnique({
+            where: { clientProfileId: cp.id }
+          });
+          if (!exists) {
+            await prisma.conversation.create({
+              data: { clientProfileId: cp.id }
+            });
+          }
+        }
+      }
+
       const where = req.user?.role === 'CLIENT' ? { clientProfile: { userId: req.user.id } } : {};
       const conversations = await prisma.conversation.findMany({
         where,

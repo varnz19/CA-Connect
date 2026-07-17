@@ -109,6 +109,36 @@ export default function AdminLayout() {
           tabBarInactiveTintColor: Colors.tabBarInactive,
         }}
       />
+      <Tabs.Screen
+        name="appointments"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="calendar"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="chat"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="documents"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

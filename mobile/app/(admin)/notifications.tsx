@@ -4,7 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppCard } from '../../components/common/AppCard';
 import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
-import { mockAdminNotifications } from '../../utils/mockData';
+import { useNotifications } from '../../hooks/useQueries';
+import { useMutation } from '@tanstack/react-query';
+import { notificationService } from '../../services/notificationService';
 import { Notification, NotificationType } from '../../types';
 import { formatDistanceFromNow } from '../../utils/formatters';
 
@@ -25,14 +27,33 @@ const NOTIF_ICONS: Record<NotificationType, { icon: keyof typeof MaterialIcons.g
 };
 
 export default function AdminNotificationsScreen() {
-  const unreadCount = mockAdminNotifications.filter((n) => !n.readAt).length;
+  const { data: notificationsRes, refetch } = useNotifications();
+  const [refreshing, setRefreshing] = React.useState(false);
+  const notificationsList = notificationsRes?.data || [];
+  const unreadCount = notificationsList.filter((n) => !n.readAt).length;
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
+
+  const markAllReadMutation = useMutation({
+    mutationFn: notificationService.markAllAsRead,
+    onSuccess: () => refetch(),
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: notificationService.markAsRead,
+    onSuccess: () => refetch(),
+  });
 
   const renderNotification = ({ item }: { item: Notification }) => {
     const config = NOTIF_ICONS[item.type] || { icon: 'notifications', color: Colors.primary };
     const isUnread = !item.readAt;
 
     return (
-      <TouchableOpacity activeOpacity={0.8}>
+      <TouchableOpacity activeOpacity={0.8} onPress={() => !item.readAt && markReadMutation.mutate(item.id)}>
         <View style={[styles.notifRow, isUnread && styles.unreadRow]}>
           {isUnread && <View style={styles.unreadIndicator} />}
           <View style={[styles.notifIcon, { backgroundColor: `${config.color}18` }]}>
@@ -58,17 +79,19 @@ export default function AdminNotificationsScreen() {
           )}
         </View>
         {unreadCount > 0 && (
-          <TouchableOpacity style={styles.markAllBtn}>
+          <TouchableOpacity style={styles.markAllBtn} onPress={() => markAllReadMutation.mutate()}>
             <Text style={styles.markAllText}>Mark all read</Text>
           </TouchableOpacity>
         )}
       </View>
 
       <FlatList
-        data={mockAdminNotifications}
+        data={notificationsList}
         keyExtractor={(item) => item.id}
         renderItem={renderNotification}
         showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />

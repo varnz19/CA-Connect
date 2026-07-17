@@ -43,7 +43,6 @@ export default function ClientCalendarScreen() {
   
   const { data: eventsData, isLoading, refetch } = useCalendarEvents();
 
-  // Fallback default events
   const defaultEvents: CalendarEventItem[] = [
     { id: '1', title: 'GST Return Filing (GSTR-1)', date: today, type: 'FILING_DEADLINE', isGlobal: true },
     { id: '2', title: 'ITR Deadline', date: '2026-07-31', type: 'FILING_DEADLINE', isGlobal: true },
@@ -51,7 +50,18 @@ export default function ClientCalendarScreen() {
     { id: '4', title: 'CA Consultation Meeting', date: today, type: 'MEETING', isGlobal: false },
   ];
 
-  const eventsList = (eventsData?.data || defaultEvents) as CalendarEventItem[];
+  const formatEventDate = (dateStr: string) => {
+    try {
+      return format(new Date(dateStr), 'yyyy-MM-dd');
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const rawEvents = eventsData?.data || [];
+  const eventsList = (rawEvents.length > 0 
+    ? rawEvents.map((e: any) => ({ ...e, date: formatEventDate(e.date) })) 
+    : defaultEvents) as CalendarEventItem[];
 
   const markedDates = eventsList.reduce(
     (acc, event) => {

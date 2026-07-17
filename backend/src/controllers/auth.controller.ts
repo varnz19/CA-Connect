@@ -6,6 +6,7 @@ import { generateTokens, verifyRefreshToken } from '../utils/jwt';
 import { AppError } from '../middleware/errorHandler';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { z } from 'zod';
+import { emailService } from '../services/email.service';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -100,8 +101,8 @@ export class AuthController {
         },
       });
 
-      // TODO: Send email via Nodemailer
-      // await emailService.sendPasswordReset(user.email, resetToken);
+      // Send email via Nodemailer
+      await emailService.sendPasswordReset(user.email, resetToken);
 
       res.json({ success: true, message: 'If this email exists, a reset link has been sent.' });
     } catch (error) {

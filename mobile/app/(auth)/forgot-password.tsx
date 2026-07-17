@@ -127,7 +127,7 @@ export default function ForgotPasswordScreen() {
               </Text>
               <AppButton
                 title="Back to Login"
-                onPress={() => router.replace('/(auth)/login')}
+                onPress={() => router.replace('/(auth)/landing')}
                 fullWidth
                 size="lg"
                 style={styles.button}

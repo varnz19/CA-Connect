@@ -60,7 +60,7 @@ export default function AdminSettingsScreen() {
   const handleLogout = () => {
     const performLogout = () => {
       logout();
-      router.replace('/(auth)/login');
+      router.replace('/(auth)/landing');
     };
 
     if (Platform.OS === 'web') {

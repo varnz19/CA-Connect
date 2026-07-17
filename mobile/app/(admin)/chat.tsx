@@ -15,9 +15,12 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { AppAvatar } from '../../components/common/AppAvatar';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
-import { mockMessages, mockClients } from '../../utils/mockData';
 import { Message } from '../../types';
 import { format, parseISO } from 'date-fns';
+import { useClient, useMessages } from '../../hooks/useQueries';
+import { useMutation } from '@tanstack/react-query';
+import { messageService } from '../../services/messageService';
+import { socketService } from '../../services/socketService';
 
 export default function ChatScreen() {
   const { conversationId, clientId } = useLocalSearchParams<{
@@ -27,29 +30,62 @@ export default function ChatScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
   const listRef = useRef<FlatList>(null);
 
-  const client = mockClients.find((c) => c.id === clientId);
-  const clientName = client ? `${client.firstName} ${client.lastName}` : 'Client';
+  const { data: clientRes } = useClient(clientId || '');
+  const clientUser = clientRes?.data;
+  const clientName = clientUser ? `${clientUser.firstName} ${clientUser.lastName}` : 'Client';
+
+  const { data: messagesRes, refetch } = useMessages(conversationId || '');
+
+  useEffect(() => {
+    if (messagesRes?.data) {
+      setMessages(messagesRes.data);
+    }
+  }, [messagesRes?.data]);
+
+  useEffect(() => {
+    if (!conversationId) return;
+
+    socketService.joinConversation(conversationId);
+
+    const handleReceive = (newMsg: Message) => {
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === newMsg.id)) return prev;
+        return [...prev, newMsg];
+      });
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+    };
+
+    const cleanup = socketService.onReceiveMessage(handleReceive);
+
+    return () => {
+      cleanup();
+    };
+  }, [conversationId]);
+
+  const sendMutation = useMutation({
+    mutationFn: messageService.sendMessage,
+    onSuccess: () => {
+      setMessage('');
+      refetch();
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+    },
+  });
 
   const sendMessage = () => {
-    if (!message.trim()) return;
-    const newMsg: Message = {
-      id: `msg-${Date.now()}`,
-      conversationId: conversationId || 'conv-001',
-      senderId: user?.id || 'admin-001',
-      receiverId: clientId || 'client-001',
+    if (!message.trim() || !conversationId || !clientId) return;
+
+    sendMutation.mutate({
+      conversationId,
+      receiverId: clientId,
       content: message.trim(),
-      createdAt: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, newMsg]);
-    setMessage('');
-    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+    });
   };
 
   const isMyMessage = (senderId: string) =>
-    senderId === user?.id || senderId === 'admin-001';
+    senderId === user?.id;
 
   const renderMessage = ({ item, index }: { item: Message; index: number }) => {
     const isMe = isMyMessage(item.senderId);
@@ -74,7 +110,7 @@ export default function ChatScreen() {
             <AppAvatar
               name={clientName}
               size="xs"
-              uri={client?.avatar}
+              uri={clientUser?.avatar}
               style={styles.bubbleAvatar}
             />
           )}
@@ -106,13 +142,13 @@ export default function ChatScreen() {
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <MaterialIcons name="arrow-back" size={22} color={Colors.textPrimary} />
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <MaterialIcons name="arrow-back" size={24} color={Colors.textPrimary} />
         </TouchableOpacity>
-        <AppAvatar name={clientName} size="sm" uri={client?.avatar} />
+        <AppAvatar name={clientName} size="sm" uri={clientUser?.avatar} />
         <View style={styles.headerInfo}>
           <Text style={styles.headerName}>{clientName}</Text>
-          <Text style={styles.headerStatus}>{client?.clientProfile?.firmName || 'Online'}</Text>
+          <Text style={styles.headerStatus}>{clientUser?.clientProfile?.firmName || 'Online'}</Text>
         </View>
         <TouchableOpacity style={styles.headerAction}>
           <MaterialIcons name="more-vert" size={22} color={Colors.textSecondary} />

@@ -109,6 +109,24 @@ export default function ClientLayout() {
           tabBarInactiveTintColor: Colors.tabBarInactive,
         }}
       />
+      <Tabs.Screen
+        name="book-appointment"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="invoices"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

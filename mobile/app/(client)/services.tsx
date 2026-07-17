@@ -6,7 +6,6 @@ import { AppEmpty } from '../../components/common/AppStates';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Typography, Spacing } from '../../constants/theme';
 import { useServices } from '../../hooks/useQueries';
-import { mockServices } from '../../utils/mockData';
 
 export default function ClientServicesScreen() {
   const { user } = useAuthStore();
@@ -20,8 +19,7 @@ export default function ClientServicesScreen() {
     setRefreshing(false);
   };
 
-  const servicesList = servicesData?.data || mockServices;
-  const myServices = servicesList.filter((s) => s.clientProfileId === clientId);
+  const myServices = servicesData?.data || [];
   const active = myServices.filter((s) => s.status === 'ACTIVE');
   const completed = myServices.filter((s) => s.status === 'COMPLETED');
 

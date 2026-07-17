@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Linking, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppCard } from '../../components/common/AppCard';
@@ -8,7 +8,6 @@ import { AppEmpty } from '../../components/common/AppStates';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Typography, Spacing } from '../../constants/theme';
 import { useInvoices } from '../../hooks/useQueries';
-import { mockInvoices } from '../../utils/mockData';
 import { Invoice } from '../../types';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 
@@ -17,6 +16,7 @@ export default function ClientInvoicesScreen() {
   const clientId = user?.clientProfile?.id || 'cp-001';
   const { data: invoicesData, refetch } = useInvoices();
   const [refreshing, setRefreshing] = React.useState(false);
+  const tokens = useAuthStore.getState().tokens;
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -24,8 +24,17 @@ export default function ClientInvoicesScreen() {
     setRefreshing(false);
   };
 
-  const invoicesList = invoicesData?.data || mockInvoices;
-  const myInvoices = invoicesList.filter((i) => i.clientProfileId === clientId);
+  const myInvoices = invoicesData?.data || [];
+
+  const handleDownloadPdf = async (invoiceId: string) => {
+    try {
+      const baseUrl = Platform.OS === 'android' ? 'http://10.0.2.2:3000/api' : 'http://localhost:3000/api';
+      const url = `${baseUrl}/invoices/${invoiceId}/pdf?token=${tokens?.accessToken}`;
+      await Linking.openURL(url);
+    } catch (err) {
+      Alert.alert('Error', 'Could not open PDF file.');
+    }
+  };
 
   const renderInvoice = ({ item }: { item: Invoice }) => (
     <AppCard style={styles.card}>
@@ -84,7 +93,7 @@ export default function ClientInvoicesScreen() {
           <MaterialIcons name="event" size={12} color={Colors.textTertiary} />
           <Text style={styles.footerText}>Due: {formatDate(item.dueDate)}</Text>
         </View>
-        <TouchableOpacity style={styles.downloadBtn}>
+        <TouchableOpacity style={styles.downloadBtn} onPress={() => handleDownloadPdf(item.id)}>
           <MaterialIcons name="cloud-download" size={16} color={Colors.secondary} />
           <Text style={styles.downloadText}>Download PDF</Text>
         </TouchableOpacity>

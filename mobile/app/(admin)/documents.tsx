@@ -14,7 +14,7 @@ import { AppButton } from '../../components/common/AppButton';
 import { DocumentCard } from '../../components/common/EntityCards';
 import { AppEmpty } from '../../components/common/AppStates';
 import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
-import { mockDocumentRequests } from '../../utils/mockData';
+import { useDocuments } from '../../hooks/useQueries';
 import { DocumentStatus } from '../../types';
 
 type FilterTab = 'ALL' | DocumentStatus;
@@ -32,10 +32,20 @@ export default function AdminDocumentsScreen() {
   const router = useRouter();
   const [filter, setFilter] = useState<FilterTab>('ALL');
 
+  const { data: documentsRes, refetch } = useDocuments();
+  const [refreshing, setRefreshing] = useState(false);
+  const documentsList = documentsRes?.data || [];
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
+
   const filtered =
     filter === 'ALL'
-      ? mockDocumentRequests
-      : mockDocumentRequests.filter((d) => d.status === filter);
+      ? documentsList
+      : documentsList.filter((d) => d.status === filter);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -47,7 +57,7 @@ export default function AdminDocumentsScreen() {
             <View style={styles.header}>
               <View>
                 <Text style={styles.title}>Documents</Text>
-                <Text style={styles.subtitle}>{mockDocumentRequests.length} requests</Text>
+                <Text style={styles.subtitle}>{documentsList.length} requests</Text>
               </View>
               <AppButton
                 title="Request"
@@ -94,6 +104,8 @@ export default function AdminDocumentsScreen() {
         )}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         ListEmptyComponent={
           <AppEmpty
             icon="folder-open"

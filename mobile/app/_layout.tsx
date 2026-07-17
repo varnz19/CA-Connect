@@ -45,7 +45,7 @@ function RootLayoutNav() {
     const inClientGroup = segments[0] === '(client)';
 
     if (!isAuthenticated && !inAuthGroup) {
-      router.replace('/(auth)/login');
+      router.replace('/(auth)/landing');
     } else if (isAuthenticated) {
       if (user?.role === 'ADMIN' && !inAdminGroup) {
         router.replace('/(admin)');

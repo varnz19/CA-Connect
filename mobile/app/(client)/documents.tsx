@@ -6,7 +6,9 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
+  Linking,
 } from 'react-native';
+import { documentService } from '../../services/documentService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppCard } from '../../components/common/AppCard';
@@ -16,7 +18,6 @@ import { AppEmpty } from '../../components/common/AppStates';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
 import { useDocuments } from '../../hooks/useQueries';
-import { mockDocumentRequests } from '../../utils/mockData';
 import { DocumentRequest } from '../../types';
 import { formatDate, formatFileSize } from '../../utils/formatters';
 import * as DocumentPicker from 'expo-document-picker';
@@ -33,8 +34,9 @@ export default function ClientDocumentsScreen() {
     setRefreshing(false);
   };
 
-  const documentsList = documentsData?.data || mockDocumentRequests;
-  const myDocs = documentsList.filter((d) => d.clientProfileId === clientId);
+  const documentsList = documentsData?.data || [];
+  const myDocs = documentsList; // Backend already filters for user
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
 
   const handleUpload = async (requestId: string) => {
     try {
@@ -43,10 +45,21 @@ export default function ClientDocumentsScreen() {
         multiple: false,
       });
       if (!result.canceled && result.assets[0]) {
-        Alert.alert('Upload Successful', `${result.assets[0].name} has been uploaded and is under review.`);
+        const file = result.assets[0];
+        setUploadingId(requestId);
+        await documentService.uploadDocument(
+          requestId,
+          file.uri,
+          file.name,
+          file.mimeType || 'application/octet-stream'
+        );
+        Alert.alert('Success', 'Document uploaded successfully.');
+        await refetch();
       }
-    } catch {
-      Alert.alert('Error', 'Failed to pick document. Please try again.');
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.message || 'Failed to upload document.');
+    } finally {
+      setUploadingId(null);
     }
   };
 
@@ -86,7 +99,7 @@ export default function ClientDocumentsScreen() {
                 <MaterialIcons name="insert-drive-file" size={16} color={Colors.secondary} />
                 <Text style={styles.fileName} numberOfLines={1}>{doc.fileName}</Text>
                 <Text style={styles.fileSize}>{formatFileSize(doc.fileSize)}</Text>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => Linking.openURL(doc.fileUrl)}>
                   <MaterialIcons name="cloud-download" size={16} color={Colors.primary} />
                 </TouchableOpacity>
               </View>
@@ -104,9 +117,10 @@ export default function ClientDocumentsScreen() {
           )}
           {canUpload && (
             <AppButton
-              title={item.status === 'REJECTED' ? 'Re-upload' : 'Upload'}
+              title={uploadingId === item.id ? 'Uploading...' : 'Upload Document'}
+              variant="primary"
               size="sm"
-              variant={item.status === 'REJECTED' ? 'danger' : 'primary'}
+              loading={uploadingId === item.id}
               onPress={() => handleUpload(item.id)}
               style={styles.uploadBtn}
             />
