@@ -16,6 +16,7 @@ import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
 import { AppEmpty } from '../../components/common/AppStates';
 import { useAuthStore } from '../../store/authStore';
+import { api } from '../../services/api';
 import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
 import { useDocuments } from '../../hooks/useQueries';
 import { DocumentRequest } from '../../types';
@@ -38,6 +39,24 @@ export default function ClientDocumentsScreen() {
   const myDocs = documentsList; // Backend already filters for user
   const [uploadingId, setUploadingId] = useState<string | null>(null);
 
+  const resolveDocUrl = (url: string) => {
+    if (!url) return '';
+    if (url.includes('localhost:') || url.includes('127.0.0.1:')) {
+      const apiBaseUrl = api.defaults.baseURL || '';
+      try {
+        const parsedApi = new URL(apiBaseUrl);
+        const parsedDoc = new URL(url);
+        parsedDoc.host = parsedApi.host;
+        parsedDoc.protocol = parsedApi.protocol;
+        return parsedDoc.toString();
+      } catch (e) {
+        const serverHost = apiBaseUrl.replace('/api', '');
+        return url.replace('http://localhost:3000', serverHost);
+      }
+    }
+    return url;
+  };
+
   const handleUpload = async (requestId: string) => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -51,7 +70,9 @@ export default function ClientDocumentsScreen() {
           requestId,
           file.uri,
           file.name,
-          file.mimeType || 'application/octet-stream'
+          file.mimeType || 'application/octet-stream',
+          // @ts-ignore
+          file.file
         );
         Alert.alert('Success', 'Document uploaded successfully.');
         await refetch();
@@ -99,7 +120,7 @@ export default function ClientDocumentsScreen() {
                 <MaterialIcons name="insert-drive-file" size={16} color={Colors.secondary} />
                 <Text style={styles.fileName} numberOfLines={1}>{doc.fileName}</Text>
                 <Text style={styles.fileSize}>{formatFileSize(doc.fileSize)}</Text>
-                <TouchableOpacity onPress={() => Linking.openURL(doc.fileUrl)}>
+                <TouchableOpacity onPress={() => Linking.openURL(resolveDocUrl(doc.fileUrl))}>
                   <MaterialIcons name="cloud-download" size={16} color={Colors.primary} />
                 </TouchableOpacity>
               </View>

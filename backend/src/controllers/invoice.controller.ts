@@ -4,6 +4,7 @@ import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { AppError } from '../middleware/errorHandler';
 import { z } from 'zod';
 import { generateInvoicePdf } from '../services/pdf.service';
+import { emailService } from '../services/email.service';
 
 
 const invoiceSchema = z.object({
@@ -132,6 +133,13 @@ export class InvoiceController {
       const invoice = await prisma.invoice.update({
         where: { id: req.params.id },
         data: { sentAt: new Date() },
+        include: {
+          clientProfile: {
+            include: {
+              user: true,
+            },
+          },
+        },
       });
 
       await prisma.auditLog.create({
@@ -142,6 +150,25 @@ export class InvoiceController {
           entityId: invoice.id,
         },
       });
+
+      // Send invoice PDF email notification in background
+      if (invoice.clientProfile?.user?.email) {
+        const clientEmail = invoice.clientProfile.user.email;
+        const clientName = `${invoice.clientProfile.user.firstName} ${invoice.clientProfile.user.lastName}`;
+        const downloadUrl = `http://localhost:3000/api/invoices/${invoice.id}/pdf`;
+
+        emailService
+          .sendInvoiceNotification(
+            clientEmail,
+            clientName,
+            invoice.invoiceNumber,
+            invoice.total,
+            downloadUrl
+          )
+          .catch((err) => {
+            console.error('Failed to send invoice notification email:', err);
+          });
+      }
 
       res.json({ success: true, data: invoice });
     } catch (error) {

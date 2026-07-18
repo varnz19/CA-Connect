@@ -293,6 +293,9 @@ export class ProfileController {
       const { currentPassword, newPassword } = req.body;
       const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
       if (!user) throw new AppError('User not found', 404);
+      if (!user.password) {
+        throw new AppError('This account is configured for Google Login and does not have a local password.', 400);
+      }
       const bcrypt = await import('bcryptjs');
       const isValid = await bcrypt.compare(currentPassword, user.password);
       if (!isValid) throw new AppError('Current password is incorrect', 400);

@@ -83,6 +83,83 @@ class EmailService {
       }
     }
   }
+
+  async sendInvoiceNotification(
+    email: string,
+    clientName: string,
+    invoiceNumber: string,
+    amount: number,
+    downloadUrl: string
+  ): Promise<void> {
+    const transporter = await this.getTransporter();
+    const mailOptions = {
+      from: process.env.SMTP_FROM || '"CA Connect" <noreply@caconnect.in>',
+      to: email,
+      subject: `New GST Invoice Generated - ${invoiceNumber}`,
+      text: `Dear ${clientName},\n\nA new GST Invoice has been generated for your services.\n\nInvoice Number: ${invoiceNumber}\nTotal Amount: INR ${amount.toFixed(2)}\n\nYou can download the invoice PDF directly by clicking the link below:\n\n${downloadUrl}\n\nThank you for your business.`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2 style="color: #0b2545; text-align: center;">CA Connect Billing</h2>
+          <p>Dear ${clientName},</p>
+          <p>A new GST Invoice has been generated for your services.</p>
+          <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px; margin: 20px 0;">
+            <p style="margin: 4px 0;"><strong>Invoice Number:</strong> ${invoiceNumber}</p>
+            <p style="margin: 4px 0;"><strong>Total Amount:</strong> INR ${amount.toFixed(2)}</p>
+          </div>
+          <p>Please click the button below to download the professional invoice PDF directly:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${downloadUrl}" style="background-color: #0b2545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Download Invoice PDF</a>
+          </div>
+          <p style="font-size: 11px; color: #94a3b8; text-align: center;">This is an automated billing statement, please do not reply.</p>
+        </div>
+      `,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    if ('messageId' in info && info.messageId) {
+        const nodemailerUrl = nodemailer.getTestMessageUrl(info);
+      if (nodemailerUrl) {
+        console.log(`✉️ Invoice email preview link: ${nodemailerUrl}`);
+      } else {
+        console.log(`✉️ Invoice notification sent to ${email}`);
+      }
+    }
+  }
+
+  async sendEmailVerification(email: string, token: string): Promise<void> {
+    const transporter = await this.getTransporter();
+    const verificationUrl = `http://localhost:3000/api/auth/verify-email?token=${token}`;
+    const mailOptions = {
+      from: process.env.SMTP_FROM || '"CA Connect" <noreply@caconnect.in>',
+      to: email,
+      subject: 'Verify Email - CA Connect',
+      text: `Welcome to CA Connect!\n\nPlease click on the following link or paste it into your browser to verify your email address:\n\n${verificationUrl}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2 style="color: #0b2545; text-align: center;">CA Connect</h2>
+          <p>Hello,</p>
+          <p>Welcome to CA Connect! Please verify your email address by clicking the button below:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${verificationUrl}" style="background-color: #0b2545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Verify Email Address</a>
+          </div>
+          <p style="font-size: 12px; color: #64748b;">If the button above does not work, copy and paste this URL into your browser:</p>
+          <p style="font-size: 12px; color: #3b82f6; word-break: break-all;">${verificationUrl}</p>
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="font-size: 11px; color: #94a3b8; text-align: center;">This is an automated email, please do not reply.</p>
+        </div>
+      `,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    if ('messageId' in info && info.messageId) {
+      const nodemailerUrl = nodemailer.getTestMessageUrl(info);
+      if (nodemailerUrl) {
+        console.log(`✉️ Email verification preview link: ${nodemailerUrl}`);
+      } else {
+        console.log(`✉️ Verification email sent successfully to ${email}`);
+      }
+    }
+  }
 }
 
 export const emailService = new EmailService();

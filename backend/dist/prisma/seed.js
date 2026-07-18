@@ -12,7 +12,7 @@ async function main() {
     const adminPassword = await bcryptjs_1.default.hash(process.env.ADMIN_DEFAULT_PASSWORD || 'Admin@123', 12);
     const admin = await prisma.user.upsert({
         where: { email: process.env.ADMIN_EMAIL || 'admin@caconnect.in' },
-        update: {},
+        update: { isVerified: true },
         create: {
             email: process.env.ADMIN_EMAIL || 'admin@caconnect.in',
             password: adminPassword,
@@ -20,6 +20,7 @@ async function main() {
             firstName: 'CA',
             lastName: 'Admin',
             phone: '+91-9876543210',
+            isVerified: true,
         },
     });
     console.log('✅ Admin user created:', admin.email);
@@ -27,7 +28,7 @@ async function main() {
     const clientPassword = await bcryptjs_1.default.hash('Client@123', 12);
     const demoClient = await prisma.user.upsert({
         where: { email: 'rajesh.kumar@example.com' },
-        update: {},
+        update: { isVerified: true },
         create: {
             email: 'rajesh.kumar@example.com',
             password: clientPassword,
@@ -35,6 +36,7 @@ async function main() {
             firstName: 'Rajesh',
             lastName: 'Kumar',
             phone: '+91-9876500001',
+            isVerified: true,
             clientProfile: {
                 create: {
                     clientCode: 'CAC001',

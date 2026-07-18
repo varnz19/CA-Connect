@@ -73,13 +73,48 @@ export default function AdminDashboard() {
   );
   const todayAppointments = todayAptsList.length;
 
+  const liveActivities: any[] = [];
+  (invoicesRes?.data || []).forEach((inv: any) => {
+    liveActivities.push({
+      id: `invoice-${inv.id}`,
+      icon: 'receipt',
+      color: Colors.secondary,
+      action: inv.status === 'PAID' ? 'Invoice Paid' : 'Invoice Generated',
+      description: `Invoice ${inv.invoiceNumber} for ${inv.client?.firmName || 'Client'}`,
+      timestamp: inv.updatedAt || inv.issueDate,
+    });
+  });
+  (docsRes?.data || []).forEach((doc: any) => {
+    liveActivities.push({
+      id: `doc-${doc.id}`,
+      icon: doc.status === 'APPROVED' ? 'check-circle' : 'folder',
+      color: doc.status === 'APPROVED' ? Colors.success : Colors.primary,
+      action: doc.status === 'UPLOADED' ? 'Document Uploaded' : doc.status === 'APPROVED' ? 'Document Approved' : 'Document Requested',
+      description: `${doc.name} for request`,
+      timestamp: doc.updatedAt || doc.createdAt,
+    });
+  });
+  (appointmentsRes?.data || []).forEach((apt: any) => {
+    liveActivities.push({
+      id: `apt-${apt.id}`,
+      icon: 'event',
+      color: '#8B5CF6',
+      action: apt.status === 'CONFIRMED' ? 'Appointment Confirmed' : 'Appointment Requested',
+      description: `Meeting: ${apt.purpose}`,
+      timestamp: apt.updatedAt || apt.createdAt,
+    });
+  });
+  const recentActivities = liveActivities
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 5);
+
   const stats = {
     totalClients,
     pendingDocuments,
     pendingInvoices,
     upcomingDeadlines,
     todayAppointments,
-    recentActivities: mockAdminDashboard.recentActivities
+    recentActivities,
   };
   const unreadNotifications = (notificationsRes?.data || []).filter((n) => !n.readAt).length;
 

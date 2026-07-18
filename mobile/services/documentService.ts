@@ -28,14 +28,18 @@ export const documentService = {
     return response.data;
   },
 
-  uploadDocument: async (id: string, fileUri: string, fileName: string, fileType: string): Promise<any> => {
+  uploadDocument: async (id: string, fileUri: string, fileName: string, fileType: string, rawFile?: any): Promise<any> => {
     const formData = new FormData();
-    // @ts-ignore
-    formData.append('file', {
-      uri: fileUri,
-      name: fileName,
-      type: fileType,
-    });
+    if (rawFile) {
+      formData.append('file', rawFile);
+    } else {
+      // @ts-ignore
+      formData.append('file', {
+        uri: fileUri,
+        name: fileName,
+        type: fileType,
+      });
+    }
 
     const response = await api.post(`/documents/${id}/upload`, formData, {
       headers: {

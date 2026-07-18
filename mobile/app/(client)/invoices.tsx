@@ -6,6 +6,7 @@ import { AppCard } from '../../components/common/AppCard';
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppEmpty } from '../../components/common/AppStates';
 import { useAuthStore } from '../../store/authStore';
+import { api } from '../../services/api';
 import { Colors, Typography, Spacing } from '../../constants/theme';
 import { useInvoices } from '../../hooks/useQueries';
 import { Invoice } from '../../types';
@@ -28,7 +29,7 @@ export default function ClientInvoicesScreen() {
 
   const handleDownloadPdf = async (invoiceId: string) => {
     try {
-      const baseUrl = Platform.OS === 'android' ? 'http://10.0.2.2:3000/api' : 'http://localhost:3000/api';
+      const baseUrl = api.defaults.baseURL;
       const url = `${baseUrl}/invoices/${invoiceId}/pdf?token=${tokens?.accessToken}`;
       await Linking.openURL(url);
     } catch (err) {

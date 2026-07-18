@@ -110,9 +110,9 @@ export default function ClientSettingsScreen() {
 
         <Text style={styles.sectionLabel}>Account</Text>
         <AppCard style={styles.section} noPadding>
-          <SettingsItem icon="person-outline" label="Edit Profile" onPress={() => {}} />
+          <SettingsItem icon="person-outline" label="Edit Profile" onPress={() => router.push('/(client)/edit-profile' as any)} />
           <View style={styles.divider} />
-          <SettingsItem icon="lock-outline" label="Change Password" onPress={() => {}} />
+          <SettingsItem icon="lock-outline" label="Change Password" onPress={() => router.push('/(client)/change-password' as any)} />
         </AppCard>
 
         <Text style={styles.sectionLabel}>Preferences</Text>

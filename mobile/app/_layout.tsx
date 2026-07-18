@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { View, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -65,6 +66,7 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  const { height: windowHeight } = useWindowDimensions();
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -80,14 +82,47 @@ export default function RootLayout() {
 
   if (!fontsLoaded) return null;
 
+  const isWebDesktop = Platform.OS === 'web' && windowHeight > 800;
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <StatusBar style="dark" />
-          <RootLayoutNav />
+          {isWebDesktop ? (
+            <View style={styles.webContainer}>
+              <View style={[styles.appContainer, { height: windowHeight > 940 ? 880 : '95%' }]}>
+                <RootLayoutNav />
+              </View>
+            </View>
+          ) : (
+            <RootLayoutNav />
+          )}
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  webContainer: {
+    flex: 1,
+    backgroundColor: '#0F172A', // Slate 900 for dark mode canvas
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  appContainer: {
+    width: '100%',
+    maxWidth: 480,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+});

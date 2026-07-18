@@ -59,10 +59,10 @@ const limiter = (0, express_rate_limit_1.default)({
     message: { success: false, message: 'Too many requests, please try again later.' },
 });
 app.use('/api/', limiter);
-// Auth rate limiting (stricter)
+// Auth rate limiting (relaxed in development)
 const authLimiter = (0, express_rate_limit_1.default)({
     windowMs: 15 * 60 * 1000,
-    max: 10,
+    max: process.env.NODE_ENV === 'development' ? 1000 : 10,
     message: { success: false, message: 'Too many login attempts, please try again later.' },
 });
 // ─── General Middleware ───────────────────────────────────────────────────────

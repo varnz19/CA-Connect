@@ -5,6 +5,7 @@ const prisma_1 = require("../utils/prisma");
 const errorHandler_1 = require("../middleware/errorHandler");
 const zod_1 = require("zod");
 const pdf_service_1 = require("../services/pdf.service");
+const email_service_1 = require("../services/email.service");
 const invoiceSchema = zod_1.z.object({
     clientProfileId: zod_1.z.string(),
     dueDate: zod_1.z.string(),
@@ -121,6 +122,13 @@ class InvoiceController {
                 const invoice = await prisma_1.prisma.invoice.update({
                     where: { id: req.params.id },
                     data: { sentAt: new Date() },
+                    include: {
+                        clientProfile: {
+                            include: {
+                                user: true,
+                            },
+                        },
+                    },
                 });
                 await prisma_1.prisma.auditLog.create({
                     data: {
@@ -130,6 +138,17 @@ class InvoiceController {
                         entityId: invoice.id,
                     },
                 });
+                // Send invoice PDF email notification in background
+                if (invoice.clientProfile?.user?.email) {
+                    const clientEmail = invoice.clientProfile.user.email;
+                    const clientName = `${invoice.clientProfile.user.firstName} ${invoice.clientProfile.user.lastName}`;
+                    const downloadUrl = `http://localhost:3000/api/invoices/${invoice.id}/pdf`;
+                    email_service_1.emailService
+                        .sendInvoiceNotification(clientEmail, clientName, invoice.invoiceNumber, invoice.total, downloadUrl)
+                        .catch((err) => {
+                        console.error('Failed to send invoice notification email:', err);
+                    });
+                }
                 res.json({ success: true, data: invoice });
             }
             catch (error) {

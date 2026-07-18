@@ -12,9 +12,11 @@ interface TabIconProps {
 }
 
 const TabIcon = ({ icon, color, focused, label }: TabIconProps) => (
-  <View style={[tabStyles.tab, focused && tabStyles.tabActive]}>
-    <MaterialIcons name={icon} size={22} color={color} />
-    <Text style={[tabStyles.label, { color }]}>{label}</Text>
+  <View style={tabStyles.tab}>
+    <MaterialIcons name={icon} size={24} color={color} />
+    <Text style={[tabStyles.label, { color, fontFamily: focused ? Typography.fontFamily.semiBold : Typography.fontFamily.medium }]}>
+      {label}
+    </Text>
   </View>
 );
 
@@ -22,18 +24,10 @@ const tabStyles = StyleSheet.create({
   tab: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    gap: 2,
+    paddingTop: 4,
+    gap: 4,
   },
-  tabActive: {
-    backgroundColor: Colors.statusActive,
-  },
-  label: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: 10,
-  },
+  label: { fontSize: 11 },
 });
 
 export default function AdminLayout() {
@@ -135,6 +129,30 @@ export default function AdminLayout() {
       />
       <Tabs.Screen
         name="notifications"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="add-client"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="create-invoice"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="request-document"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="appointment-detail"
         options={{
           href: null,
         }}
