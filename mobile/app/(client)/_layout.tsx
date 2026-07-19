@@ -99,7 +99,7 @@ export default function ClientLayout() {
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="profile"
         options={{
           tabBarIcon: ({ color, focused }) => (
             <TabIcon icon="person" color={color} focused={focused} label="Profile" />
@@ -121,7 +121,37 @@ export default function ClientLayout() {
         }}
       />
       <Tabs.Screen
+        name="invoice-details"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="notifications"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="upload"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="appointment-details"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="profile-edit"
         options={{
           href: null,
         }}

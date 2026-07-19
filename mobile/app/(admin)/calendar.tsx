@@ -44,6 +44,7 @@ export default function AdminCalendarScreen() {
   const [title, setTitle] = useState('');
   const [type, setType] = useState<'FILING' | 'MEETING' | 'TAX' | 'REMINDER'>('MEETING');
   const [description, setDescription] = useState('');
+  const [showPicker, setShowPicker] = useState(false);
 
   // Map backend events into structured calendar items
   const backendEvents = (calendarRes?.data || []).map((e: any) => {
@@ -273,17 +274,56 @@ export default function AdminCalendarScreen() {
               {/* Type Select */}
               <View style={styles.pickerField}>
                 <Text style={styles.fieldLabel}>Event Type</Text>
-                <View style={styles.pickerWrapper}>
-                  <select
-                    value={type}
-                    onChange={(e) => setType(e.target.value as any)}
-                    style={styles.htmlSelect}
+                <View style={{ zIndex: 1000, position: 'relative' }}>
+                  <TouchableOpacity
+                    style={styles.selectButton}
+                    onPress={() => setShowPicker(!showPicker)}
+                    activeOpacity={0.8}
                   >
-                    <option value="MEETING">Meeting</option>
-                    <option value="FILING">Filing Deadline</option>
-                    <option value="TAX">Tax Payment</option>
-                    <option value="REMINDER">General Reminder</option>
-                  </select>
+                    <Text style={styles.selectButtonText}>
+                      {type === 'MEETING' ? 'Meeting' :
+                       type === 'FILING' ? 'Filing Deadline' :
+                       type === 'TAX' ? 'Tax Payment' :
+                       type === 'REMINDER' ? 'General Reminder' : 'Choose type...'}
+                    </Text>
+                    <MaterialIcons
+                      name={showPicker ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                      size={20}
+                      color={Colors.textSecondary}
+                    />
+                  </TouchableOpacity>
+
+                  {showPicker && (
+                    <View style={styles.dropdownContainer}>
+                      <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
+                        {[
+                          { value: 'MEETING', label: 'Meeting' },
+                          { value: 'FILING', label: 'Filing Deadline' },
+                          { value: 'TAX', label: 'Tax Payment' },
+                          { value: 'REMINDER', label: 'General Reminder' },
+                        ].map((t) => (
+                          <TouchableOpacity
+                            key={t.value}
+                            style={[
+                              styles.dropdownItem,
+                              type === t.value && styles.dropdownItemSelected
+                            ]}
+                            onPress={() => {
+                              setType(t.value as any);
+                              setShowPicker(false);
+                            }}
+                          >
+                            <Text style={[
+                              styles.dropdownItemText,
+                              type === t.value && styles.dropdownItemTextSelected
+                            ]}>
+                              {t.label}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
                 </View>
               </View>
 
@@ -515,16 +555,59 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: Spacing.sm,
   },
-  htmlSelect: {
-    width: '100%',
-    height: '100%',
-    borderWidth: 0,
-    backgroundColor: 'transparent',
+  selectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.backgroundInput,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    height: 48,
+    paddingHorizontal: Spacing.sm,
+  },
+  selectButtonText: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.base,
     color: Colors.textPrimary,
-    outlineStyle: 'none',
-  } as any,
+  },
+  dropdownContainer: {
+    backgroundColor: Colors.backgroundCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    marginTop: 4,
+    maxHeight: 180,
+    position: 'absolute',
+    top: 48,
+    left: 0,
+    right: 0,
+    zIndex: 2000,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  dropdownScroll: {
+    paddingVertical: 4,
+  },
+  dropdownItem: {
+    paddingHorizontal: Spacing.base,
+    paddingVertical: 12,
+  },
+  dropdownItemSelected: {
+    backgroundColor: Colors.statusActive,
+  },
+  dropdownItemText: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.base,
+    color: Colors.textPrimary,
+  },
+  dropdownItemTextSelected: {
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.primary,
+  },
   modalSubmitBtn: {
     marginTop: Spacing.base,
   },

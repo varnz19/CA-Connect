@@ -43,7 +43,7 @@ const SettingsItem = ({ icon, label, value, onPress, showArrow = true, danger = 
   </TouchableOpacity>
 );
 
-export default function ClientSettingsScreen() {
+export default function ClientProfileScreen() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const [notifications, setNotifications] = React.useState(true);

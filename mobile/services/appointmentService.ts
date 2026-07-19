@@ -17,8 +17,8 @@ export const appointmentService = {
     return response.data;
   },
 
-  confirmAppointment: async (id: string, confirmedDate?: string): Promise<{ data: Appointment }> => {
-    const response = await api.put(`/appointments/${id}/confirm`, { confirmedDate });
+  confirmAppointment: async (id: string, payload: { confirmedDate?: string; meetingLink?: string; notes?: string }): Promise<{ data: Appointment }> => {
+    const response = await api.put(`/appointments/${id}/confirm`, payload);
     return response.data;
   },
 
@@ -27,8 +27,8 @@ export const appointmentService = {
     return response.data;
   },
 
-  rescheduleAppointment: async (id: string, newDate: string, notes?: string): Promise<{ data: Appointment }> => {
-    const response = await api.put(`/appointments/${id}/reschedule`, { newDate, notes });
+  rescheduleAppointment: async (id: string, payload: { newDate: string; notes?: string; meetingLink?: string }): Promise<{ data: Appointment }> => {
+    const response = await api.put(`/appointments/${id}/reschedule`, payload);
     return response.data;
   },
 

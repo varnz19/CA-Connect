@@ -124,7 +124,15 @@ export class AppointmentController {
 
   confirmAppointment = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const apt = await prisma.appointment.update({ where: { id: req.params.id }, data: { status: 'CONFIRMED', confirmedDate: req.body.confirmedDate ? new Date(req.body.confirmedDate) : new Date() } });
+      const apt = await prisma.appointment.update({
+        where: { id: req.params.id },
+        data: {
+          status: 'CONFIRMED',
+          confirmedDate: req.body.confirmedDate ? new Date(req.body.confirmedDate) : new Date(),
+          meetingLink: req.body.meetingLink || null,
+          notes: req.body.notes || null,
+        },
+      });
       await prisma.auditLog.create({ data: { userId: req.user!.id, action: 'APPOINTMENT_UPDATED', entity: 'Appointment', entityId: apt.id } });
       res.json({ success: true, data: apt });
     } catch (error) { next(error); }
@@ -139,7 +147,15 @@ export class AppointmentController {
 
   rescheduleAppointment = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const apt = await prisma.appointment.update({ where: { id: req.params.id }, data: { status: 'RESCHEDULED', confirmedDate: new Date(req.body.newDate), notes: req.body.notes } });
+      const apt = await prisma.appointment.update({
+        where: { id: req.params.id },
+        data: {
+          status: 'RESCHEDULED',
+          confirmedDate: new Date(req.body.newDate),
+          notes: req.body.notes,
+          meetingLink: req.body.meetingLink || null,
+        },
+      });
       res.json({ success: true, data: apt });
     } catch (error) { next(error); }
   };

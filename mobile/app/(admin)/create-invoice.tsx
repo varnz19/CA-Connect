@@ -37,6 +37,7 @@ export default function AdminCreateInvoiceScreen() {
   const [dueDate, setDueDate] = useState<string>('');
   const [taxRate, setTaxRate] = useState<number>(18);
   const [notes, setNotes] = useState<string>('');
+  const [showPicker, setShowPicker] = useState(false);
   
   // Invoice items state
   const [items, setItems] = useState<InvoiceItem[]>([
@@ -159,23 +160,57 @@ export default function AdminCreateInvoiceScreen() {
             {/* Client Picker */}
             <View style={styles.pickerField}>
               <Text style={styles.fieldLabel}>Select Client</Text>
-              <View style={styles.pickerWrapper}>
-                {clients.length === 0 ? (
+              {clients.length === 0 ? (
+                <View style={styles.pickerWrapper}>
                   <Text style={styles.pickerEmpty}>No active client profiles</Text>
-                ) : (
-                  <select
-                    value={selectedClientId}
-                    onChange={(e) => setSelectedClientId(e.target.value)}
-                    style={styles.htmlSelect}
+                </View>
+              ) : (
+                <View style={{ zIndex: 1000, position: 'relative' }}>
+                  <TouchableOpacity
+                    style={styles.selectButton}
+                    onPress={() => setShowPicker(!showPicker)}
+                    activeOpacity={0.8}
                   >
-                    {clients.map((c) => (
-                      <option key={c.id} value={c.clientProfile?.id}>
-                        {c.firstName} {c.lastName} ({c.clientProfile?.firmName || 'No Firm'})
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </View>
+                    <Text style={styles.selectButtonText}>
+                      {clients.find(c => c.clientProfile?.id === selectedClientId)
+                        ? `${clients.find(c => c.clientProfile?.id === selectedClientId)?.firstName} ${clients.find(c => c.clientProfile?.id === selectedClientId)?.lastName} (${clients.find(c => c.clientProfile?.id === selectedClientId)?.clientProfile?.firmName || 'No Firm'})`
+                        : 'Choose a client...'}
+                    </Text>
+                    <MaterialIcons
+                      name={showPicker ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                      size={20}
+                      color={Colors.textSecondary}
+                    />
+                  </TouchableOpacity>
+
+                  {showPicker && (
+                    <View style={styles.dropdownContainer}>
+                      <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
+                        {clients.map((c) => (
+                          <TouchableOpacity
+                            key={c.id}
+                            style={[
+                              styles.dropdownItem,
+                              selectedClientId === c.clientProfile?.id && styles.dropdownItemSelected
+                            ]}
+                            onPress={() => {
+                              setSelectedClientId(c.clientProfile?.id || '');
+                              setShowPicker(false);
+                            }}
+                          >
+                            <Text style={[
+                              styles.dropdownItemText,
+                              selectedClientId === c.clientProfile?.id && styles.dropdownItemTextSelected
+                            ]}>
+                              {c.firstName} {c.lastName} ({c.clientProfile?.firmName || 'No Firm'})
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              )}
             </View>
 
             <AppInput
@@ -350,16 +385,59 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: Spacing.sm,
   },
-  htmlSelect: {
-    width: '100%',
-    height: '100%',
-    borderWidth: 0,
-    backgroundColor: 'transparent',
+  selectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.backgroundInput,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    height: 48,
+    paddingHorizontal: Spacing.sm,
+  },
+  selectButtonText: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.base,
     color: Colors.textPrimary,
-    outlineStyle: 'none',
-  } as any,
+  },
+  dropdownContainer: {
+    backgroundColor: Colors.backgroundCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    marginTop: 4,
+    maxHeight: 180,
+    position: 'absolute',
+    top: 48,
+    left: 0,
+    right: 0,
+    zIndex: 2000,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  dropdownScroll: {
+    paddingVertical: 4,
+  },
+  dropdownItem: {
+    paddingHorizontal: Spacing.base,
+    paddingVertical: 12,
+  },
+  dropdownItemSelected: {
+    backgroundColor: Colors.statusActive,
+  },
+  dropdownItemText: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.base,
+    color: Colors.textPrimary,
+  },
+  dropdownItemTextSelected: {
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.primary,
+  },
   pickerEmpty: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.base,

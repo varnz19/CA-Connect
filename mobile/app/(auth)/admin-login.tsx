@@ -22,6 +22,7 @@ import { AppButton } from '../../components/common/AppButton';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { authService } from '../../services/authService';
+import { base64Encode } from '../../utils/base64';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -99,8 +100,8 @@ export default function AdminLoginScreen() {
               setIsLoading(true);
               try {
                 // Generate a mock JWT token base64 format
-                const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-                const payload = btoa(JSON.stringify({
+                const header = base64Encode(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+                const payload = base64Encode(JSON.stringify({
                   sub: 'g-admin-123',
                   email: 'admin@caconnect.in',
                   given_name: 'CA',
