@@ -175,6 +175,12 @@ export default function AdminLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="client-detail"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

@@ -8,6 +8,7 @@ import {
   Alert,
   TextInput,
   Platform,
+  Linking,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -33,6 +34,20 @@ export default function AdminAppointmentDetailScreen() {
   const [isConfirmMode, setIsConfirmMode] = useState(false);
   const [isRejectMode, setIsRejectMode] = useState(false);
 
+  const [meetingLink, setMeetingLink] = useState('');
+  const [notes, setNotes] = useState('');
+
+  const generateGoogleMeetLink = () => {
+    const chars = 'abcdefghijklmnopqrstuvwxyz';
+    const randPart = (len: number) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    setMeetingLink(`https://meet.google.com/${randPart(3)}-${randPart(4)}-${randPart(3)}`);
+  };
+
+  const generateTeamsLink = () => {
+    const meetId = Math.floor(100000000 + Math.random() * 900000000);
+    setMeetingLink(`https://teams.live.com/meet/${meetId}`);
+  };
+
   const fetchDetail = async () => {
     if (!id) return;
     setIsLoading(true);
@@ -40,6 +55,8 @@ export default function AdminAppointmentDetailScreen() {
       const res = await appointmentService.getAppointment(id);
       if (res.data) {
         setAppointment(res.data);
+        setMeetingLink(res.data.meetingLink || '');
+        setNotes(res.data.notes || '');
         // Default confirm date/time to request date
         if (res.data.requestedDate) {
           try {
@@ -65,10 +82,11 @@ export default function AdminAppointmentDetailScreen() {
     if (!id) return;
     setActionLoading(true);
     try {
-      const res = await appointmentService.confirmAppointment(
-        id,
-        confirmedDate ? new Date(confirmedDate).toISOString() : undefined
-      );
+      const res = await appointmentService.confirmAppointment(id, {
+        confirmedDate: confirmedDate ? new Date(confirmedDate).toISOString() : undefined,
+        meetingLink,
+        notes,
+      });
       if (res.data) {
         Alert.alert('Success', 'Appointment confirmed successfully.');
         setIsConfirmMode(false);
@@ -207,6 +225,30 @@ export default function AdminAppointmentDetailScreen() {
             </View>
           )}
 
+          {appointment.meetingLink && (
+            <View style={[styles.row, { marginTop: Spacing.sm }]}>
+              <MaterialIcons name="video-call" size={22} color={Colors.secondary} />
+              <View style={styles.info}>
+                <Text style={styles.label}>Conference Link</Text>
+                <TouchableOpacity onPress={() => Linking.openURL(appointment.meetingLink!)}>
+                  <Text style={[styles.value, { color: Colors.secondary, textDecorationLine: 'underline' }]}>
+                    {appointment.meetingLink}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {appointment.notes && (
+            <View style={[styles.row, { marginTop: Spacing.sm }]}>
+              <MaterialIcons name="notes" size={22} color={Colors.primary} />
+              <View style={styles.info}>
+                <Text style={styles.label}>Admin Notes / Details</Text>
+                <Text style={styles.value}>{appointment.notes}</Text>
+              </View>
+            </View>
+          )}
+
           <View style={styles.statusSection}>
             <Text style={styles.label}>Current Status</Text>
             <View style={[styles.statusBadge, { backgroundColor: appointment.status === 'CONFIRMED' ? Colors.successLight : (appointment.status === 'REQUESTED' ? Colors.primaryLight : Colors.dangerLight) }]}>
@@ -224,6 +266,28 @@ export default function AdminAppointmentDetailScreen() {
                 placeholder="2025-07-20T10:00"
                 value={confirmedDate}
                 onChangeText={setConfirmedDate}
+              />
+              <AppInput
+                label="Meeting Link (Google Meet / Teams)"
+                placeholder="https://meet.google.com/..."
+                value={meetingLink}
+                onChangeText={setMeetingLink}
+              />
+              <View style={styles.quickLinkRow}>
+                <TouchableOpacity style={styles.quickLinkBtn} onPress={generateGoogleMeetLink}>
+                  <MaterialIcons name="video-call" size={14} color={Colors.secondary} />
+                  <Text style={styles.quickLinkText}>Google Meet</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.quickLinkBtn} onPress={generateTeamsLink}>
+                  <MaterialIcons name="videocam" size={14} color={Colors.secondary} />
+                  <Text style={styles.quickLinkText}>MS Teams</Text>
+                </TouchableOpacity>
+              </View>
+              <AppInput
+                label="Meeting Notes / Description"
+                placeholder="Google Meet virtual consultation details."
+                value={notes}
+                onChangeText={setNotes}
               />
               <View style={styles.btnRow}>
                 <AppButton
@@ -397,5 +461,24 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: Spacing.sm,
     marginTop: Spacing.xs,
+  },
+  quickLinkRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginBottom: Spacing.xs,
+  },
+  quickLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: `${Colors.secondary}12`,
+    paddingVertical: 6,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+  },
+  quickLinkText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 11,
+    color: Colors.secondaryDark,
   },
 });

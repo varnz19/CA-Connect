@@ -57,7 +57,7 @@ export default function AdminChangePasswordScreen() {
       });
       if (response.success) {
         Alert.alert('Success', 'Password changed successfully.', [
-          { text: 'OK', onPress: () => router.back() }
+          { text: 'OK', onPress: () => router.replace('/(admin)/settings') }
         ]);
       }
     } catch (err: any) {
@@ -75,7 +75,7 @@ export default function AdminChangePasswordScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.replace('/(admin)/settings')} style={styles.backBtn}>
             <MaterialIcons name="arrow-back" size={20} color={Colors.textPrimary} />
             <Text style={styles.backText}>Back to Settings</Text>
           </TouchableOpacity>

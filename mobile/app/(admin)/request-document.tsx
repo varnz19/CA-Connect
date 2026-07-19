@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppInput } from '../../components/common/AppInput';
@@ -30,13 +30,19 @@ export default function AdminRequestDocumentScreen() {
   const [dueDate, setDueDate] = useState<string>('');
   const [showPicker, setShowPicker] = useState(false);
 
+  const { clientId } = useLocalSearchParams<{ clientId: string }>();
+
   // Fetch active client list on mount
   useEffect(() => {
     clientService.getClients()
       .then((res) => {
         if (res.data && res.data.length > 0) {
           setClients(res.data);
-          setSelectedClientId(res.data[0].clientProfile?.id || '');
+          if (clientId) {
+            setSelectedClientId(clientId);
+          } else {
+            setSelectedClientId(res.data[0].clientProfile?.id || '');
+          }
         }
       })
       .catch((err) => console.error('Failed to fetch clients:', err));

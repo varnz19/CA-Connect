@@ -83,7 +83,7 @@ export default function ClientEditProfileScreen() {
       if (response.data) {
         updateUser(response.data);
         Alert.alert('Success', 'Profile updated successfully.', [
-          { text: 'OK', onPress: () => router.back() }
+          { text: 'OK', onPress: () => router.replace('/(client)/profile') }
         ]);
       }
     } catch (err: any) {
@@ -101,7 +101,7 @@ export default function ClientEditProfileScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.replace('/(client)/profile')} style={styles.backBtn}>
             <MaterialIcons name="arrow-back" size={20} color={Colors.textPrimary} />
             <Text style={styles.backText}>Back to Settings</Text>
           </TouchableOpacity>
