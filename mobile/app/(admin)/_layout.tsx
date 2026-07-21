@@ -13,7 +13,9 @@ interface TabIconProps {
 
 const TabIcon = ({ icon, color, focused, label }: TabIconProps) => (
   <View style={tabStyles.tab}>
-    <MaterialIcons name={icon} size={24} color={color} />
+    <View style={[tabStyles.iconWrapper, focused && tabStyles.iconWrapperFocused]}>
+      <MaterialIcons name={icon} size={22} color={color} />
+    </View>
     <Text style={[tabStyles.label, { color, fontFamily: focused ? Typography.fontFamily.semiBold : Typography.fontFamily.medium }]}>
       {label}
     </Text>
@@ -24,8 +26,16 @@ const tabStyles = StyleSheet.create({
   tab: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 4,
     gap: 4,
+    height: '100%',
+  },
+  iconWrapper: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
+  },
+  iconWrapperFocused: {
+    backgroundColor: `${Colors.primary}15`,
   },
   label: { fontSize: 11 },
 });
@@ -41,9 +51,14 @@ export default function AdminLayout() {
           backgroundColor: Colors.tabBarBackground,
           borderTopColor: Colors.border,
           borderTopWidth: 1,
-          height: 60 + insets.bottom,
-          paddingBottom: insets.bottom,
+          height: 72 + insets.bottom,
+          paddingBottom: insets.bottom + 8,
           paddingTop: 8,
+          elevation: 10,
+          shadowColor: '#0F172A',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.03,
+          shadowRadius: 12,
         },
         tabBarShowLabel: false,
       }}

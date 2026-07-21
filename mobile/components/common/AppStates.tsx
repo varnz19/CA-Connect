@@ -102,13 +102,13 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing['3xl'],
   },
   iconWrapper: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: Colors.backgroundInput,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.base,
+    marginBottom: Spacing.lg,
   },
   errorIconWrapper: {
     backgroundColor: Colors.dangerLight,

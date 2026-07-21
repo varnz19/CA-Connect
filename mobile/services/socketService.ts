@@ -3,6 +3,9 @@ import { useAuthStore } from '../store/authStore';
 import { Platform } from 'react-native';
 
 const getSocketUrl = () => {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
   if (Platform.OS === 'android') {
     return 'http://10.0.2.2:3000';
   }
@@ -22,8 +25,11 @@ class SocketService {
       auth: {
         token: tokens.accessToken,
       },
-      transports: ['websocket'],
+      transports: ['polling', 'websocket'],
       autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
     this.socket.on('connect', () => {
@@ -35,7 +41,7 @@ class SocketService {
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('⚡ Socket connection error:', error.message);
+      console.warn('⚡ Socket connection warning:', error.message);
     });
   }
 

@@ -58,7 +58,8 @@ const signupSchema = zod_1.z.object({
     gstState: zod_1.z.string().optional(),
 });
 const googleLoginSchema = zod_1.z.object({
-    idToken: zod_1.z.string(),
+    idToken: zod_1.z.string().optional(),
+    accessToken: zod_1.z.string().optional(),
 });
 const forgotPasswordSchema = zod_1.z.object({
     email: zod_1.z.string().email(),
@@ -297,36 +298,55 @@ class AuthController {
         };
         this.googleLogin = async (req, res, next) => {
             try {
-                const { idToken } = googleLoginSchema.parse(req.body);
-                let payload;
-                try {
-                    const { OAuth2Client } = await Promise.resolve().then(() => __importStar(require('google-auth-library')));
-                    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-                    const ticket = await client.verifyIdToken({
-                        idToken,
-                        audience: process.env.GOOGLE_CLIENT_ID,
-                    });
-                    payload = ticket.getPayload();
+                const { idToken, accessToken } = googleLoginSchema.parse(req.body);
+                if (!idToken && !accessToken) {
+                    throw new errorHandler_1.AppError('Either idToken or accessToken is required.', 400);
                 }
-                catch (verifyErr) {
-                    console.error('Cryptographic Google Token Verification failed:', verifyErr);
-                    const isPlaceholderClientId = !process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID.startsWith('1234567890');
-                    if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' || isPlaceholderClientId) {
-                        console.log('⚠️ [DEV MODE] Google verification fallback to mock parsing.');
-                        const parts = idToken.split('.');
-                        if (parts.length === 3) {
-                            const decoded = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
-                            payload = {
-                                sub: decoded.sub || 'g-user-123',
-                                email: decoded.email || 'google.client@caconnect.in',
-                                given_name: decoded.given_name || 'Google',
-                                family_name: decoded.family_name || 'Client',
-                                picture: decoded.picture || '',
-                            };
-                        }
+                let payload;
+                if (accessToken) {
+                    try {
+                        const { default: axios } = await Promise.resolve().then(() => __importStar(require('axios')));
+                        const response = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
+                            headers: { Authorization: `Bearer ${accessToken}` },
+                        });
+                        payload = response.data;
+                        payload.sub = payload.id; // Normalize to match idToken format
                     }
-                    if (!payload) {
-                        throw new errorHandler_1.AppError('Google verification failed. Invalid token.', 401);
+                    catch (err) {
+                        console.error('Failed to fetch user info with accessToken', err);
+                        throw new errorHandler_1.AppError('Invalid access token.', 401);
+                    }
+                }
+                else if (idToken) {
+                    try {
+                        const { OAuth2Client } = await Promise.resolve().then(() => __importStar(require('google-auth-library')));
+                        const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+                        const ticket = await client.verifyIdToken({
+                            idToken,
+                            audience: process.env.GOOGLE_CLIENT_ID,
+                        });
+                        payload = ticket.getPayload();
+                    }
+                    catch (verifyErr) {
+                        console.error('Cryptographic Google Token Verification failed:', verifyErr);
+                        const isPlaceholderClientId = !process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID.startsWith('1234567890');
+                        if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' || isPlaceholderClientId) {
+                            console.log('⚠️ [DEV MODE] Google verification fallback to mock parsing.');
+                            const parts = idToken.split('.');
+                            if (parts.length === 3) {
+                                const decoded = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+                                payload = {
+                                    sub: decoded.sub || 'g-user-123',
+                                    email: decoded.email || 'google.client@caconnect.in',
+                                    given_name: decoded.given_name || 'Google',
+                                    family_name: decoded.family_name || 'Client',
+                                    picture: decoded.picture || '',
+                                };
+                            }
+                        }
+                        if (!payload) {
+                            throw new errorHandler_1.AppError('Google verification failed. Invalid token.', 401);
+                        }
                     }
                 }
                 if (!payload || !payload.email) {
@@ -346,6 +366,7 @@ class AuthController {
                     },
                     include: { clientProfile: true },
                 });
+                let isNewUser = false;
                 if (user) {
                     if (!user.googleId) {
                         user = await prisma_1.prisma.user.update({
@@ -356,6 +377,7 @@ class AuthController {
                     }
                 }
                 else {
+                    isNewUser = true;
                     const defaultAdmin = await prisma_1.prisma.user.findFirst({
                         where: { role: 'ADMIN' },
                     });
@@ -396,6 +418,7 @@ class AuthController {
                     data: {
                         user: safeUser,
                         tokens,
+                        isNewUser,
                     },
                 });
             }

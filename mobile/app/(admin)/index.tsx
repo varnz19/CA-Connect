@@ -6,6 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -37,12 +39,16 @@ interface StatCardProps {
 
 const StatCard = ({ icon, label, value, color, bg, onPress }: StatCardProps) => (
   <TouchableOpacity style={styles.statCard} onPress={onPress} activeOpacity={0.8}>
-    <AppCard style={styles.statCardInner}>
-      <View style={[styles.statIconBg, { backgroundColor: bg }]}>
-        <MaterialIcons name={icon} size={22} color={color} />
+    <AppCard style={styles.statCardInner} padding={Spacing.base}>
+      <View style={styles.statHeaderRow}>
+        <View style={[styles.statIconBg, { backgroundColor: bg }]}>
+          <MaterialIcons name={icon} size={24} color={color} />
+        </View>
       </View>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <View style={styles.statContent}>
+        <Text style={styles.statValue}>{value}</Text>
+        <Text style={styles.statLabel}>{label}</Text>
+      </View>
     </AppCard>
   </TouchableOpacity>
 );
@@ -131,6 +137,9 @@ export default function AdminDashboard() {
     setRefreshing(false);
   };
 
+  const { width } = useWindowDimensions();
+  const isDesktop = width > 768;
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
@@ -167,9 +176,6 @@ export default function AdminDashboard() {
         </View>
 
         {/* Quick Stats Grid */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Overview</Text>
-        </View>
         <View style={styles.statsGrid}>
           <StatCard
             icon="people"
@@ -213,102 +219,113 @@ export default function AdminDashboard() {
           />
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-        </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.actionScroll}>
-          {[
-            { icon: 'person-add', label: 'Add Client', route: '/(admin)/clients' },
-            { icon: 'post-add', label: 'New Invoice', route: '/(admin)/invoices' },
-            { icon: 'assignment', label: 'Doc Request', route: '/(admin)/documents' },
-            { icon: 'event-available', label: 'Appointments', route: '/(admin)/appointments' },
-            { icon: 'calendar-today', label: 'Calendar', route: '/(admin)/calendar' },
-          ].map((action) => (
-            <TouchableOpacity
-              key={action.label}
-              style={styles.actionChip}
-              onPress={() => router.push(action.route as any)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.actionIconBg}>
-                <MaterialIcons name={action.icon as any} size={20} color={Colors.primary} />
-              </View>
-              <Text style={styles.actionLabel}>{action.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Upcoming Appointments */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Today's Appointments</Text>
-          <TouchableOpacity onPress={() => router.push('/(admin)/appointments' as any)}>
-            <Text style={styles.seeAll}>See all</Text>
-          </TouchableOpacity>
-        </View>
-        {todayAptsList.slice(0, 3).map((apt) => (
-          <TouchableOpacity
-            key={apt.id}
-            activeOpacity={0.8}
-            onPress={() => router.push(`/(admin)/appointment-detail?id=${apt.id}` as any)}
-          >
-            <AppCard style={styles.aptCard}>
-              <View style={styles.aptRow}>
-                <View style={styles.aptTimeBadge}>
-                  <Text style={styles.aptTime}>
-                    {new Date(apt.confirmedDate || apt.requestedDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                  </Text>
-                </View>
-                <View style={styles.aptInfo}>
-                  <Text style={styles.aptTitle}>{apt.title}</Text>
-                  <Text style={styles.aptClient}>
-                    {apt.clientProfile?.user ? `${apt.clientProfile.user.firstName} ${apt.clientProfile.user.lastName}` : 'Client'}
-                  </Text>
-                </View>
-                <View style={styles.aptDuration}>
-                  <MaterialIcons name="schedule" size={14} color={Colors.textTertiary} />
-                  <Text style={styles.aptDurationText}>{apt.duration}m</Text>
-                </View>
-              </View>
-            </AppCard>
-          </TouchableOpacity>
-        ))}
-        {todayAptsList.length === 0 && (
-          <AppCard style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No appointments scheduled for today</Text>
-          </AppCard>
-        )}
-
-        {/* Recent Activity */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-        </View>
-        <AppCard style={styles.activityCard} noPadding>
-          {stats.recentActivities.map((activity: any, index: number) => (
-            <View
-              key={activity.id}
-              style={[
-                styles.activityItem,
-                index < stats.recentActivities.length - 1 && styles.activityBorder,
-              ]}
-            >
-              <View style={[styles.activityIconBg, { backgroundColor: `${activity.color}18` }]}>
-                <MaterialIcons
-                  name={activity.icon as any}
-                  size={16}
-                  color={activity.color}
-                />
-              </View>
-              <View style={styles.activityInfo}>
-                <Text style={styles.activityAction}>{activity.action}</Text>
-                <Text style={styles.activityDesc}>{activity.description}</Text>
-              </View>
-              <Text style={styles.activityTime}>
-                {formatRelativeTime(activity.timestamp)}
-              </Text>
+        {/* Desktop Layout Wrapper */}
+        <View style={[styles.mainLayout, isDesktop && styles.mainLayoutDesktop]}>
+          <View style={styles.mainColumn}>
+            {/* Quick Actions */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Quick Actions</Text>
             </View>
-          ))}
-        </AppCard>
+            <View style={styles.actionGrid}>
+              {[
+                { icon: 'person-add', label: 'Add Client', route: '/(admin)/clients' },
+                { icon: 'post-add', label: 'New Invoice', route: '/(admin)/invoices' },
+                { icon: 'assignment', label: 'Doc Request', route: '/(admin)/documents' },
+                { icon: 'event-available', label: 'Appointments', route: '/(admin)/appointments' },
+                { icon: 'calendar-today', label: 'Calendar', route: '/(admin)/calendar' },
+              ].map((action) => (
+                <TouchableOpacity
+                  key={action.label}
+                  style={styles.actionChip}
+                  onPress={() => router.push(action.route as any)}
+                  activeOpacity={0.8}
+                >
+                  <AppCard style={styles.actionIconBg} noPadding>
+                    <MaterialIcons name={action.icon as any} size={24} color={Colors.primary} />
+                  </AppCard>
+                  <Text style={styles.actionLabel}>{action.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Upcoming Appointments */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Today's Appointments</Text>
+              <TouchableOpacity onPress={() => router.push('/(admin)/appointments' as any)}>
+                <Text style={styles.seeAll}>See all</Text>
+              </TouchableOpacity>
+            </View>
+            {todayAptsList.slice(0, 3).map((apt) => (
+              <TouchableOpacity
+                key={apt.id}
+                activeOpacity={0.8}
+                onPress={() => router.push(`/(admin)/appointment-detail?id=${apt.id}` as any)}
+              >
+                <AppCard style={styles.aptCard}>
+                  <View style={styles.aptRow}>
+                    <View style={styles.aptTimeBadge}>
+                      <Text style={styles.aptTime}>
+                        {new Date(apt.confirmedDate || apt.requestedDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                      </Text>
+                    </View>
+                    <View style={styles.aptInfo}>
+                      <Text style={styles.aptTitle}>{apt.title}</Text>
+                      <Text style={styles.aptClient}>
+                        {apt.clientProfile?.user ? `${apt.clientProfile.user.firstName} ${apt.clientProfile.user.lastName}` : 'Client'}
+                      </Text>
+                    </View>
+                    <View style={styles.aptDuration}>
+                      <MaterialIcons name="schedule" size={14} color={Colors.textTertiary} />
+                      <Text style={styles.aptDurationText}>{apt.duration}m</Text>
+                    </View>
+                  </View>
+                </AppCard>
+              </TouchableOpacity>
+            ))}
+            {todayAptsList.length === 0 && (
+              <AppCard style={styles.emptyCard}>
+                <Text style={styles.emptyText}>No appointments scheduled for today</Text>
+              </AppCard>
+            )}
+          </View>
+
+          <View style={styles.sideColumn}>
+            {/* Recent Activity */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Recent Activity</Text>
+            </View>
+            <AppCard style={styles.activityCard} noPadding>
+              {stats.recentActivities.length > 0 ? (
+                stats.recentActivities.map((activity: any, index: number) => (
+                  <View
+                    key={activity.id}
+                    style={[
+                      styles.activityItem,
+                      index < stats.recentActivities.length - 1 && styles.activityBorder,
+                    ]}
+                  >
+                    <View style={[styles.activityIconBg, { backgroundColor: `${activity.color}15` }]}>
+                      <MaterialIcons
+                        name={activity.icon as any}
+                        size={18}
+                        color={activity.color}
+                      />
+                    </View>
+                    <View style={styles.activityInfo}>
+                      <Text style={styles.activityAction}>{activity.action}</Text>
+                      <Text style={styles.activityDesc}>{activity.description}</Text>
+                    </View>
+                    <Text style={styles.activityTime}>{formatRelativeTime(activity.timestamp)}</Text>
+                  </View>
+                ))
+              ) : (
+                <View style={styles.emptyCard}>
+                  <Text style={styles.emptyText}>No recent activity</Text>
+                </View>
+              )}
+            </AppCard>
+          </View>
+        </View>
 
         <View style={styles.bottomPad} />
       </ScrollView>
@@ -378,21 +395,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: Spacing.base,
-    gap: Spacing.sm,
+    gap: Spacing.base,
   },
   statCard: {
-    width: '47%',
+    flexGrow: 1,
+    flexBasis: 200,
+    minWidth: 150,
   },
   statCardInner: {
-    gap: Spacing.xs,
+    height: 120,
+    justifyContent: 'center',
+  },
+  statHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
   },
   statIconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.xs,
+  },
+  statContent: {
+    flex: 1,
+    justifyContent: 'flex-end',
   },
   statValue: {
     fontFamily: Typography.fontFamily.bold,
@@ -400,33 +429,49 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   statLabel: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
     color: Colors.textSecondary,
+    marginTop: 2,
   },
-  actionScroll: {
-    paddingLeft: Spacing.base,
+  mainLayout: {
+    flexDirection: 'column',
+    width: '100%',
+  },
+  mainLayoutDesktop: {
+    flexDirection: 'row',
     paddingRight: Spacing.base,
+  },
+  mainColumn: {
+    flex: 2,
+  },
+  sideColumn: {
+    flex: 1,
+    paddingLeft: Spacing.base,
+    borderLeftWidth: 1,
+    borderLeftColor: Colors.border,
+  },
+  actionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: Spacing.base,
+    gap: Spacing.base,
   },
   actionChip: {
     alignItems: 'center',
-    marginRight: Spacing.sm,
-    width: 72,
+    width: 80,
   },
   actionIconBg: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: Colors.backgroundCard,
+    width: 64,
+    height: 64,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.sm,
   },
   actionLabel: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: 10,
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 11,
     color: Colors.textSecondary,
     textAlign: 'center',
   },

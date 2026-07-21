@@ -62,66 +62,37 @@ export default function AdminLoginScreen() {
     redirectUri,
   });
 
+  // Handle Google Auth response on all platforms
   useEffect(() => {
-    if (response?.type === 'success' && response.authentication?.idToken) {
-      const { idToken } = response.authentication;
-      setIsLoading(true);
-      authService
-        .googleLogin({ idToken })
-        .then((res) => {
-          if (res.success && res.data) {
-            if (res.data.user.role !== 'ADMIN') {
-              Alert.alert('Access Denied', 'This portal is restricted to Admin accounts only. Please use the Client portal.');
-              return;
+    if (response?.type === 'success') {
+      const auth = response.authentication || (response as any).params;
+      const idToken = auth?.idToken || auth?.id_token;
+      const accessToken = auth?.accessToken || auth?.access_token;
+      if (idToken || accessToken) {
+        setIsLoading(true);
+        authService
+          .googleLogin({ idToken, accessToken })
+          .then((res) => {
+            if (res.success && res.data) {
+              if (res.data.user.role !== 'ADMIN') {
+                Alert.alert('Access Denied', 'This portal is restricted to Admin accounts only. Please use the Client portal.');
+                return;
+              }
+              login(res.data.user, res.data.tokens);
+            } else {
+              Alert.alert('Google Login Failed', res.message || 'Verification failed.');
             }
-            login(res.data.user, res.data.tokens);
-          } else {
-            Alert.alert('Google Login Failed', res.message || 'Verification failed.');
-          }
-        })
-        .catch((err) => {
-          const msg = err.response?.data?.message || 'Google Auth is currently unavailable.';
-          Alert.alert('Error', msg);
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
+          })
+          .catch((err) => {
+            const msg = err.response?.data?.message || 'Google Auth failed.';
+            Alert.alert('Error', msg);
+          })
+          .finally(() => setIsLoading(false));
+      }
     }
   }, [response]);
 
   const handleGoogleLogin = async () => {
-    if (androidClientId.startsWith('1234567890')) {
-      // Developer Bypass: execute immediately without Alert.alert to support web testing
-      setIsLoading(true);
-      try {
-        // Generate a mock JWT token base64 format
-        const header = base64Encode(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-        const payload = base64Encode(JSON.stringify({
-          sub: 'g-admin-123',
-          email: 'admin@caconnect.in',
-          given_name: 'CA',
-          family_name: 'Admin',
-          picture: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face'
-        }));
-        const mockIdToken = `${header}.${payload}.signature`;
-
-        const res = await authService.googleLogin({ idToken: mockIdToken });
-        if (res.success && res.data) {
-          if (res.data.user.role !== 'ADMIN') {
-            Alert.alert('Access Denied', 'This portal is restricted to Admin accounts only.');
-            return;
-          }
-          login(res.data.user, res.data.tokens);
-        } else {
-          Alert.alert('Login Failed', res.message);
-        }
-      } catch (err: any) {
-        Alert.alert('Error', err.message || 'Verification failed.');
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
     promptAsync();
   };
 

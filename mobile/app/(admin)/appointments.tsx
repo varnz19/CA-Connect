@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { AppointmentCard } from '../../components/common/EntityCards';
 import { AppEmpty } from '../../components/common/AppStates';
+import { AppButton } from '../../components/common/AppButton';
 import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
 import { useAppointments } from '../../hooks/useQueries';
 import { AppointmentStatus } from '../../types';
@@ -60,6 +61,11 @@ export default function AdminAppointmentsScreen() {
                   {pendingCount > 0 ? ` · ${pendingCount} pending review` : ''}
                 </Text>
               </View>
+              <AppButton
+                title="New"
+                size="sm"
+                onPress={() => router.push('/(admin)/add-appointment' as any)}
+              />
             </View>
 
             {/* Filter Tabs */}

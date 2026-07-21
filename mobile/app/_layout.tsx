@@ -7,9 +7,11 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import * as SplashScreen from 'expo-splash-screen';
+import * as WebBrowser from 'expo-web-browser';
 import { useAuthStore } from '../store/authStore';
 
 SplashScreen.preventAutoHideAsync();
+WebBrowser.maybeCompleteAuthSession();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -82,16 +84,16 @@ export default function RootLayout() {
 
   if (!fontsLoaded) return null;
 
-  const isWebDesktop = Platform.OS === 'web' && windowHeight > 800;
+  const isWeb = Platform.OS === 'web';
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <StatusBar style="dark" />
-          {isWebDesktop ? (
+          {isWeb ? (
             <View style={styles.webContainer}>
-              <View style={[styles.appContainer, { height: windowHeight > 940 ? 880 : '95%' }]}>
+              <View style={styles.appContainer}>
                 <RootLayoutNav />
               </View>
             </View>
@@ -107,22 +109,15 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   webContainer: {
     flex: 1,
-    backgroundColor: '#0F172A', // Slate 900 for dark mode canvas
+    backgroundColor: '#F5F7FB', // Use global background
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   appContainer: {
+    flex: 1,
     width: '100%',
-    maxWidth: 480,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 16,
+    maxWidth: 1400,
+    backgroundColor: '#F5F7FB',
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 10,
-    borderWidth: 1,
-    borderColor: '#334155',
   },
 });

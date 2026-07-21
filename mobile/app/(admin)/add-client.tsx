@@ -24,13 +24,12 @@ const addClientSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  phone: z.string().optional(),
-  firmName: z.string().optional(),
-  panNumber: z.string().optional(),
-  gstin: z.string().optional(),
-  gstState: z.string().optional(),
-  address: z.string().optional(),
+  phone: z.string().min(10, 'Phone number is required'),
+  firmName: z.string().min(2, 'Firm name is required'),
+  panNumber: z.string().min(10, 'Valid PAN is required'),
+  gstin: z.string().min(15, 'Valid GSTIN is required'),
+  gstState: z.string().min(2, 'GST state is required'),
+  address: z.string().min(5, 'Address is required'),
 });
 
 type AddClientForm = z.infer<typeof addClientSchema>;
@@ -49,7 +48,6 @@ export default function AddClientScreen() {
       firstName: '',
       lastName: '',
       email: '',
-      password: '',
       phone: '',
       firmName: '',
       panNumber: '',
@@ -159,56 +157,35 @@ export default function AddClientScreen() {
               />
 
               <Controller
-                control={control}
-                name="password"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <AppInput
-                    label="Login Password"
-                    placeholder="Min 8 characters"
-                    secureTextEntry
-                    autoCapitalize="none"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={errors.password?.message as any}
-                  />
-                )}
-              />
+              control={control}
+              name="phone"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <AppInput
+                  label="Phone Number"
+                  placeholder="e.g. +91 98765 43210"
+                  keyboardType="phone-pad"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  error={errors.phone?.message as any}
+                />
+              )}
+            />   <Text style={[styles.cardTitle, { marginTop: Spacing.sm }]}>Business & GST Details</Text>
 
               <Controller
-                control={control}
-                name="phone"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <AppInput
-                    label="Phone Number (Optional)"
-                    placeholder="+91-9876543210"
-                    keyboardType="phone-pad"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={errors.phone?.message as any}
-                  />
-                )}
-              />
-
-              <Text style={[styles.cardTitle, { marginTop: Spacing.sm }]}>Business & GST Details</Text>
-
-              <Controller
-                control={control}
-                name="firmName"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <AppInput
-                    label="Firm Name (Optional)"
-                    placeholder="John Doe Enterprises"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={errors.firmName?.message as any}
-                  />
-                )}
-              />
-
-              <View style={styles.row}>
+              control={control}
+              name="firmName"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <AppInput
+                  label="Firm / Company Name"
+                  placeholder="e.g. ACME Corp"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  error={errors.firmName?.message as any}
+                />
+              )}
+            />   <View style={styles.row}>
                 <View style={styles.half}>
                   <Controller
                     control={control}
@@ -245,22 +222,20 @@ export default function AddClientScreen() {
               </View>
 
               <Controller
-                control={control}
-                name="gstin"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <AppInput
-                    label="GSTIN Number"
-                    placeholder="27ABCDE1234F1Z5"
-                    autoCapitalize="characters"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={errors.gstin?.message as any}
-                  />
-                )}
-              />
-
-              <Controller
+              control={control}
+              name="gstin"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <AppInput
+                  label="GSTIN"
+                  placeholder="e.g. 27ABCDE1234F1Z5"
+                  autoCapitalize="characters"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  error={errors.gstin?.message as any}
+                />
+              )}
+            />   <Controller
                 control={control}
                 name="address"
                 render={({ field: { onChange, onBlur, value } }) => (

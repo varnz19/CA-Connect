@@ -24,7 +24,8 @@ const signupSchema = z.object({
 });
 
 const googleLoginSchema = z.object({
-  idToken: z.string(),
+  idToken: z.string().optional(),
+  accessToken: z.string().optional(),
 });
 
 const forgotPasswordSchema = z.object({
@@ -302,36 +303,55 @@ export class AuthController {
 
   googleLogin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { idToken } = googleLoginSchema.parse(req.body);
+      const { idToken, accessToken } = googleLoginSchema.parse(req.body);
+
+      if (!idToken && !accessToken) {
+        throw new AppError('Either idToken or accessToken is required.', 400);
+      }
 
       let payload: any;
-      try {
-        const { OAuth2Client } = await import('google-auth-library');
-        const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-        const ticket = await client.verifyIdToken({
-          idToken,
-          audience: process.env.GOOGLE_CLIENT_ID,
-        });
-        payload = ticket.getPayload();
-      } catch (verifyErr) {
-        console.error('Cryptographic Google Token Verification failed:', verifyErr);
-        const isPlaceholderClientId = !process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID.startsWith('1234567890');
-        if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' || isPlaceholderClientId) {
-          console.log('⚠️ [DEV MODE] Google verification fallback to mock parsing.');
-          const parts = idToken.split('.');
-          if (parts.length === 3) {
-            const decoded = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
-            payload = {
-              sub: decoded.sub || 'g-user-123',
-              email: decoded.email || 'google.client@caconnect.in',
-              given_name: decoded.given_name || 'Google',
-              family_name: decoded.family_name || 'Client',
-              picture: decoded.picture || '',
-            };
-          }
+      
+      if (accessToken) {
+        try {
+          const { default: axios } = await import('axios');
+          const response = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          payload = response.data;
+          payload.sub = payload.id; // Normalize to match idToken format
+        } catch (err) {
+          console.error('Failed to fetch user info with accessToken', err);
+          throw new AppError('Invalid access token.', 401);
         }
-        if (!payload) {
-          throw new AppError('Google verification failed. Invalid token.', 401);
+      } else if (idToken) {
+        try {
+          const { OAuth2Client } = await import('google-auth-library');
+          const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+          const ticket = await client.verifyIdToken({
+            idToken,
+            audience: process.env.GOOGLE_CLIENT_ID,
+          });
+          payload = ticket.getPayload();
+        } catch (verifyErr) {
+          console.error('Cryptographic Google Token Verification failed:', verifyErr);
+          const isPlaceholderClientId = !process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID.startsWith('1234567890');
+          if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' || isPlaceholderClientId) {
+            console.log('⚠️ [DEV MODE] Google verification fallback to mock parsing.');
+            const parts = idToken.split('.');
+            if (parts.length === 3) {
+              const decoded = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+              payload = {
+                sub: decoded.sub || 'g-user-123',
+                email: decoded.email || 'google.client@caconnect.in',
+                given_name: decoded.given_name || 'Google',
+                family_name: decoded.family_name || 'Client',
+                picture: decoded.picture || '',
+              };
+            }
+          }
+          if (!payload) {
+            throw new AppError('Google verification failed. Invalid token.', 401);
+          }
         }
       }
 
@@ -355,6 +375,8 @@ export class AuthController {
         include: { clientProfile: true },
       });
 
+      let isNewUser = false;
+
       if (user) {
         if (!user.googleId) {
           user = await prisma.user.update({
@@ -364,6 +386,7 @@ export class AuthController {
           });
         }
       } else {
+        isNewUser = true;
         const defaultAdmin = await prisma.user.findFirst({
           where: { role: 'ADMIN' },
         });
@@ -410,6 +433,7 @@ export class AuthController {
         data: {
           user: safeUser,
           tokens,
+          isNewUser,
         },
       });
     } catch (error) {

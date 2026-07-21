@@ -6,6 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -59,6 +61,9 @@ export default function ClientDashboard() {
     setRefreshing(false);
   };
 
+  const { width } = useWindowDimensions();
+  const isDesktop = width > 768;
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
@@ -100,45 +105,50 @@ export default function ClientDashboard() {
               { icon: 'receipt', label: 'Invoices Due', value: clientInvoices.length, color: Colors.danger },
             ].map((item, i, arr) => (
               <View key={item.label} style={[styles.stripItem, i < arr.length - 1 && styles.stripDivider]}>
-                <MaterialIcons name={item.icon as any} size={20} color={item.color} />
-                <Text style={styles.stripValue}>{item.value}</Text>
-                <Text style={styles.stripLabel}>{item.label}</Text>
+                <MaterialIcons name={item.icon as any} size={24} color={item.color} />
+                <View style={styles.stripContent}>
+                  <Text style={styles.stripValue}>{item.value}</Text>
+                  <Text style={styles.stripLabel}>{item.label}</Text>
+                </View>
               </View>
             ))}
           </AppCard>
         </View>
 
-        {/* Active Services */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Active Services</Text>
-          <TouchableOpacity onPress={() => router.push('/(client)/services')}>
-            <Text style={styles.seeAll}>See all</Text>
-          </TouchableOpacity>
-        </View>
-        {clientServices.slice(0, 2).map((service) => (
-          <AppCard key={service.id} style={styles.serviceCard}>
-            <View style={styles.serviceRow}>
-              <View style={styles.serviceIcon}>
-                <MaterialIcons name="work-outline" size={18} color={Colors.primary} />
-              </View>
-              <View style={styles.serviceInfo}>
-                <Text style={styles.serviceName}>{service.name}</Text>
-                {service.description && (
-                  <Text style={styles.serviceDesc} numberOfLines={1}>{service.description}</Text>
-                )}
-                {service.dueDate && (
-                  <Text style={styles.serviceDue}>Due: {formatDate(service.dueDate)}</Text>
-                )}
-              </View>
-              <AppBadge status={service.status} />
+        {/* Desktop Layout Wrapper */}
+        <View style={[styles.mainLayout, isDesktop && styles.mainLayoutDesktop]}>
+          <View style={styles.mainColumn}>
+            {/* Active Services */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Active Services</Text>
+              <TouchableOpacity onPress={() => router.push('/(client)/services')}>
+                <Text style={styles.seeAll}>See all</Text>
+              </TouchableOpacity>
             </View>
-          </AppCard>
-        ))}
-        {clientServices.length === 0 && (
-          <AppCard style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No active services at the moment</Text>
-          </AppCard>
-        )}
+            {clientServices.slice(0, 2).map((service) => (
+              <AppCard key={service.id} style={styles.serviceCard}>
+                <View style={styles.serviceRow}>
+                  <View style={styles.serviceIcon}>
+                    <MaterialIcons name="work-outline" size={20} color={Colors.primary} />
+                  </View>
+                  <View style={styles.serviceInfo}>
+                    <Text style={styles.serviceName}>{service.name}</Text>
+                    {service.description && (
+                      <Text style={styles.serviceDesc} numberOfLines={1}>{service.description}</Text>
+                    )}
+                    {service.dueDate && (
+                      <Text style={styles.serviceDue}>Due: {formatDate(service.dueDate)}</Text>
+                    )}
+                  </View>
+                  <AppBadge status={service.status} />
+                </View>
+              </AppCard>
+            ))}
+            {clientServices.length === 0 && (
+              <AppCard style={styles.emptyCard}>
+                <Text style={styles.emptyText}>No active services at the moment</Text>
+              </AppCard>
+            )}
 
         {/* Pending Documents */}
         {clientDocs.length > 0 && (
@@ -234,31 +244,36 @@ export default function ClientDashboard() {
           </>
         )}
 
-        {/* Quick Actions */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-        </View>
-        <View style={styles.quickActions}>
-          {[
-            { icon: 'cloud-upload', label: 'Upload Document', route: '/(client)/documents', color: Colors.secondary },
-            { icon: 'event', label: 'Book Appointment', route: '/(client)/book-appointment', color: Colors.success },
-            { icon: 'receipt', label: 'View Invoices', route: '/(client)/invoices', color: Colors.warning },
-            { icon: 'chat', label: 'Message CA', route: '/(client)/messages', color: Colors.primary },
-          ].map((action) => (
-            <TouchableOpacity
-              key={action.label}
-              style={styles.quickAction}
-              onPress={() => router.push(action.route as any)}
-              activeOpacity={0.8}
-            >
-              <AppCard style={styles.quickActionCard}>
-                <View style={[styles.quickActionIcon, { backgroundColor: `${action.color}18` }]}>
-                  <MaterialIcons name={action.icon as any} size={24} color={action.color} />
-                </View>
-                <Text style={styles.quickActionLabel}>{action.label}</Text>
-              </AppCard>
-            </TouchableOpacity>
-          ))}
+          </View>
+
+          <View style={styles.sideColumn}>
+            {/* Quick Actions */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Quick Actions</Text>
+            </View>
+            <View style={styles.actionGrid}>
+              {[
+                { icon: 'cloud-upload', label: 'Upload Document', route: '/(client)/documents', color: Colors.secondary },
+                { icon: 'event', label: 'Book Appointment', route: '/(client)/book-appointment', color: Colors.success },
+                { icon: 'receipt', label: 'View Invoices', route: '/(client)/invoices', color: Colors.warning },
+                { icon: 'chat', label: 'Message CA', route: '/(client)/messages', color: Colors.primary },
+              ].map((action) => (
+                <TouchableOpacity
+                  key={action.label}
+                  style={styles.quickAction}
+                  onPress={() => router.push(action.route as any)}
+                  activeOpacity={0.8}
+                >
+                  <AppCard style={styles.quickActionCard}>
+                    <View style={[styles.quickActionIcon, { backgroundColor: `${action.color}15` }]}>
+                      <MaterialIcons name={action.icon as any} size={28} color={action.color} />
+                    </View>
+                    <Text style={styles.quickActionLabel}>{action.label}</Text>
+                  </AppCard>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
         </View>
 
         <View style={{ height: Spacing['2xl'] }} />
@@ -322,6 +337,10 @@ const styles = StyleSheet.create({
   stripDivider: {
     borderRightWidth: 1,
     borderRightColor: Colors.borderLight,
+  },
+  stripContent: {
+    justifyContent: 'center',
+    marginLeft: Spacing.xs,
   },
   stripValue: {
     fontFamily: Typography.fontFamily.bold,
@@ -457,6 +476,29 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.sm,
     color: Colors.textTertiary,
+  },
+  mainLayout: {
+    flexDirection: 'column',
+    width: '100%',
+  },
+  mainLayoutDesktop: {
+    flexDirection: 'row',
+    paddingRight: Spacing.base,
+  },
+  mainColumn: {
+    flex: 2,
+  },
+  sideColumn: {
+    flex: 1,
+    paddingLeft: Spacing.base,
+    borderLeftWidth: 1,
+    borderLeftColor: Colors.border,
+  },
+  actionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: Spacing.base,
+    gap: Spacing.sm,
   },
   quickActions: {
     flexDirection: 'row',

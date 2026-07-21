@@ -9,7 +9,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 
 interface AppInputProps extends TextInputProps {
   label?: string;
@@ -119,18 +119,21 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.backgroundInput,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: Colors.border,
-    minHeight: 48,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.backgroundCard,
+    overflow: 'hidden',
+    height: 48,
   },
   inputWrapperFocused: {
-    borderColor: Colors.borderFocus,
+    borderColor: Colors.primary,
     backgroundColor: Colors.backgroundCard,
+    ...Shadows.sm,
   },
   inputWrapperError: {
     borderColor: Colors.danger,
+    backgroundColor: Colors.dangerLight,
   },
   input: {
     flex: 1,

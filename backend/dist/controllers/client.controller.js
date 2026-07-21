@@ -1,10 +1,6 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ClientController = void 0;
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const prisma_1 = require("../utils/prisma");
 const errorHandler_1 = require("../middleware/errorHandler");
 const zod_1 = require("zod");
@@ -12,15 +8,14 @@ const createClientSchema = zod_1.z.object({
     firstName: zod_1.z.string().min(1),
     lastName: zod_1.z.string().min(1),
     email: zod_1.z.string().email(),
-    password: zod_1.z.string().min(8),
-    phone: zod_1.z.string().optional(),
-    firmName: zod_1.z.string().optional(),
-    panNumber: zod_1.z.string().optional(),
-    gstin: zod_1.z.string().optional(),
-    gstState: zod_1.z.string().optional(),
-    address: zod_1.z.string().optional(),
+    phone: zod_1.z.string().min(10, 'Phone is required'),
+    firmName: zod_1.z.string().min(1, 'Firm Name is required'),
+    panNumber: zod_1.z.string().min(10, 'PAN is required'),
+    gstin: zod_1.z.string().min(15, 'GSTIN is required'),
+    gstState: zod_1.z.string().min(1, 'GST State is required'),
+    address: zod_1.z.string().min(5, 'Address is required'),
 });
-const updateClientSchema = createClientSchema.partial().omit({ password: true });
+const updateClientSchema = createClientSchema.partial();
 class ClientController {
     constructor() {
         this.getClients = async (req, res, next) => {
@@ -92,14 +87,12 @@ class ClientController {
                 const existing = await prisma_1.prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
                 if (existing)
                     throw new errorHandler_1.AppError('Email already registered', 409);
-                const hashedPassword = await bcryptjs_1.default.hash(data.password, 12);
                 // Generate client code
                 const count = await prisma_1.prisma.clientProfile.count();
                 const clientCode = `CAC${String(count + 1).padStart(3, '0')}`;
                 const user = await prisma_1.prisma.user.create({
                     data: {
                         email: data.email.toLowerCase(),
-                        password: hashedPassword,
                         role: 'CLIENT',
                         firstName: data.firstName,
                         lastName: data.lastName,

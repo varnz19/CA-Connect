@@ -9,16 +9,15 @@ const createClientSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   email: z.string().email(),
-  password: z.string().min(8),
-  phone: z.string().optional(),
-  firmName: z.string().optional(),
-  panNumber: z.string().optional(),
-  gstin: z.string().optional(),
-  gstState: z.string().optional(),
-  address: z.string().optional(),
+  phone: z.string().min(10, 'Phone is required'),
+  firmName: z.string().min(1, 'Firm Name is required'),
+  panNumber: z.string().min(10, 'PAN is required'),
+  gstin: z.string().min(15, 'GSTIN is required'),
+  gstState: z.string().min(1, 'GST State is required'),
+  address: z.string().min(5, 'Address is required'),
 });
 
-const updateClientSchema = createClientSchema.partial().omit({ password: true });
+const updateClientSchema = createClientSchema.partial();
 
 export class ClientController {
   getClients = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -97,8 +96,6 @@ export class ClientController {
       const existing = await prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
       if (existing) throw new AppError('Email already registered', 409);
 
-      const hashedPassword = await bcrypt.hash(data.password, 12);
-
       // Generate client code
       const count = await prisma.clientProfile.count();
       const clientCode = `CAC${String(count + 1).padStart(3, '0')}`;
@@ -106,7 +103,6 @@ export class ClientController {
       const user = await prisma.user.create({
         data: {
           email: data.email.toLowerCase(),
-          password: hashedPassword,
           role: 'CLIENT',
           firstName: data.firstName,
           lastName: data.lastName,
