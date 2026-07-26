@@ -1,8 +1,9 @@
 import { Tabs } from 'expo-router';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, View, Text, useWindowDimensions, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Typography } from '../../constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Sidebar } from '../../components/navigation/Sidebar';
 
 interface TabIconProps {
   icon: keyof typeof MaterialIcons.glyphMap;
@@ -35,154 +36,121 @@ const tabStyles = StyleSheet.create({
     borderRadius: 16,
   },
   iconWrapperFocused: {
-    backgroundColor: `${Colors.primary}15`,
+    backgroundColor: `${Colors.secondary}20`,
   },
   label: { fontSize: 11 },
 });
 
 export default function ClientLayout() {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768 && Platform.OS === 'web';
+
+  const sidebarItems = [
+    { name: 'index', label: 'Home', icon: 'home' as const, route: '/' },
+    { name: 'services', label: 'Services', icon: 'work' as const, route: '/services' },
+    { name: 'documents', label: 'Docs', icon: 'folder' as const, route: '/documents' },
+    { name: 'calendar', label: 'Calendar', icon: 'event' as const, route: '/calendar' },
+    { name: 'messages', label: 'Chat', icon: 'chat' as const, route: '/messages' },
+    { name: 'profile', label: 'Profile', icon: 'person' as const, route: '/profile' },
+  ];
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: Colors.tabBarBackground,
-          borderTopColor: Colors.border,
-          borderTopWidth: 1,
-          height: 72 + insets.bottom,
-          paddingBottom: insets.bottom + 8,
-          paddingTop: 8,
-          elevation: 10,
-          shadowColor: '#0F172A',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.03,
-          shadowRadius: 12,
-        },
-        tabBarShowLabel: false,
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon icon="home" color={color} focused={focused} label="Home" />
-          ),
-          tabBarActiveTintColor: Colors.primary,
-          tabBarInactiveTintColor: Colors.tabBarInactive,
-        }}
-      />
-      <Tabs.Screen
-        name="services"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon icon="work" color={color} focused={focused} label="Services" />
-          ),
-          tabBarActiveTintColor: Colors.primary,
-          tabBarInactiveTintColor: Colors.tabBarInactive,
-        }}
-      />
-      <Tabs.Screen
-        name="documents"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon icon="folder" color={color} focused={focused} label="Docs" />
-          ),
-          tabBarActiveTintColor: Colors.primary,
-          tabBarInactiveTintColor: Colors.tabBarInactive,
-        }}
-      />
-      <Tabs.Screen
-        name="calendar"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon icon="event" color={color} focused={focused} label="Calendar" />
-          ),
-          tabBarActiveTintColor: Colors.primary,
-          tabBarInactiveTintColor: Colors.tabBarInactive,
-        }}
-      />
-      <Tabs.Screen
-        name="messages"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon icon="chat" color={color} focused={focused} label="Chat" />
-          ),
-          tabBarActiveTintColor: Colors.primary,
-          tabBarInactiveTintColor: Colors.tabBarInactive,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon icon="person" color={color} focused={focused} label="Profile" />
-          ),
-          tabBarActiveTintColor: Colors.primary,
-          tabBarInactiveTintColor: Colors.tabBarInactive,
-        }}
-      />
-      <Tabs.Screen
-        name="book-appointment"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="invoices"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="invoice-details"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="notifications"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="upload"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="appointment-details"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="profile-edit"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="edit-profile"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="change-password"
-        options={{
-          href: null,
-        }}
-      />
-    </Tabs>
+    <View style={layoutStyles.container}>
+      {isDesktop && <Sidebar items={sidebarItems} baseRoute="(client)" />}
+      <View style={layoutStyles.content}>
+        <Tabs
+          screenOptions={{
+            headerShown: false,
+            tabBarStyle: isDesktop ? { display: 'none' } : {
+              backgroundColor: Colors.tabBarBackground,
+              borderTopColor: Colors.primaryLight,
+              borderTopWidth: 1,
+              height: 72 + insets.bottom,
+              paddingBottom: insets.bottom + 8,
+              paddingTop: 8,
+            },
+            tabBarShowLabel: false,
+          }}
+        >
+          <Tabs.Screen
+            name="index"
+            options={{
+              tabBarIcon: ({ color, focused }) => (
+                <TabIcon icon="home" color={color} focused={focused} label="Home" />
+              ),
+              tabBarActiveTintColor: Colors.secondary,
+              tabBarInactiveTintColor: Colors.tabBarInactive,
+            }}
+          />
+          <Tabs.Screen
+            name="services"
+            options={{
+              tabBarIcon: ({ color, focused }) => (
+                <TabIcon icon="work" color={color} focused={focused} label="Services" />
+              ),
+              tabBarActiveTintColor: Colors.secondary,
+              tabBarInactiveTintColor: Colors.tabBarInactive,
+            }}
+          />
+          <Tabs.Screen
+            name="documents"
+            options={{
+              tabBarIcon: ({ color, focused }) => (
+                <TabIcon icon="folder" color={color} focused={focused} label="Docs" />
+              ),
+              tabBarActiveTintColor: Colors.secondary,
+              tabBarInactiveTintColor: Colors.tabBarInactive,
+            }}
+          />
+          <Tabs.Screen
+            name="calendar"
+            options={{
+              tabBarIcon: ({ color, focused }) => (
+                <TabIcon icon="event" color={color} focused={focused} label="Calendar" />
+              ),
+              tabBarActiveTintColor: Colors.secondary,
+              tabBarInactiveTintColor: Colors.tabBarInactive,
+            }}
+          />
+          <Tabs.Screen
+            name="messages"
+            options={{
+              tabBarIcon: ({ color, focused }) => (
+                <TabIcon icon="chat" color={color} focused={focused} label="Chat" />
+              ),
+              tabBarActiveTintColor: Colors.secondary,
+              tabBarInactiveTintColor: Colors.tabBarInactive,
+            }}
+          />
+          <Tabs.Screen
+            name="profile"
+            options={{
+              tabBarIcon: ({ color, focused }) => (
+                <TabIcon icon="person" color={color} focused={focused} label="Profile" />
+              ),
+              tabBarActiveTintColor: Colors.secondary,
+              tabBarInactiveTintColor: Colors.tabBarInactive,
+            }}
+          />
+          <Tabs.Screen name="book-appointment" options={{ href: null }} />
+          <Tabs.Screen name="invoices" options={{ href: null }} />
+          <Tabs.Screen name="notifications" options={{ href: null }} />
+          <Tabs.Screen name="edit-profile" options={{ href: null }} />
+          <Tabs.Screen name="change-password" options={{ href: null }} />
+        </Tabs>
+      </View>
+    </View>
   );
 }
+
+const layoutStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  content: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+});

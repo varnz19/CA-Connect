@@ -77,8 +77,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: BorderRadius.lg,
-    ...Shadows.sm,
+    borderRadius: BorderRadius.sm, // More structured borders
   },
   fullWidth: {
     width: '100%',
@@ -89,22 +88,18 @@ const styles = StyleSheet.create({
 
   // Variants
   primary: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.primaryLight, // ink-700
   },
   secondary: {
-    backgroundColor: Colors.secondary,
+    backgroundColor: Colors.secondary,    // brass
   },
   outline: {
     backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
-    shadowOpacity: 0,
-    elevation: 0,
+    borderWidth: 1,
+    borderColor: Colors.border,           // hairline rule
   },
   ghost: {
     backgroundColor: 'transparent',
-    shadowOpacity: 0,
-    elevation: 0,
   },
   danger: {
     backgroundColor: Colors.danger,
@@ -129,7 +124,7 @@ const styles = StyleSheet.create({
 
   // Text styles
   text: {
-    fontFamily: Typography.fontFamily.semiBold,
+    fontFamily: Typography.fontFamily.medium, // More utilitarian
     letterSpacing: Typography.letterSpacing.normal,
   },
   text_primary: {
@@ -138,8 +133,8 @@ const styles = StyleSheet.create({
   text_secondary: {
     color: Colors.textLight,
   },
-  text_outline: { color: Colors.primary },
-  text_ghost: { color: Colors.primary },
+  text_outline: { color: Colors.primaryLight }, // ink-700 text for outline
+  text_ghost: { color: Colors.primaryLight },
   text_danger: { color: Colors.textLight },
 
   text_size_sm: { fontSize: Typography.size.sm },

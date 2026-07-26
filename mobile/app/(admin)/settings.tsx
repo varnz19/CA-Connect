@@ -59,8 +59,13 @@ export default function AdminSettingsScreen() {
 
   const handleLogout = () => {
     const performLogout = () => {
+      if (Platform.OS === 'web') {
+        localStorage.clear();
+      }
       logout();
-      router.replace('/(auth)/landing');
+      setTimeout(() => {
+        router.replace('/(auth)/landing');
+      }, 50);
     };
 
     if (Platform.OS === 'web') {

@@ -303,21 +303,7 @@ class AuthController {
                     throw new errorHandler_1.AppError('Either idToken or accessToken is required.', 400);
                 }
                 let payload;
-                if (accessToken) {
-                    try {
-                        const { default: axios } = await Promise.resolve().then(() => __importStar(require('axios')));
-                        const response = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
-                            headers: { Authorization: `Bearer ${accessToken}` },
-                        });
-                        payload = response.data;
-                        payload.sub = payload.id; // Normalize to match idToken format
-                    }
-                    catch (err) {
-                        console.error('Failed to fetch user info with accessToken', err);
-                        throw new errorHandler_1.AppError('Invalid access token.', 401);
-                    }
-                }
-                else if (idToken) {
+                if (idToken) {
                     try {
                         const { OAuth2Client } = await Promise.resolve().then(() => __importStar(require('google-auth-library')));
                         const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -345,8 +331,22 @@ class AuthController {
                             }
                         }
                         if (!payload) {
-                            throw new errorHandler_1.AppError('Google verification failed. Invalid token.', 401);
+                            console.log('Falling back to accessToken since idToken verification failed.');
                         }
+                    }
+                }
+                if (!payload && accessToken) {
+                    try {
+                        const { default: axios } = await Promise.resolve().then(() => __importStar(require('axios')));
+                        const response = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
+                            headers: { Authorization: `Bearer ${accessToken}` },
+                        });
+                        payload = response.data;
+                        payload.sub = payload.id; // Normalize to match idToken format
+                    }
+                    catch (err) {
+                        console.error('Failed to fetch user info with accessToken', err);
+                        throw new errorHandler_1.AppError('Invalid access token.', 401);
                     }
                 }
                 if (!payload || !payload.email) {

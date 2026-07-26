@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Linking, Alert, Pla
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppCard } from '../../components/common/AppCard';
-import { AppBadge } from '../../components/common/AppBadge';
+import { StatusStamp } from '../../components/common/StatusStamp';
 import { AppEmpty } from '../../components/common/AppStates';
 import { useAuthStore } from '../../store/authStore';
 import { api } from '../../services/api';
@@ -44,7 +44,7 @@ export default function ClientInvoicesScreen() {
           <Text style={styles.invoiceNumber}>{item.invoiceNumber}</Text>
           <Text style={styles.issueDate}>Issued: {formatDate(item.issueDate)}</Text>
         </View>
-        <AppBadge status={item.status} />
+        <StatusStamp status={item.status} />
       </View>
 
       <View style={styles.divider} />
@@ -140,39 +140,48 @@ export default function ClientInvoicesScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
   header: {
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.base,
-    paddingBottom: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.md,
   },
   title: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.displayBold,
     fontSize: Typography.size.xl,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   subtitle: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.sm,
     color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    marginTop: 2,
   },
-  list: { paddingHorizontal: Spacing.base, paddingBottom: Spacing['3xl'] },
-  card: { marginBottom: Spacing.sm },
+  list: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing['3xl'] },
+  card: {
+    marginBottom: Spacing.md,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.lg,
+  },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
   invoiceNumber: {
-    fontFamily: Typography.fontFamily.semiBold,
+    fontFamily: Typography.fontFamily.monoBold,
     fontSize: Typography.size.base,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   issueDate: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.xs,
     color: Colors.textTertiary,
-    marginTop: 2,
+    marginTop: 4,
+    textTransform: 'uppercase',
   },
-  divider: { height: 1, backgroundColor: Colors.borderLight, marginVertical: Spacing.sm },
+  divider: { height: 1, backgroundColor: Colors.border, marginVertical: Spacing.md },
   itemRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -181,14 +190,14 @@ const styles = StyleSheet.create({
   },
   itemDesc: {
     flex: 1,
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.sm,
     color: Colors.textSecondary,
   },
   itemAmount: {
-    fontFamily: Typography.fontFamily.medium,
+    fontFamily: Typography.fontFamily.monoMedium,
     fontSize: Typography.size.sm,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   taxRow: {
     flexDirection: 'row',
@@ -196,30 +205,31 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   taxLabel: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.sm,
     color: Colors.textSecondary,
   },
   taxValue: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.sm,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: Spacing.xs,
-    paddingTop: Spacing.xs,
+    marginTop: Spacing.sm,
+    paddingTop: Spacing.sm,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },
   totalLabel: {
-    fontFamily: Typography.fontFamily.semiBold,
+    fontFamily: Typography.fontFamily.monoMedium,
     fontSize: Typography.size.base,
-    color: Colors.textPrimary,
+    color: Colors.primary,
+    textTransform: 'uppercase',
   },
   totalValue: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.monoBold,
     fontSize: Typography.size.lg,
     color: Colors.primary,
   },
@@ -227,43 +237,48 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: Spacing.sm,
+    marginTop: Spacing.md,
     paddingTop: Spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: Colors.borderLight,
+    borderTopColor: Colors.border,
   },
   footerLeft: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   footerText: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.xs,
     color: Colors.textSecondary,
+    textTransform: 'uppercase',
   },
   downloadBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: Colors.infoLight,
-    borderRadius: 6,
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
   },
   downloadText: {
-    fontFamily: Typography.fontFamily.medium,
+    fontFamily: Typography.fontFamily.monoMedium,
     fontSize: Typography.size.xs,
     color: Colors.secondary,
+    textTransform: 'uppercase',
   },
   paidBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: Spacing.xs,
-    backgroundColor: Colors.successLight,
-    borderRadius: 6,
-    padding: Spacing.xs,
+    marginTop: Spacing.sm,
+    backgroundColor: Colors.background,
+    borderLeftWidth: 2,
+    borderLeftColor: Colors.success,
+    padding: Spacing.sm,
   },
   paidText: {
-    fontFamily: Typography.fontFamily.medium,
+    fontFamily: Typography.fontFamily.monoMedium,
     fontSize: Typography.size.xs,
     color: Colors.success,
+    textTransform: 'uppercase',
   },
 });

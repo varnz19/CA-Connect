@@ -267,7 +267,7 @@ export default function ClientSignupScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8FAFC' },
+  safe: { flex: 1, backgroundColor: Colors.background }, // paper
   flex: { flex: 1 },
   topBar: {
     paddingHorizontal: Spacing.base,
@@ -294,36 +294,35 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 64,
     height: 64,
-    borderRadius: BorderRadius.lg,
-    backgroundColor: Colors.backgroundCard,
+    borderRadius: 0,
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.sm,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    ...Shadows.sm,
+    borderColor: Colors.border, // hairline
   },
   brandName: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.displayBold,
     fontSize: 24,
-    color: Colors.primary,
+    color: Colors.primary, // ink-900
   },
   brandTagline: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.xs,
     color: Colors.textSecondary,
     marginTop: 4,
+    textTransform: 'uppercase',
   },
   card: {
     backgroundColor: Colors.backgroundCard,
-    borderRadius: 16,
+    borderRadius: 0,
     padding: Spacing.xl,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    ...Shadows.sm,
+    borderColor: Colors.border,
   },
   cardTitle: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.lg,
     color: Colors.primary,
   },
@@ -365,18 +364,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: Colors.background,
   },
   successIconContainer: {
     width: 96,
     height: 96,
-    borderRadius: BorderRadius.full,
-    backgroundColor: `${Colors.success}10`,
+    borderRadius: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: Colors.success,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.xl,
   },
   successTitle: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.displayBold,
     fontSize: 24,
     color: Colors.primary,
     marginBottom: Spacing.md,

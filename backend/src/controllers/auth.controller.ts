@@ -311,19 +311,7 @@ export class AuthController {
 
       let payload: any;
       
-      if (accessToken) {
-        try {
-          const { default: axios } = await import('axios');
-          const response = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          });
-          payload = response.data;
-          payload.sub = payload.id; // Normalize to match idToken format
-        } catch (err) {
-          console.error('Failed to fetch user info with accessToken', err);
-          throw new AppError('Invalid access token.', 401);
-        }
-      } else if (idToken) {
+      if (idToken) {
         try {
           const { OAuth2Client } = await import('google-auth-library');
           const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -350,8 +338,22 @@ export class AuthController {
             }
           }
           if (!payload) {
-            throw new AppError('Google verification failed. Invalid token.', 401);
+            console.log('Falling back to accessToken since idToken verification failed.');
           }
+        }
+      }
+      
+      if (!payload && accessToken) {
+        try {
+          const { default: axios } = await import('axios');
+          const response = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          payload = response.data;
+          payload.sub = payload.id; // Normalize to match idToken format
+        } catch (err) {
+          console.error('Failed to fetch user info with accessToken', err);
+          throw new AppError('Invalid access token.', 401);
         }
       }
 

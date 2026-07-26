@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppCard } from '../../components/common/AppCard';
 import { AppAvatar } from '../../components/common/AppAvatar';
-import { AppBadge } from '../../components/common/AppBadge';
+import { StatusStamp } from '../../components/common/StatusStamp';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, Typography, Spacing } from '../../constants/theme';
 import {
@@ -140,7 +140,7 @@ export default function ClientDashboard() {
                       <Text style={styles.serviceDue}>Due: {formatDate(service.dueDate)}</Text>
                     )}
                   </View>
-                  <AppBadge status={service.status} />
+                  <StatusStamp status={service.status} />
                 </View>
               </AppCard>
             ))}
@@ -176,7 +176,7 @@ export default function ClientDashboard() {
                         <Text style={styles.alertText}>{doc.adminComment}</Text>
                       )}
                     </View>
-                    <AppBadge status={doc.status} />
+                    <StatusStamp status={doc.status} />
                   </View>
                 </AppCard>
               </TouchableOpacity>
@@ -208,7 +208,7 @@ export default function ClientDashboard() {
                     </Text>
                     <Text style={styles.aptDuration}>{apt.duration} minutes</Text>
                   </View>
-                  <AppBadge status={apt.status} />
+                  <StatusStamp status={apt.status} />
                 </View>
               </AppCard>
             ))}
@@ -235,7 +235,7 @@ export default function ClientDashboard() {
                     </View>
                     <View style={styles.invoiceRight}>
                       <Text style={styles.invoiceAmount}>{formatCurrency(inv.total)}</Text>
-                      <AppBadge status={inv.status} />
+                      <StatusStamp status={inv.status} />
                     </View>
                   </View>
                 </AppCard>
@@ -288,25 +288,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.base,
-    paddingBottom: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.md,
   },
   headerLeft: { flex: 1 },
   greeting: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
+    fontFamily: Typography.fontFamily.displayRegular,
+    fontSize: Typography.size.lg,
     color: Colors.textSecondary,
+    fontStyle: 'italic',
   },
   userName: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: Typography.size.xl,
-    color: Colors.textPrimary,
+    fontFamily: Typography.fontFamily.displayBold,
+    fontSize: Typography.size['2xl'],
+    color: Colors.primary,
+    marginTop: 4,
   },
   firmName: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.sm,
     color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    marginTop: 4,
   },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   notifBtn: { position: 'relative', padding: 4 },
@@ -317,67 +321,71 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: Colors.danger,
+    backgroundColor: Colors.secondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   notifBadgeText: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.monoBold,
     fontSize: 9,
-    color: Colors.textLight,
+    color: Colors.background,
   },
-  stripContainer: { paddingHorizontal: Spacing.base, marginBottom: Spacing.sm },
-  strip: { flexDirection: 'row' },
+  stripContainer: { paddingHorizontal: Spacing.xl, marginBottom: Spacing.md },
+  strip: { flexDirection: 'row', borderRadius: 0, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.backgroundCard },
   stripItem: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: Spacing.md,
-    gap: 2,
+    gap: 4,
   },
   stripDivider: {
     borderRightWidth: 1,
-    borderRightColor: Colors.borderLight,
+    borderRightColor: Colors.border,
   },
   stripContent: {
     justifyContent: 'center',
-    marginLeft: Spacing.xs,
+    alignItems: 'center',
   },
   stripValue: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.monoBold,
     fontSize: Typography.size.xl,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   stripLabel: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: 10,
+    fontFamily: Typography.fontFamily.monoMedium,
+    fontSize: 9,
     color: Colors.textSecondary,
     textAlign: 'center',
+    textTransform: 'uppercase',
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base,
-    marginTop: Spacing.base,
+    paddingHorizontal: Spacing.xl,
+    marginTop: Spacing.md,
     marginBottom: Spacing.sm,
   },
   sectionTitle: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.base,
-    color: Colors.textPrimary,
+    fontFamily: Typography.fontFamily.displayBold,
+    fontSize: Typography.size.lg,
+    color: Colors.primary,
   },
   seeAll: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.sm,
+    fontFamily: Typography.fontFamily.monoMedium,
+    fontSize: Typography.size.xs,
     color: Colors.secondary,
+    textTransform: 'uppercase',
   },
-  serviceCard: { marginHorizontal: Spacing.base, marginBottom: Spacing.sm },
+  serviceCard: { marginHorizontal: Spacing.xl, marginBottom: Spacing.sm, borderRadius: 0, borderWidth: 1, borderColor: Colors.border },
   serviceRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   serviceIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: Colors.statusActive,
+    width: 32,
+    height: 32,
+    borderRadius: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -385,95 +393,101 @@ const styles = StyleSheet.create({
   serviceName: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.base,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   serviceDesc: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
-    marginTop: 1,
+    marginTop: 4,
   },
   serviceDue: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.xs,
     color: Colors.textTertiary,
-    marginTop: 1,
+    marginTop: 2,
+    textTransform: 'uppercase',
   },
-  alertCard: { borderLeftWidth: 3, borderLeftColor: Colors.warning },
+  alertCard: { borderLeftWidth: 3, borderLeftColor: Colors.secondary, backgroundColor: Colors.background },
   alertIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: Colors.warningLight,
+    width: 32,
+    height: 32,
+    borderRadius: 0,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
   alertRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   alertText: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.xs,
-    color: Colors.warning,
-    marginTop: 1,
+    color: Colors.secondary,
+    marginTop: 4,
   },
-  aptCard: { marginHorizontal: Spacing.base, marginBottom: Spacing.sm },
-  aptRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  aptCard: { marginHorizontal: Spacing.xl, marginBottom: Spacing.sm, borderRadius: 0, borderWidth: 1, borderColor: Colors.border },
+  aptRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   aptDateBox: {
-    width: 52,
-    height: 52,
-    borderRadius: 12,
-    backgroundColor: Colors.statusActive,
+    width: 48,
+    height: 48,
+    borderRadius: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   aptDay: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.monoBold,
     fontSize: Typography.size.xl,
     color: Colors.primary,
   },
   aptMonth: {
-    fontFamily: Typography.fontFamily.medium,
+    fontFamily: Typography.fontFamily.monoMedium,
     fontSize: Typography.size.xs,
-    color: Colors.secondary,
+    color: Colors.textSecondary,
+    textTransform: 'uppercase',
   },
   aptInfo: { flex: 1 },
   aptTitle: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.base,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   aptTime: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
-    marginTop: 1,
+    marginTop: 4,
   },
   aptDuration: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.xs,
     color: Colors.textTertiary,
+    marginTop: 2,
   },
-  invoiceCard: { marginHorizontal: Spacing.base, marginBottom: Spacing.sm, borderLeftWidth: 3, borderLeftColor: Colors.warning },
+  invoiceCard: { marginHorizontal: Spacing.xl, marginBottom: Spacing.sm, borderLeftWidth: 3, borderLeftColor: Colors.secondary, borderRadius: 0, borderWidth: 1, borderColor: Colors.border },
   invoiceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   invoiceNumber: {
-    fontFamily: Typography.fontFamily.semiBold,
+    fontFamily: Typography.fontFamily.monoBold,
     fontSize: Typography.size.base,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   invoiceDue: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
-    marginTop: 2,
+    marginTop: 4,
+    textTransform: 'uppercase',
   },
   invoiceRight: { alignItems: 'flex-end', gap: 4 },
   invoiceAmount: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: Typography.size.base,
-    color: Colors.textPrimary,
+    fontFamily: Typography.fontFamily.monoBold,
+    fontSize: Typography.size.lg,
+    color: Colors.primary,
   },
-  emptyCard: { marginHorizontal: Spacing.base, alignItems: 'center', paddingVertical: Spacing.base },
+  emptyCard: { marginHorizontal: Spacing.xl, alignItems: 'center', paddingVertical: Spacing.xl, borderRadius: 0, borderWidth: 1, borderColor: Colors.border, borderStyle: 'dashed' },
   emptyText: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.sm,
     color: Colors.textTertiary,
   },
@@ -483,42 +497,46 @@ const styles = StyleSheet.create({
   },
   mainLayoutDesktop: {
     flexDirection: 'row',
-    paddingRight: Spacing.base,
+    paddingRight: Spacing.xl,
   },
   mainColumn: {
     flex: 2,
   },
   sideColumn: {
     flex: 1,
-    paddingLeft: Spacing.base,
+    paddingLeft: Spacing.xl,
     borderLeftWidth: 1,
     borderLeftColor: Colors.border,
   },
   actionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: Spacing.base,
+    paddingHorizontal: Spacing.xl,
     gap: Spacing.sm,
   },
   quickActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: Spacing.base,
+    paddingHorizontal: Spacing.xl,
     gap: Spacing.sm,
   },
-  quickAction: { width: '47%' },
-  quickActionCard: { alignItems: 'center', paddingVertical: Spacing.base, gap: Spacing.xs },
+  quickAction: { width: '48%' },
+  quickActionCard: { alignItems: 'center', paddingVertical: Spacing.md, gap: Spacing.sm, borderRadius: 0, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.backgroundCard },
   quickActionIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
+    width: 48,
+    height: 48,
+    borderRadius: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   quickActionLabel: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.sm,
-    color: Colors.textPrimary,
+    fontFamily: Typography.fontFamily.monoMedium,
+    fontSize: Typography.size.xs,
+    color: Colors.primary,
     textAlign: 'center',
+    textTransform: 'uppercase',
   },
 });

@@ -170,7 +170,8 @@ export default function AddClientScreen() {
                   error={errors.phone?.message as any}
                 />
               )}
-            />   <Text style={[styles.cardTitle, { marginTop: Spacing.sm }]}>Business & GST Details</Text>
+              />
+              <Text style={[styles.cardTitle, { marginTop: Spacing.sm }]}>Business & GST Details</Text>
 
               <Controller
               control={control}
@@ -185,7 +186,8 @@ export default function AddClientScreen() {
                   error={errors.firmName?.message as any}
                 />
               )}
-            />   <View style={styles.row}>
+              />
+              <View style={styles.row}>
                 <View style={styles.half}>
                   <Controller
                     control={control}
@@ -235,7 +237,8 @@ export default function AddClientScreen() {
                   error={errors.gstin?.message as any}
                 />
               )}
-            />   <Controller
+              />
+              <Controller
                 control={control}
                 name="address"
                 render={({ field: { onChange, onBlur, value } }) => (

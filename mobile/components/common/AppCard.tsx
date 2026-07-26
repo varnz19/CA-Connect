@@ -31,9 +31,8 @@ export const AppCard: React.FC<AppCardProps> = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.backgroundCard,
-    borderRadius: BorderRadius.xl,
-    ...Shadows.sm,
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: Colors.borderLight,
+    borderColor: Colors.border,
   },
 });

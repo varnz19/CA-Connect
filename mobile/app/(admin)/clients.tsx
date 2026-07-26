@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppCard } from '../../components/common/AppCard';
 import { AppAvatar } from '../../components/common/AppAvatar';
+import { StatusStamp } from '../../components/common/StatusStamp';
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
 import { AppEmpty } from '../../components/common/AppStates';
@@ -88,9 +89,9 @@ export default function ClientsScreen() {
               <Text style={styles.clientName}>
                 {item.firstName} {item.lastName}
               </Text>
-              <AppBadge
-                label={item.isActive ? 'Active' : 'Inactive'}
-                variant={item.isActive ? 'success' : 'neutral'}
+              <StatusStamp
+                status={item.isActive ? 'ACTIVE' : 'INACTIVE'}
+                size="sm"
               />
             </View>
             {item.clientProfile?.firmName && (
@@ -199,115 +200,119 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.base,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.xl,
     paddingBottom: Spacing.sm,
   },
   title: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.displayBold,
     fontSize: Typography.size.xl,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   subtitle: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.sm,
     color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    marginTop: 2,
   },
   addBtn: {},
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: BorderRadius.lg,
-    marginHorizontal: Spacing.base,
-    marginBottom: Spacing.sm,
+    backgroundColor: Colors.background,
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.md,
     paddingHorizontal: Spacing.sm,
     borderWidth: 1,
     borderColor: Colors.border,
-    height: 44,
+    height: 40,
     gap: Spacing.xs,
   },
   searchIcon: { marginLeft: 4 },
   searchInput: {
     flex: 1,
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.base,
-    color: Colors.textPrimary,
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: Typography.size.sm,
+    color: Colors.primary,
   },
   list: {
-    paddingHorizontal: Spacing.base,
+    paddingHorizontal: Spacing.xl,
     paddingBottom: Spacing['3xl'],
   },
   clientCard: {
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.lg,
   },
   clientRow: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    gap: Spacing.lg,
   },
   clientInfo: { flex: 1 },
   clientNameRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: Spacing.xs,
   },
   clientName: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.base,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   firmName: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
     color: Colors.textSecondary,
-    marginTop: 2,
+    marginTop: 4,
   },
   clientEmail: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: Typography.size.xs,
     color: Colors.textTertiary,
-    marginTop: 1,
+    marginTop: 4,
   },
   metaRow: {
     flexDirection: 'row',
-    gap: Spacing.xs,
-    marginTop: Spacing.xs,
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
   },
   metaChip: {
-    backgroundColor: Colors.backgroundInput,
-    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    borderColor: Colors.border,
     paddingHorizontal: Spacing.xs,
     paddingVertical: 2,
   },
   metaText: {
-    fontFamily: Typography.fontFamily.medium,
+    fontFamily: Typography.fontFamily.monoMedium,
     fontSize: 10,
     color: Colors.textSecondary,
+    textTransform: 'uppercase',
   },
   actionRow: {
     flexDirection: 'row',
-    gap: Spacing.xs,
-    marginTop: Spacing.sm,
+    gap: Spacing.md,
+    marginTop: Spacing.lg,
     paddingTop: Spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: Colors.borderLight,
+    borderTopColor: Colors.border,
   },
   actionBtn: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    paddingVertical: Spacing.xs + 2,
-    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.xs,
   },
-  actionBtnPrimary: { backgroundColor: Colors.statusActive },
-  actionBtnSecondary: { backgroundColor: Colors.infoLight },
-  actionBtnDanger: { backgroundColor: Colors.dangerLight },
+  actionBtnPrimary: {},
+  actionBtnSecondary: {},
+  actionBtnDanger: {},
   actionBtnText: {
     fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.xs,
+    fontSize: Typography.size.sm,
     color: Colors.primary,
   },
 });

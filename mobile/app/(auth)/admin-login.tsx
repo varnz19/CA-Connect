@@ -230,7 +230,7 @@ export default function AdminLoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8FAFC' },
+  safe: { flex: 1, backgroundColor: Colors.background }, // paper
   flex: { flex: 1 },
   topBar: {
     paddingHorizontal: Spacing.base,
@@ -244,49 +244,53 @@ const styles = StyleSheet.create({
   backText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
-    color: Colors.textPrimary,
+    color: Colors.textSecondary,
   },
   scroll: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.xl,
+    alignItems: 'center', // Center content for 480px width limit
   },
   header: {
     alignItems: 'center',
     marginVertical: Spacing.xl,
+    width: '100%',
+    maxWidth: 480,
   },
   logoContainer: {
     width: 64,
     height: 64,
-    borderRadius: BorderRadius.lg,
+    borderRadius: 0,
     backgroundColor: Colors.backgroundCard,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.sm,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    ...Shadows.sm,
+    borderColor: Colors.border, // hairline
   },
   brandName: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.displayBold,
     fontSize: 24,
-    color: Colors.primary,
+    color: Colors.primary, // ink-900
   },
   brandTagline: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.xs,
     color: Colors.textSecondary,
     marginTop: 4,
+    textTransform: 'uppercase',
   },
   card: {
     backgroundColor: Colors.backgroundCard,
-    borderRadius: 16,
+    borderRadius: 0, // Structured
     padding: Spacing.xl,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    ...Shadows.sm,
+    borderColor: Colors.border,
+    width: '100%',
+    maxWidth: 480, // Restricted width
   },
   cardTitle: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.lg,
     color: Colors.primary,
   },
@@ -306,7 +310,7 @@ const styles = StyleSheet.create({
   forgotText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
-    color: Colors.secondaryDark,
+    color: Colors.primaryLight, // ink-700
   },
   loginBtn: {
     marginTop: Spacing.xs,
@@ -320,12 +324,13 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: Colors.border,
   },
   dividerText: {
-    fontFamily: Typography.fontFamily.medium,
+    fontFamily: Typography.fontFamily.monoMedium,
     fontSize: 12,
     color: Colors.textTertiary,
+    textTransform: 'uppercase',
   },
   googleBtn: {
     flexDirection: 'row',
@@ -333,11 +338,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: Colors.backgroundCard,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
+    borderColor: Colors.border,
+    borderRadius: 0,
     height: 48,
     gap: 8,
-    ...Shadows.sm,
   },
   googleIconContainer: {
     width: 28,
@@ -346,8 +350,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   googleBtnText: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.sm,
-    color: Colors.primary,
+    color: Colors.primaryLight,
   },
 });

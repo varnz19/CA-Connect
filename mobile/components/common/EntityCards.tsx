@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppCard } from './AppCard';
+import { StatusStamp } from './StatusStamp';
 import { AppBadge } from './AppBadge';
 import { Colors, Typography, Spacing } from '../../constants/theme';
 import { Invoice } from '../../types';
@@ -29,16 +30,12 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({ invoice, onPress, show
               </Text>
             )}
           </View>
-          <AppBadge status={invoice.status} />
+          <StatusStamp status={invoice.status} />
         </View>
 
         <View style={styles.divider} />
 
         <View style={styles.row}>
-          <View style={styles.col}>
-            <Text style={styles.metaLabel}>Amount</Text>
-            <Text style={styles.amount}>{formatCurrency(invoice.total)}</Text>
-          </View>
           <View style={styles.col}>
             <Text style={styles.metaLabel}>Issue Date</Text>
             <Text style={styles.metaValue}>{formatDate(invoice.issueDate)}</Text>
@@ -48,6 +45,10 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({ invoice, onPress, show
             <Text style={[styles.metaValue, invoice.status === 'OVERDUE' && styles.overdueText]}>
               {formatDate(invoice.dueDate)}
             </Text>
+          </View>
+          <View style={[styles.col, { alignItems: 'flex-end' }]}>
+            <Text style={styles.metaLabel}>Amount</Text>
+            <Text style={styles.amount}>{formatCurrency(invoice.total)}</Text>
           </View>
         </View>
 
@@ -102,7 +103,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ service, onPress, show
               <Text style={styles.serviceDesc} numberOfLines={2}>{service.description}</Text>
             )}
           </View>
-          <AppBadge status={service.status} />
+          <StatusStamp status={service.status} />
         </View>
         {service.dueDate && (
           <View style={styles.dueDateRow}>
@@ -148,7 +149,7 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({ doc, onPress, showCl
               <Text style={styles.serviceDesc} numberOfLines={1}>{doc.description}</Text>
             )}
           </View>
-          <AppBadge status={doc.status} />
+          <StatusStamp status={doc.status} />
         </View>
         {doc.adminComment && (
           <View style={styles.commentBox}>
@@ -210,7 +211,7 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
               </Text>
             </View>
           </View>
-          <AppBadge status={appointment.status} />
+          <StatusStamp status={appointment.status} />
         </View>
       </AppCard>
     </TouchableOpacity>
@@ -227,20 +228,20 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   invoiceNumber: {
-    fontFamily: Typography.fontFamily.semiBold,
+    fontFamily: Typography.fontFamily.monoBold,
     fontSize: Typography.size.base,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   clientName: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
     color: Colors.textSecondary,
-    marginTop: 2,
+    marginTop: 4,
   },
   divider: {
     height: 1,
-    backgroundColor: Colors.borderLight,
-    marginVertical: Spacing.sm,
+    backgroundColor: Colors.border,
+    marginVertical: Spacing.md,
   },
   row: {
     flexDirection: 'row',
@@ -250,20 +251,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   metaLabel: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.xs,
     color: Colors.textTertiary,
-    marginBottom: 2,
+    marginBottom: 4,
+    textTransform: 'uppercase',
   },
   metaValue: {
-    fontFamily: Typography.fontFamily.medium,
+    fontFamily: Typography.fontFamily.monoMedium,
     fontSize: Typography.size.sm,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   amount: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.base,
-    color: Colors.textPrimary,
+    fontFamily: Typography.fontFamily.monoBold,
+    fontSize: Typography.size.lg,
+    color: Colors.primary,
   },
   overdueText: {
     color: Colors.danger,
@@ -285,18 +287,20 @@ const styles = StyleSheet.create({
     color: Colors.textTertiary,
   },
   serviceIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: Colors.statusActive,
+    width: 32,
+    height: 32,
+    borderRadius: 0,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   docIcon: {
-    backgroundColor: Colors.infoLight,
+    backgroundColor: 'transparent',
   },
   aptIcon: {
-    backgroundColor: Colors.successLight,
+    backgroundColor: 'transparent',
   },
   serviceInfo: {
     flex: 1,
@@ -304,42 +308,44 @@ const styles = StyleSheet.create({
   serviceName: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.base,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   serviceDesc: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.sm,
     color: Colors.textSecondary,
-    marginTop: 2,
+    marginTop: 4,
   },
   dueDateRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: Spacing.sm,
+    marginTop: Spacing.md,
     paddingTop: Spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: Colors.borderLight,
+    borderTopColor: Colors.border,
   },
   dueText: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.xs,
     color: Colors.textSecondary,
+    textTransform: 'uppercase',
   },
   commentBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 4,
+    gap: Spacing.xs,
     marginTop: Spacing.sm,
-    backgroundColor: Colors.warningLight,
-    borderRadius: 6,
-    padding: Spacing.xs,
+    backgroundColor: Colors.background,
+    borderLeftWidth: 2,
+    borderLeftColor: Colors.warning,
+    padding: Spacing.sm,
   },
   commentText: {
     flex: 1,
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.xs,
-    color: Colors.statusPendingText,
+    color: Colors.textSecondary,
   },
   aptMeta: {
     flexDirection: 'row',

@@ -12,6 +12,7 @@ import { documentService } from '../../services/documentService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppCard } from '../../components/common/AppCard';
+import { StatusStamp } from '../../components/common/StatusStamp';
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
 import { AppEmpty } from '../../components/common/AppStates';
@@ -100,7 +101,7 @@ export default function ClientDocumentsScreen() {
               <Text style={styles.docDesc} numberOfLines={2}>{item.description}</Text>
             )}
           </View>
-          <AppBadge status={item.status} />
+          <StatusStamp status={item.status} />
         </View>
 
         {/* Admin Comment */}
@@ -182,87 +183,101 @@ export default function ClientDocumentsScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
   header: {
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.base,
-    paddingBottom: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.md,
   },
   title: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.displayBold,
     fontSize: Typography.size.xl,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   subtitle: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.sm,
     color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    marginTop: 2,
   },
-  list: { paddingHorizontal: Spacing.base, paddingBottom: Spacing['3xl'] },
-  card: { marginBottom: Spacing.sm },
-  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
+  list: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing['3xl'] },
+  card: {
+    marginBottom: Spacing.md,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.lg,
+  },
+  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md },
   docIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: Colors.infoLight,
+    width: 32,
+    height: 32,
+    borderRadius: 0,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   cardInfo: { flex: 1 },
   docName: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.base,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   docDesc: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.sm,
     color: Colors.textSecondary,
-    marginTop: 2,
+    marginTop: 4,
   },
   commentBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 4,
-    backgroundColor: Colors.warningLight,
-    borderRadius: 8,
-    padding: Spacing.xs,
+    gap: Spacing.xs,
+    backgroundColor: Colors.background,
+    borderLeftWidth: 2,
+    borderLeftColor: Colors.warning,
+    padding: Spacing.sm,
     marginTop: Spacing.sm,
   },
   commentText: {
     flex: 1,
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.xs,
-    color: Colors.statusPendingText,
+    color: Colors.textSecondary,
   },
   uploadedList: {
-    marginTop: Spacing.sm,
+    marginTop: Spacing.md,
     paddingTop: Spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: Colors.borderLight,
+    borderTopColor: Colors.border,
+    borderStyle: 'dashed',
     gap: Spacing.xs,
   },
   uploadedLabel: {
-    fontFamily: Typography.fontFamily.medium,
+    fontFamily: Typography.fontFamily.monoMedium,
     fontSize: Typography.size.xs,
     color: Colors.textTertiary,
     marginBottom: 4,
+    textTransform: 'uppercase',
   },
   fileRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.xs,
-    backgroundColor: Colors.backgroundInput,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.xs + 2,
+    gap: Spacing.sm,
+    backgroundColor: Colors.backgroundCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.sm,
   },
   fileName: {
     flex: 1,
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.sm,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   fileSize: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.xs,
     color: Colors.textTertiary,
   },
@@ -270,16 +285,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: Spacing.sm,
+    marginTop: Spacing.md,
     paddingTop: Spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: Colors.borderLight,
+    borderTopColor: Colors.border,
   },
   dueDateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   dueDate: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.xs,
     color: Colors.textSecondary,
+    textTransform: 'uppercase',
   },
   uploadBtn: {},
 });

@@ -150,29 +150,34 @@ export default function CompleteGoogleProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8FAFC' },
+  safe: { flex: 1, backgroundColor: Colors.background }, // paper
   flex: { flex: 1 },
   scroll: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.xl,
+    alignItems: 'center', // Center for 480px width
   },
   header: {
     alignItems: 'center',
     marginVertical: Spacing.xl,
+    width: '100%',
+    maxWidth: 480,
   },
   iconContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: BorderRadius.lg,
-    backgroundColor: `${Colors.secondary}15`,
+    width: 64,
+    height: 64,
+    borderRadius: 0,
+    backgroundColor: Colors.backgroundCard,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   title: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.displayBold,
     fontSize: 24,
-    color: Colors.primary,
+    color: Colors.primary, // ink-900
     marginTop: Spacing.xs,
   },
   subtitle: {
@@ -185,13 +190,15 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   googleInfoCard: {
-    backgroundColor: `${Colors.success}10`,
-    borderRadius: 12,
+    backgroundColor: Colors.backgroundCard,
+    borderRadius: 0,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
     marginBottom: Spacing.base,
     borderWidth: 1,
-    borderColor: `${Colors.success}30`,
+    borderColor: Colors.success,
+    width: '100%',
+    maxWidth: 480,
   },
   googleInfoRow: {
     flexDirection: 'row',
@@ -205,18 +212,19 @@ const styles = StyleSheet.create({
   },
   googleEmailText: {
     fontFamily: Typography.fontFamily.semiBold,
-    color: Colors.textPrimary,
+    color: Colors.primaryLight,
   },
   card: {
     backgroundColor: Colors.backgroundCard,
-    borderRadius: 16,
+    borderRadius: 0, // structured
     padding: Spacing.xl,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    ...Shadows.sm,
+    borderColor: Colors.border,
+    width: '100%',
+    maxWidth: 480, // restricted width
   },
   cardTitle: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.lg,
     color: Colors.primary,
   },

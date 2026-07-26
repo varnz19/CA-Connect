@@ -108,6 +108,7 @@ export const AppInput: React.FC<AppInputProps> = ({
 const styles = StyleSheet.create({
   container: {
     marginBottom: Spacing.base,
+    maxWidth: 480, // Restrict width per guidelines
   },
   label: {
     fontFamily: Typography.fontFamily.medium,
@@ -119,17 +120,16 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 1, // Hairline rule
     borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.sm, // Structured radius
     backgroundColor: Colors.backgroundCard,
     overflow: 'hidden',
     height: 48,
   },
   inputWrapperFocused: {
-    borderColor: Colors.primary,
+    borderColor: Colors.primaryLight, // ink-700 focus ring
     backgroundColor: Colors.backgroundCard,
-    ...Shadows.sm,
   },
   inputWrapperError: {
     borderColor: Colors.danger,
