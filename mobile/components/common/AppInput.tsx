@@ -9,7 +9,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 
 interface AppInputProps extends TextInputProps {
   label?: string;
@@ -94,10 +94,7 @@ export const AppInput: React.FC<AppInputProps> = ({
       </View>
 
       {error && (
-        <View style={styles.errorRow}>
-          <MaterialIcons name="error-outline" size={12} color={Colors.danger} />
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
+        <Text style={styles.errorText}>{error}</Text>
       )}
 
       {!error && hint && <Text style={styles.hintText}>{hint}</Text>}
@@ -108,40 +105,39 @@ export const AppInput: React.FC<AppInputProps> = ({
 const styles = StyleSheet.create({
   container: {
     marginBottom: Spacing.base,
-    maxWidth: 480, // Restrict width per guidelines
+    maxWidth: 480,
   },
   label: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
     color: Colors.textPrimary,
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.sm,
     letterSpacing: Typography.letterSpacing.normal,
   },
+  // Underline-style input — bottom border only, no box
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1, // Hairline rule
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.sm, // Structured radius
-    backgroundColor: Colors.backgroundCard,
-    overflow: 'hidden',
-    height: 48,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    backgroundColor: 'transparent',
+    height: 44,
   },
   inputWrapperFocused: {
-    borderColor: Colors.primaryLight, // ink-700 focus ring
-    backgroundColor: Colors.backgroundCard,
+    borderBottomWidth: 2,
+    borderBottomColor: Colors.borderFocus, // Brass underline on focus
   },
   inputWrapperError: {
-    borderColor: Colors.danger,
-    backgroundColor: Colors.dangerLight,
+    borderBottomWidth: 2,
+    borderBottomColor: Colors.danger, // desaturated rust, not alarm-red
   },
   input: {
     flex: 1,
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.base,
     color: Colors.textPrimary,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm + 2,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: 0,
   },
   inputWithLeftIcon: {
     paddingLeft: Spacing.xs,
@@ -150,22 +146,17 @@ const styles = StyleSheet.create({
     paddingRight: Spacing.xs,
   },
   leftIcon: {
-    paddingLeft: Spacing.md,
+    marginRight: Spacing.sm,
   },
   rightIconWrapper: {
-    paddingRight: Spacing.md,
     paddingLeft: Spacing.xs,
   },
-  errorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: Spacing.xs,
-    gap: Spacing.xs,
-  },
+  // Error in sentence-case, Ink color (not bright red), beneath field
   errorText: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.xs,
     color: Colors.danger,
+    marginTop: Spacing.xs,
   },
   hintText: {
     fontFamily: Typography.fontFamily.regular,

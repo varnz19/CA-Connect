@@ -4,8 +4,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Platform,
-  StatusBar,
   ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -124,7 +122,6 @@ const styles = StyleSheet.create({
   backButton: {
     marginRight: Spacing.sm,
     padding: Spacing.xs,
-    borderRadius: 8,
   },
   titleContainer: {
     flex: 1,
@@ -151,7 +148,6 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: Spacing.xs,
-    borderRadius: 8,
     position: 'relative',
   },
   badge: {
@@ -160,14 +156,14 @@ const styles = StyleSheet.create({
     right: 0,
     minWidth: 16,
     height: 16,
-    borderRadius: 8,
+    borderRadius: 4,             // 4px, not pill
     backgroundColor: Colors.danger,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 3,
   },
   badgeText: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.monoBold,
     fontSize: 9,
     color: Colors.textLight,
   },

@@ -3,13 +3,10 @@ import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ServiceCard } from '../../components/common/EntityCards';
 import { AppEmpty } from '../../components/common/AppStates';
-import { useAuthStore } from '../../store/authStore';
 import { Colors, Typography, Spacing } from '../../constants/theme';
 import { useServices } from '../../hooks/useQueries';
 
 export default function ClientServicesScreen() {
-  const { user } = useAuthStore();
-  const clientId = user?.clientProfile?.id || 'cp-001';
   const { data: servicesData, refetch } = useServices();
   const [refreshing, setRefreshing] = React.useState(false);
 
@@ -34,39 +31,22 @@ export default function ClientServicesScreen() {
         ListHeaderComponent={
           <>
             <View style={styles.header}>
-              <Text style={styles.title}>My Services</Text>
+              <Text style={styles.title}>Service Engagements</Text>
               <Text style={styles.subtitle}>
                 {active.length} active · {completed.length} completed
               </Text>
             </View>
-
-            {active.length > 0 && (
-              <Text style={styles.sectionLabel}>Active Services</Text>
-            )}
-            {active.map((service) => (
-              <View key={service.id} style={styles.cardWrapper}>
-                <ServiceCard service={service} showClient={false} />
-              </View>
-            ))}
-
-            {completed.length > 0 && (
-              <Text style={[styles.sectionLabel, styles.sectionLabelTop]}>Completed Services</Text>
-            )}
+            <View style={styles.hairlineRule} />
           </>
         }
-        renderItem={({ item }) =>
-          item.status === 'COMPLETED' ? (
-            <View style={styles.cardWrapper}>
-              <ServiceCard service={item} showClient={false} />
-            </View>
-          ) : null
-        }
+        renderItem={({ item }) => (
+          <ServiceCard service={item} showClient={false} />
+        )}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <AppEmpty
-            icon="work-outline"
-            title="No services assigned"
-            description="Your CA will assign services to you here."
+            title="No service records"
+            description="Professional CA services assigned to your firm account will appear here."
           />
         }
       />
@@ -77,30 +57,26 @@ export default function ClientServicesScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
   header: {
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.base,
-    paddingBottom: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
   },
   title: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.displayBold,
     fontSize: Typography.size.xl,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   subtitle: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
+    marginTop: 2,
   },
-  sectionLabel: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.sm,
-    color: Colors.textTertiary,
-    paddingHorizontal: Spacing.base,
-    marginBottom: Spacing.xs,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
   },
-  sectionLabelTop: { marginTop: Spacing.base },
-  list: { paddingBottom: Spacing['3xl'] },
-  cardWrapper: { paddingHorizontal: Spacing.base },
+  list: {
+    backgroundColor: Colors.backgroundCard,
+  },
 });

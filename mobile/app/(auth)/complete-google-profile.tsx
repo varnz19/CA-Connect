@@ -10,11 +10,10 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 import { profileService } from '../../services/profileService';
 import { api } from '../../services/api';
 
@@ -33,27 +32,24 @@ export default function CompleteGoogleProfileScreen() {
 
   const handleComplete = async () => {
     if (!phone.trim()) {
-      Alert.alert('Required', 'Please enter your phone number.');
+      Alert.alert('Required', 'Please enter your contact phone number.');
       return;
     }
     if (!firmName.trim()) {
-      Alert.alert('Required', 'Please enter your firm name.');
+      Alert.alert('Required', 'Please enter your business or firm name.');
       return;
     }
 
     setIsLoading(true);
     try {
-      // Set the token so the API calls are authenticated
       api.defaults.headers.common['Authorization'] = `Bearer ${tokens.accessToken}`;
 
-      // Update the profile with additional details
       await profileService.updateProfile({
         phone: phone.trim(),
         firmName: firmName.trim(),
         gstState: gstState.trim() || 'Maharashtra',
       });
 
-      // Now login (this triggers the redirect to dashboard in _layout.tsx)
       login(userData, tokens);
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Failed to update profile. Please try again.';
@@ -64,7 +60,6 @@ export default function CompleteGoogleProfileScreen() {
   };
 
   const handleSkip = () => {
-    // Login directly with defaults
     login(userData, tokens);
   };
 
@@ -79,35 +74,28 @@ export default function CompleteGoogleProfileScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.iconContainer}>
-              <MaterialIcons name="person-add" size={32} color={Colors.secondary} />
-            </View>
-            <Text style={styles.title}>Complete Your Profile</Text>
-            <Text style={styles.subtitle}>
-              Welcome, {userData.firstName}! Please fill in a few more details to get started.
-            </Text>
-          </View>
-
-          {/* Google Info Preview */}
-          <View style={styles.googleInfoCard}>
-            <View style={styles.googleInfoRow}>
-              <MaterialIcons name="check-circle" size={18} color={Colors.success} />
-              <Text style={styles.googleInfoText}>
-                Signed in as <Text style={styles.googleEmailText}>{userData.email}</Text>
+          <View style={styles.container}>
+            {/* Header Block */}
+            <View style={styles.headerBlock}>
+              <Text style={styles.refCode}>AUTH-SSO-PROFILE</Text>
+              <Text style={styles.pageTitle}>Complete Client Record</Text>
+              <Text style={styles.pageSubtitle}>
+                Welcome, {userData.firstName}. Complete your business record to associate your tax accounts.
               </Text>
             </View>
-          </View>
 
-          {/* Form Card */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Business Details</Text>
-            <Text style={styles.cardSubtitle}>These details help your CA serve you better</Text>
+            {/* SSO Meta Info */}
+            <View style={styles.ssoMetaRow}>
+              <Text style={styles.ssoMetaLabel}>AUTHENTICATED IDENTITY</Text>
+              <Text style={styles.ssoMetaEmail}>{userData.email}</Text>
+            </View>
 
+            <View style={styles.hairlineRule} />
+
+            {/* Flat Form */}
             <View style={styles.form}>
               <AppInput
-                label="Phone Number *"
+                label="Primary Phone Number *"
                 placeholder="+91-9876543210"
                 keyboardType="phone-pad"
                 value={phone}
@@ -115,31 +103,32 @@ export default function CompleteGoogleProfileScreen() {
               />
 
               <AppInput
-                label="Firm / Business Name *"
-                placeholder="e.g. Sunrise Enterprises"
+                label="Registered Business / Firm Name *"
+                placeholder="ABC Enterprises"
                 value={firmName}
                 onChangeText={setFirmName}
               />
 
               <AppInput
-                label="GST State"
+                label="GST Jurisdiction State"
                 placeholder="Maharashtra"
                 value={gstState}
                 onChangeText={setGstState}
               />
 
               <AppButton
-                title={isLoading ? 'Saving...' : 'Complete Registration'}
+                title={isLoading ? 'Updating Record...' : 'Complete Registration'}
                 onPress={handleComplete}
                 loading={isLoading}
-                style={styles.submitBtn}
+                size="md"
+                style={styles.actionBtn}
               />
 
               <AppButton
-                title="Skip for Now"
-                variant="ghost"
+                title="Skip For Now"
                 onPress={handleSkip}
-                style={styles.skipBtn}
+                variant="outline"
+                size="md"
               />
             </View>
           </View>
@@ -150,98 +139,67 @@ export default function CompleteGoogleProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background }, // paper
+  safe: { flex: 1, backgroundColor: Colors.background },
   flex: { flex: 1 },
   scroll: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xl,
-    alignItems: 'center', // Center for 480px width
-  },
-  header: {
+    paddingVertical: Spacing['2xl'],
+    paddingHorizontal: Spacing.xl,
     alignItems: 'center',
-    marginVertical: Spacing.xl,
+  },
+  container: {
     width: '100%',
     maxWidth: 480,
   },
-  iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 0,
-    backgroundColor: Colors.backgroundCard,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-    borderWidth: 1,
-    borderColor: Colors.border,
+  headerBlock: {
+    marginBottom: Spacing.lg,
   },
-  title: {
+  refCode: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
+    marginBottom: Spacing.xs,
+  },
+  pageTitle: {
     fontFamily: Typography.fontFamily.displayBold,
     fontSize: 24,
-    color: Colors.primary, // ink-900
-    marginTop: Spacing.xs,
+    color: Colors.primary,
+    marginBottom: 4,
   },
-  subtitle: {
+  pageSubtitle: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.sm,
     color: Colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 4,
-    paddingHorizontal: Spacing.lg,
     lineHeight: 20,
   },
-  googleInfoCard: {
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: 0,
-    paddingHorizontal: Spacing.base,
+  ssoMetaRow: {
     paddingVertical: Spacing.sm,
-    marginBottom: Spacing.base,
-    borderWidth: 1,
-    borderColor: Colors.success,
-    width: '100%',
-    maxWidth: 480,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: Colors.hairline,
+    marginBottom: Spacing.md,
   },
-  googleInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
+  ssoMetaLabel: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 9,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
   },
-  googleInfoText: {
-    fontFamily: Typography.fontFamily.regular,
+  ssoMetaEmail: {
+    fontFamily: Typography.fontFamily.monoMedium,
     fontSize: Typography.size.sm,
-    color: Colors.textSecondary,
-  },
-  googleEmailText: {
-    fontFamily: Typography.fontFamily.semiBold,
-    color: Colors.primaryLight,
-  },
-  card: {
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: 0, // structured
-    padding: Spacing.xl,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    width: '100%',
-    maxWidth: 480, // restricted width
-  },
-  cardTitle: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.lg,
     color: Colors.primary,
+    marginTop: 2,
   },
-  cardSubtitle: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.xs,
-    color: Colors.textSecondary,
-    marginTop: 4,
-    marginBottom: Spacing.base,
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
+    marginVertical: Spacing.md,
   },
   form: {
-    gap: Spacing.base,
+    gap: Spacing.lg,
   },
-  submitBtn: {
+  actionBtn: {
     marginTop: Spacing.sm,
-  },
-  skipBtn: {
-    marginTop: -4,
   },
 });

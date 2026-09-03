@@ -13,6 +13,7 @@ export function useClients(search?: string) {
   return useQuery({
     queryKey: ['clients', search],
     queryFn: () => clientService.getClients(search),
+    staleTime: 1000 * 60 * 5,
   });
 }
 
@@ -21,6 +22,7 @@ export function useClient(id: string) {
     queryKey: ['client', id],
     queryFn: () => clientService.getClient(id),
     enabled: !!id,
+    staleTime: 1000 * 60 * 5,
   });
 }
 

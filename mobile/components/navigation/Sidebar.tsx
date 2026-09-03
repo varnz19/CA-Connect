@@ -22,19 +22,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ items, baseRoute }) => {
   const segments = useSegments();
   const { user } = useAuthStore();
 
-  // Find current active route
-  // segments is usually ['(admin)', 'clients', ...]
   const currentSegment = segments[1] || 'index';
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <MaterialIcons name="security" size={32} color={Colors.secondary} />
+        <View style={styles.brandBadge}>
+          <Text style={styles.brandInitials}>CA</Text>
+        </View>
         <View style={styles.headerTextContainer}>
-          <Text style={styles.brandText}>CA-Connect</Text>
-          <Text style={styles.roleText}>{user?.role === 'ADMIN' ? 'Firm Workspace' : 'Client Portal'}</Text>
+          <Text style={styles.brandText}>CA CONNECT</Text>
+          <Text style={styles.roleText}>{user?.role === 'ADMIN' ? 'FIRM WORKSPACE' : 'CLIENT PORTAL'}</Text>
         </View>
       </View>
+
+      <View style={styles.hairlineRule} />
 
       <View style={styles.navContainer}>
         {items.map((item) => {
@@ -48,8 +50,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ items, baseRoute }) => {
             >
               <MaterialIcons 
                 name={item.icon} 
-                size={20} 
-                color={isActive ? Colors.primary : Colors.secondaryLight} 
+                size={18} 
+                color={isActive ? Colors.secondary : Colors.textTertiary} 
               />
               <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
                 {item.label}
@@ -58,6 +60,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ items, baseRoute }) => {
           );
         })}
       </View>
+
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>LEDGER SYSTEM · v1.0</Text>
+      </View>
     </View>
   );
 };
@@ -65,56 +71,90 @@ export const Sidebar: React.FC<SidebarProps> = ({ items, baseRoute }) => {
 const styles = StyleSheet.create({
   container: {
     width: 240,
-    backgroundColor: Colors.primary, // ink-900 book spine
+    backgroundColor: Colors.backgroundCard,
     height: '100%',
     borderRightWidth: 1,
-    borderRightColor: Colors.primaryLight,
-    paddingVertical: Spacing.xl,
+    borderRightColor: Colors.hairline,
+    paddingVertical: Spacing.lg,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.xl * 2,
     gap: Spacing.sm,
+  },
+  brandBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  brandInitials: {
+    fontFamily: Typography.fontFamily.monoBold,
+    fontSize: 13,
+    color: Colors.primary,
   },
   headerTextContainer: {
     justifyContent: 'center',
   },
   brandText: {
     fontFamily: Typography.fontFamily.displayBold,
-    fontSize: 18,
-    color: Colors.textLight,
+    fontSize: 15,
+    color: Colors.primary,
+    letterSpacing: 0.5,
   },
   roleText: {
-    fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: 10,
-    color: Colors.secondary,
+    fontFamily: Typography.fontFamily.monoMedium,
+    fontSize: 9,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
     marginTop: 2,
+  },
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
+    marginVertical: Spacing.lg,
   },
   navContainer: {
     flex: 1,
-    paddingHorizontal: Spacing.sm,
-    gap: Spacing.xs,
+    gap: 2,
   },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    borderRadius: 8,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 11,
     gap: Spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: 'transparent',
   },
+  // Left-border accent in Brass on the active nav item
   navItemActive: {
-    backgroundColor: Colors.secondaryLight, // Brass soft for active
+    borderLeftColor: Colors.secondary,
+    backgroundColor: 'rgba(184, 134, 58, 0.08)',
   },
   navLabel: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
-    color: Colors.textLight,
+    color: Colors.textSecondary,
   },
   navLabelActive: {
-    color: Colors.primary, // ink-900 text when active
+    color: Colors.primary,
     fontFamily: Typography.fontFamily.semiBold,
+  },
+  footer: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.hairline,
+  },
+  footerText: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 9,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
   },
 });

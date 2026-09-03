@@ -7,9 +7,9 @@ const getSocketUrl = () => {
     return process.env.EXPO_PUBLIC_API_URL;
   }
   if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:3000';
+    return 'http://10.0.2.2:4000';
   }
-  return 'http://localhost:3000';
+  return 'http://localhost:4000';
 };
 
 class SocketService {

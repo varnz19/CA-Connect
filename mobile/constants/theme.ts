@@ -1,4 +1,8 @@
-// CA Connect Design System - Color Palette & Theme
+// CA Connect Design System — Ledger-Adjacent Visual Language
+//
+// TYPOGRAPHY RULE: IBM Plex Mono is STRICTLY for numbers — amounts,
+// invoice numbers, dates, GSTIN/PAN, timestamps. Montserrat for all
+// UI labels, body text, headings, and navigation.
 
 export const Colors = {
   // Ledger & Seal Core Colors
@@ -22,6 +26,9 @@ export const Colors = {
   textLight: '#F5F6F1',     // --paper
   textMuted: '#DAD9CE',     // --rule
 
+  // Hairline rules — low-opacity ink for structural separation
+  hairline: 'rgba(20, 38, 30, 0.12)',
+
   // Status & Actions
   success: '#1F3D2E',       // Using ink-700 for success (official)
   successLight: '#EFE3C8',
@@ -31,7 +38,7 @@ export const Colors = {
   warningLight: '#EFE3C8',
   warningDark: '#8A652B',
 
-  danger: '#A34B34',        // --rust
+  danger: '#A34B34',        // --rust (desaturated, not alarm-red)
   dangerLight: '#FDECE8',
   dangerDark: '#7A3827',
 
@@ -42,7 +49,7 @@ export const Colors = {
   // Borders & Rules
   border: '#DAD9CE',        // --rule
   borderLight: '#EBEBE4',
-  borderFocus: '#1F3D2E',   // --ink-700
+  borderFocus: '#B8863A',   // Brass for focus states (underline inputs)
 
   divider: '#DAD9CE',       // --rule
 
@@ -65,25 +72,26 @@ export const Colors = {
   statusCancelledText: '#5B6560',
 
   // Tab Bar
-  tabBarBackground: '#14261E', // --ink-900
-  tabBarActive: '#B8863A',     // --brass
-  tabBarInactive: '#5B6560',   // --text-secondary
+  tabBarBackground: '#FBFBF8', // paper-card (not ink — calmer)
+  tabBarActive: '#B8863A',     // --brass accent
+  tabBarInactive: '#8A9590',   // --text-tertiary
 } as const;
 
 export const Typography = {
   // Font families
   fontFamily: {
-    // Inter for UI
-    regular: 'Inter_400Regular',
-    medium: 'Inter_500Medium',
-    semiBold: 'Inter_600SemiBold',
-    bold: 'Inter_700Bold',
-    // Fraunces for display/headings
-    displayRegular: 'Fraunces_400Regular',
-    displayMedium: 'Fraunces_500Medium',
-    displaySemiBold: 'Fraunces_600SemiBold',
-    displayBold: 'Fraunces_700Bold',
-    // IBM Plex Mono for data/numbers
+    // Montserrat for ALL UI text
+    regular: 'Montserrat_400Regular',
+    medium: 'Montserrat_500Medium',
+    semiBold: 'Montserrat_600SemiBold',
+    bold: 'Montserrat_700Bold',
+    // Montserrat for display/headings
+    displayRegular: 'Montserrat_400Regular',
+    displayMedium: 'Montserrat_500Medium',
+    displaySemiBold: 'Montserrat_600SemiBold',
+    displayBold: 'Montserrat_700Bold',
+    // IBM Plex Mono — ONLY for numbers: amounts, invoice numbers,
+    // dates, GSTIN/PAN, timestamps, reference codes
     monoRegular: 'IBMPlexMono_400Regular',
     monoMedium: 'IBMPlexMono_500Medium',
     monoSemiBold: 'IBMPlexMono_600SemiBold',
@@ -137,16 +145,17 @@ export const Spacing = {
   '5xl': 64,
 } as const;
 
+// Consistent 4px radius everywhere — no mixed radii
 export const BorderRadius = {
-  sm: 2, // More structured corners
+  sm: 4,
   md: 4,
-  lg: 8,
-  xl: 12,
-  '2xl': 16,
-  full: 9999,
+  lg: 4,
+  xl: 4,
+  '2xl': 4,
+  full: 9999, // only for notification dots / avatars
 } as const;
 
-// Shadows removed/minimized in favor of hairline rules
+// No shadows — separation via hairline rules and borders only
 export const Shadows = {
   sm: {
     shadowColor: 'transparent',

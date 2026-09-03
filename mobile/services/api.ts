@@ -4,12 +4,10 @@ import { Platform } from 'react-native';
 
 // Detect host for localhost access
 const getBaseUrl = () => {
-  // If you run on Android Emulator, localhost is 10.0.2.2.
-  // If you run on iOS Simulator/Web, it is localhost.
   if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:3000/api';
+    return 'http://10.0.2.2:4000/api';
   }
-  return 'http://localhost:3000/api';
+  return 'http://localhost:4000/api';
 };
 
 export const api = axios.create({

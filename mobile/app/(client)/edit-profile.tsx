@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 import { useAuthStore } from '../../store/authStore';
 import { profileService } from '../../services/profileService';
 
@@ -25,7 +25,6 @@ const profileSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
   phone: z.string().optional(),
-  avatar: z.string().optional(),
   firmName: z.string().optional(),
   panNumber: z.string().optional(),
   gstin: z.string().optional(),
@@ -51,7 +50,6 @@ export default function ClientEditProfileScreen() {
       firstName: user?.firstName || '',
       lastName: user?.lastName || '',
       phone: user?.phone || '',
-      avatar: user?.avatar || '',
       firmName: user?.clientProfile?.firmName || '',
       panNumber: user?.clientProfile?.panNumber || '',
       gstin: user?.clientProfile?.gstin || '',
@@ -66,7 +64,6 @@ export default function ClientEditProfileScreen() {
         firstName: user.firstName,
         lastName: user.lastName,
         phone: user.phone || '',
-        avatar: user.avatar || '',
         firmName: user.clientProfile?.firmName || '',
         panNumber: user.clientProfile?.panNumber || '',
         gstin: user.clientProfile?.gstin || '',
@@ -82,7 +79,7 @@ export default function ClientEditProfileScreen() {
       const response = await profileService.updateProfile(data);
       if (response.data) {
         updateUser(response.data);
-        Alert.alert('Success', 'Profile updated successfully.', [
+        Alert.alert('Success', 'Client details updated in firm records.', [
           { text: 'OK', onPress: () => router.replace('/(client)/profile') }
         ]);
       }
@@ -95,15 +92,15 @@ export default function ClientEditProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.replace('/(client)/profile')} style={styles.backBtn}>
-            <MaterialIcons name="arrow-back" size={20} color={Colors.textPrimary} />
-            <Text style={styles.backText}>Back to Settings</Text>
+            <MaterialIcons name="arrow-back" size={18} color={Colors.primary} />
+            <Text style={styles.backText}>Profile</Text>
           </TouchableOpacity>
         </View>
 
@@ -112,41 +109,60 @@ export default function ClientEditProfileScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <Text style={styles.title}>Edit Profile</Text>
-            <Text style={styles.subtitle}>Update your client account and business info</Text>
-          </View>
+          <View style={styles.container}>
+            {/* Header */}
+            <View style={styles.headerBlock}>
+              <Text style={styles.refCode}>CLIENT RECORD</Text>
+              <Text style={styles.pageTitle}>Edit Profile & Tax Details</Text>
+              <Text style={styles.pageSubtitle}>
+                Update registered entity name, contact phone, PAN, and GST identification.
+              </Text>
+            </View>
 
-          <View style={styles.card}>
+            <View style={styles.hairlineRule} />
+
+            {/* Flat Form */}
             <View style={styles.form}>
-              <Controller
-                control={control}
-                name="firstName"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <AppInput
-                    label="First Name"
-                    placeholder="First Name"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={errors.firstName?.message as any}
-                  />
-                )}
-              />
+              <Text style={styles.sectionHeading}>Personal & Contact</Text>
 
-              <Controller
-                control={control}
-                name="lastName"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <AppInput
-                    label="Last Name"
-                    placeholder="Last Name"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={errors.lastName?.message as any}
+              <View style={styles.row}>
+                <View style={styles.half}>
+                  <Controller
+                    control={control}
+                    name="firstName"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <AppInput
+                        label="First Name *"
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        error={errors.firstName?.message as any}
+                      />
+                    )}
                   />
-                )}
+                </View>
+                <View style={styles.half}>
+                  <Controller
+                    control={control}
+                    name="lastName"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <AppInput
+                        label="Last Name *"
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        error={errors.lastName?.message as any}
+                      />
+                    )}
+                  />
+                </View>
+              </View>
+
+              <AppInput
+                label="Registered Email Address"
+                value={user?.email || ''}
+                editable={false}
+                hint="Contact CA firm admin to change verified email."
               />
 
               <Controller
@@ -154,92 +170,78 @@ export default function ClientEditProfileScreen() {
                 name="phone"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
-                    label="Phone Number"
+                    label="Primary Phone Number"
                     placeholder="+91-9876543210"
                     keyboardType="phone-pad"
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
-                    error={errors.phone?.message as any}
                   />
                 )}
               />
 
-              <Controller
-                control={control}
-                name="avatar"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <AppInput
-                    label="Avatar Image URL"
-                    placeholder="https://example.com/avatar.jpg"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={errors.avatar?.message as any}
-                  />
-                )}
-              />
-
-              <Text style={styles.sectionTitle}>Business Info</Text>
+              <View style={styles.hairlineRule} />
+              <Text style={styles.sectionHeading}>Business & Statutory Identification</Text>
 
               <Controller
                 control={control}
                 name="firmName"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
-                    label="Firm Name"
-                    placeholder="Firm Name"
+                    label="Business / Trade Name"
+                    placeholder="Enter entity name"
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
-                    error={errors.firmName?.message as any}
                   />
                 )}
               />
 
-              <Controller
-                control={control}
-                name="panNumber"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <AppInput
-                    label="PAN Number"
-                    placeholder="ABCDE1234F"
-                    autoCapitalize="characters"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={errors.panNumber?.message as any}
+              <View style={styles.row}>
+                <View style={styles.half}>
+                  <Controller
+                    control={control}
+                    name="panNumber"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <AppInput
+                        label="PAN Card Number"
+                        placeholder="ABCDE1234F"
+                        autoCapitalize="characters"
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                      />
+                    )}
                   />
-                )}
-              />
+                </View>
+                <View style={styles.half}>
+                  <Controller
+                    control={control}
+                    name="gstState"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <AppInput
+                        label="GST Jurisdiction State"
+                        placeholder="Maharashtra"
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                      />
+                    )}
+                  />
+                </View>
+              </View>
 
               <Controller
                 control={control}
                 name="gstin"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
-                    label="GSTIN"
+                    label="GSTIN Number"
                     placeholder="27ABCDE1234F1Z5"
                     autoCapitalize="characters"
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
-                    error={errors.gstin?.message as any}
-                  />
-                )}
-              />
-
-              <Controller
-                control={control}
-                name="gstState"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <AppInput
-                    label="GST State"
-                    placeholder="Maharashtra"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={errors.gstState?.message as any}
                   />
                 )}
               />
@@ -249,20 +251,22 @@ export default function ClientEditProfileScreen() {
                 name="address"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
-                    label="Address"
-                    placeholder="Office Suite, Business Complex, City"
+                    label="Registered Office Address"
+                    placeholder="Principal address for tax communications"
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
-                    error={errors.address?.message as any}
+                    multiline
+                    numberOfLines={2}
                   />
                 )}
               />
 
               <AppButton
-                title={isLoading ? 'Saving...' : 'Save Profile'}
+                title={isLoading ? 'Updating...' : 'Save Profile Record'}
                 onPress={handleSubmit(onSubmit)}
                 loading={isLoading}
+                size="md"
                 style={styles.submitBtn}
               />
             </View>
@@ -274,59 +278,78 @@ export default function ClientEditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8FAFC' },
+  safe: { flex: 1, backgroundColor: Colors.background },
   flex: { flex: 1 },
   topBar: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
   },
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   backText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
-    color: Colors.textPrimary,
+    color: Colors.textSecondary,
   },
   scroll: {
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.xl,
+    paddingVertical: Spacing.xl,
+    paddingHorizontal: Spacing.xl,
+    alignItems: 'center',
   },
-  header: {
-    marginBottom: Spacing.base,
+  container: {
+    width: '100%',
+    maxWidth: 500,
   },
-  title: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: 22,
+  headerBlock: {
+    marginBottom: Spacing.md,
+  },
+  refCode: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  pageTitle: {
+    fontFamily: Typography.fontFamily.displayBold,
+    fontSize: Typography.size.xl,
     color: Colors.primary,
   },
-  subtitle: {
+  pageSubtitle: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.xs,
     color: Colors.textSecondary,
+    lineHeight: 18,
     marginTop: 2,
   },
-  card: {
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: 16,
-    padding: Spacing.base,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    ...Shadows.sm,
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
+    marginVertical: Spacing.lg,
   },
   form: {
-    gap: Spacing.sm,
+    gap: Spacing.md,
   },
-  sectionTitle: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: Typography.size.base,
+  sectionHeading: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.sm,
     color: Colors.primary,
-    marginTop: Spacing.sm,
     marginBottom: Spacing.xs,
   },
+  row: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  half: {
+    flex: 1,
+  },
   submitBtn: {
-    marginTop: Spacing.base,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.xl,
   },
 });

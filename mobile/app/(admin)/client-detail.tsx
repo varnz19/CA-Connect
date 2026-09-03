@@ -5,18 +5,13 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
-  FlatList,
-  Linking,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { AppCard } from '../../components/common/AppCard';
-import { AppAvatar } from '../../components/common/AppAvatar';
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 import { useClient } from '../../hooks/useQueries';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 
@@ -25,7 +20,7 @@ type TabType = 'PROFILE' | 'SERVICES' | 'INVOICES' | 'DOCS' | 'APPOINTMENTS';
 export default function AdminClientDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: clientRes, isLoading, refetch } = useClient(id || '');
+  const { data: clientRes, isLoading } = useClient(id || '');
   const [activeTab, setActiveTab] = useState<TabType>('PROFILE');
 
   if (isLoading) {
@@ -43,8 +38,8 @@ export default function AdminClientDetailScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.centered}>
-          <Text style={styles.loadingText}>Client not found.</Text>
-          <AppButton title="Go Back" onPress={() => router.replace('/(admin)/clients')} style={styles.backBtn} />
+          <Text style={styles.loadingText}>Client record not found.</Text>
+          <AppButton title="Return to Directory" onPress={() => router.replace('/(admin)/clients')} size="sm" />
         </View>
       </SafeAreaView>
     );
@@ -58,437 +53,398 @@ export default function AdminClientDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Header */}
+      {/* Top Bar */}
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => router.replace('/(admin)/clients')} style={styles.backBtn}>
-          <MaterialIcons name="arrow-back" size={20} color={Colors.textPrimary} />
-          <Text style={styles.backText}>Back to Clients</Text>
+          <MaterialIcons name="arrow-back" size={18} color={Colors.primary} />
+          <Text style={styles.backText}>Client Directory</Text>
         </TouchableOpacity>
+        <AppBadge status={client.isActive ? 'ACTIVE' : 'CANCELLED'} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* User Brief Card */}
-        <AppCard style={styles.profileCard}>
-          <View style={styles.profileRow}>
-            <AppAvatar
-              name={`${client.firstName} ${client.lastName}`}
-              size="lg"
-              uri={client.avatar}
-            />
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>
-                {client.firstName} {client.lastName}
-              </Text>
-              <Text style={styles.profileCode}>Code: {profile.clientCode || 'N/A'}</Text>
-              <View style={styles.badgeRow}>
-                <AppBadge
-                  label={client.isActive ? 'Active' : 'Inactive'}
-                  variant={client.isActive ? 'success' : 'neutral'}
-                />
-              </View>
+        {/* Header Block: name/title in Ink, key facts as labeled key-value grid */}
+        <View style={styles.headerBlock}>
+          <Text style={styles.refCode}>CLIENT CODE: {profile.clientCode || 'UNASSIGNED'}</Text>
+          <Text style={styles.clientTitle}>{client.firstName} {client.lastName}</Text>
+          {profile.firmName && (
+            <Text style={styles.firmSubtitle}>{profile.firmName}</Text>
+          )}
+
+          {/* Key Facts Grid (Mono type for values) */}
+          <View style={styles.keyFactsGrid}>
+            <View style={styles.keyFactCol}>
+              <Text style={styles.factLabel}>GST STATE</Text>
+              <Text style={styles.factValue}>{profile.gstState || '—'}</Text>
+            </View>
+            <View style={styles.keyFactCol}>
+              <Text style={styles.factLabel}>GSTIN</Text>
+              <Text style={styles.factValue}>{profile.gstin || '—'}</Text>
+            </View>
+            <View style={styles.keyFactCol}>
+              <Text style={styles.factLabel}>PAN NUMBER</Text>
+              <Text style={styles.factValue}>{profile.panNumber || '—'}</Text>
             </View>
           </View>
 
-          {/* Quick Actions */}
-          <View style={styles.quickActions}>
-            <TouchableOpacity
-              style={styles.actionButton}
+          {/* Actions: Clear text-labeled buttons in Ink or outline variant */}
+          <View style={styles.actionRow}>
+            <AppButton
+              title="Issue Invoice"
+              size="sm"
               onPress={() => router.push(`/(admin)/create-invoice?clientId=${profile.id}` as any)}
-            >
-              <MaterialIcons name="receipt" size={16} color={Colors.secondary} />
-              <Text style={styles.actionButtonText}>Invoice</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionButton}
+            />
+            <AppButton
+              title="Request Doc"
+              variant="outline"
+              size="sm"
               onPress={() => router.push(`/(admin)/request-document?clientId=${profile.id}` as any)}
-            >
-              <MaterialIcons name="cloud-upload" size={16} color={Colors.secondary} />
-              <Text style={styles.actionButtonText}>Request Doc</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => router.push(`/(admin)/messages?clientId=${client.id}` as any)}
-            >
-              <MaterialIcons name="chat" size={16} color={Colors.secondary} />
-              <Text style={styles.actionButtonText}>Message</Text>
-            </TouchableOpacity>
+            />
+            <AppButton
+              title="Message"
+              variant="outline"
+              size="sm"
+              onPress={() => router.push(`/(admin)/chat?clientId=${client.id}` as any)}
+            />
           </View>
-        </AppCard>
+        </View>
 
-        {/* Tab Buttons */}
-        <View style={styles.tabContainer}>
+        <View style={styles.hairlineRule} />
+
+        {/* Tab Navigation (Flat) */}
+        <View style={styles.tabRow}>
           {(['PROFILE', 'SERVICES', 'INVOICES', 'DOCS', 'APPOINTMENTS'] as TabType[]).map((tab) => (
             <TouchableOpacity
               key={tab}
-              style={[styles.tabButton, activeTab === tab && styles.tabButtonActive]}
+              style={[styles.tabItem, activeTab === tab && styles.tabItemActive]}
               onPress={() => setActiveTab(tab)}
             >
-              <Text style={[styles.tabButtonText, activeTab === tab && styles.tabButtonTextActive]}>
+              <Text style={[styles.tabItemText, activeTab === tab && styles.tabItemTextActive]}>
                 {tab.charAt(0) + tab.slice(1).toLowerCase()}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Tab Content */}
-        <View style={styles.tabContent}>
+        <View style={styles.hairlineRule} />
+
+        {/* Content Section */}
+        <View style={styles.contentSection}>
           {activeTab === 'PROFILE' && (
-            <AppCard style={styles.contentCard}>
-              <Text style={styles.sectionTitle}>Profile Details</Text>
+            <View style={styles.sectionBody}>
+              <Text style={styles.sectionHeading}>Contact & Registration Details</Text>
               
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Email Address</Text>
-                <Text style={styles.detailValue}>{client.email}</Text>
+              <View style={styles.kvRow}>
+                <Text style={styles.kvKey}>Email address</Text>
+                <Text style={styles.kvValMono}>{client.email}</Text>
               </View>
 
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Phone Number</Text>
-                <Text style={styles.detailValue}>{client.phone || 'Not Provided'}</Text>
+              <View style={styles.kvRow}>
+                <Text style={styles.kvKey}>Phone number</Text>
+                <Text style={styles.kvValMono}>{client.phone || 'Not recorded'}</Text>
               </View>
 
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Firm Name</Text>
-                <Text style={styles.detailValue}>{profile.firmName || 'Individual'}</Text>
+              <View style={styles.kvRow}>
+                <Text style={styles.kvKey}>Firm / Trade name</Text>
+                <Text style={styles.kvValText}>{profile.firmName || 'Individual'}</Text>
               </View>
 
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>PAN Card Number</Text>
-                <Text style={styles.detailValue}>{profile.panNumber || 'Not Registered'}</Text>
+              <View style={styles.kvRow}>
+                <Text style={styles.kvKey}>PAN card number</Text>
+                <Text style={styles.kvValMono}>{profile.panNumber || 'Not recorded'}</Text>
               </View>
 
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>GSTIN State</Text>
-                <Text style={styles.detailValue}>{profile.gstState || 'Not Registered'}</Text>
+              <View style={styles.kvRow}>
+                <Text style={styles.kvKey}>GSTIN state jurisdiction</Text>
+                <Text style={styles.kvValText}>{profile.gstState || 'Not recorded'}</Text>
               </View>
 
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>GSTIN Number</Text>
-                <Text style={styles.detailValue}>{profile.gstin || 'Not Registered'}</Text>
+              <View style={styles.kvRow}>
+                <Text style={styles.kvKey}>GSTIN number</Text>
+                <Text style={styles.kvValMono}>{profile.gstin || 'Not registered'}</Text>
               </View>
 
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Billing Address</Text>
-                <Text style={styles.detailValue}>{profile.address || 'No address added'}</Text>
+              <View style={styles.kvRow}>
+                <Text style={styles.kvKey}>Billing address</Text>
+                <Text style={styles.kvValText}>{profile.address || 'Not recorded'}</Text>
               </View>
-            </AppCard>
+            </View>
           )}
 
           {activeTab === 'SERVICES' && (
-            <View style={styles.listContainer}>
+            <View style={styles.sectionBody}>
+              <Text style={styles.sectionHeading}>Assigned Service Engagements</Text>
               {services.length === 0 ? (
-                <Text style={styles.emptyText}>No services assigned to this client.</Text>
+                <Text style={styles.emptyText}>No service engagements currently active.</Text>
               ) : (
                 services.map((svc: any) => (
-                  <AppCard key={svc.id} style={styles.listItemCard}>
-                    <View style={styles.listItemHeader}>
-                      <Text style={styles.listItemTitle}>{svc.name}</Text>
-                      <AppBadge status={svc.status} />
+                  <View key={svc.id} style={styles.detailListRow}>
+                    <View style={styles.detailListLeft}>
+                      <Text style={styles.rowTitle}>{svc.name}</Text>
+                      {svc.description && <Text style={styles.rowDesc}>{svc.description}</Text>}
+                      <Text style={styles.rowMeta}>Started: {formatDate(svc.startDate)}</Text>
                     </View>
-                    {svc.description && <Text style={styles.listItemDesc}>{svc.description}</Text>}
-                    <Text style={styles.listItemFooter}>Started: {formatDate(svc.startDate)}</Text>
-                  </AppCard>
+                    <AppBadge status={svc.status} />
+                  </View>
                 ))
               )}
             </View>
           )}
 
           {activeTab === 'INVOICES' && (
-            <View style={styles.listContainer}>
+            <View style={styles.sectionBody}>
+              <Text style={styles.sectionHeading}>Invoices & Billing Statements</Text>
               {invoices.length === 0 ? (
-                <Text style={styles.emptyText}>No invoices generated yet.</Text>
+                <Text style={styles.emptyText}>No invoices generated for this account.</Text>
               ) : (
                 invoices.map((inv: any) => (
-                  <AppCard key={inv.id} style={styles.listItemCard}>
-                    <View style={styles.listItemHeader}>
-                      <Text style={styles.listItemTitle}>{inv.invoiceNumber}</Text>
+                  <View key={inv.id} style={styles.detailListRow}>
+                    <View style={styles.detailListLeft}>
+                      <Text style={styles.rowTitleMono}>{inv.invoiceNumber}</Text>
+                      <Text style={styles.rowMeta}>Due: {formatDate(inv.dueDate)}</Text>
+                    </View>
+                    <View style={styles.detailListRight}>
+                      <Text style={styles.rowAmount}>{formatCurrency(inv.total)}</Text>
                       <AppBadge status={inv.status} />
                     </View>
-                    <View style={styles.listItemMeta}>
-                      <Text style={styles.metaLabel}>Total Amount:</Text>
-                      <Text style={styles.metaValue}>{formatCurrency(inv.total)}</Text>
-                    </View>
-                    <Text style={styles.listItemFooter}>Due: {formatDate(inv.dueDate)}</Text>
-                  </AppCard>
+                  </View>
                 ))
               )}
             </View>
           )}
 
           {activeTab === 'DOCS' && (
-            <View style={styles.listContainer}>
+            <View style={styles.sectionBody}>
+              <Text style={styles.sectionHeading}>Document Requests</Text>
               {docRequests.length === 0 ? (
-                <Text style={styles.emptyText}>No document requests created.</Text>
+                <Text style={styles.emptyText}>No document requests issued for this client.</Text>
               ) : (
                 docRequests.map((doc: any) => (
-                  <AppCard key={doc.id} style={styles.listItemCard}>
-                    <View style={styles.listItemHeader}>
-                      <Text style={styles.listItemTitle}>{doc.name}</Text>
-                      <AppBadge status={doc.status} />
+                  <View key={doc.id} style={styles.detailListRow}>
+                    <View style={styles.detailListLeft}>
+                      <Text style={styles.rowTitle}>{doc.name}</Text>
+                      {doc.dueDate && <Text style={styles.rowMeta}>Due: {formatDate(doc.dueDate)}</Text>}
                     </View>
-                    {doc.description && <Text style={styles.listItemDesc}>{doc.description}</Text>}
-                    {doc.documents && doc.documents.length > 0 && (
-                      <View style={styles.docAttachments}>
-                        <Text style={styles.attachmentsLabel}>Uploaded Files:</Text>
-                        {doc.documents.map((file: any) => (
-                          <TouchableOpacity
-                            key={file.id}
-                            style={styles.fileLink}
-                            onPress={() => Linking.openURL(file.fileUrl)}
-                          >
-                            <MaterialIcons name="insert-drive-file" size={14} color={Colors.secondary} />
-                            <Text style={styles.fileLinkText}>{file.fileName}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    )}
-                    <Text style={styles.listItemFooter}>
-                      Due: {doc.dueDate ? formatDate(doc.dueDate) : 'No due date'}
-                    </Text>
-                  </AppCard>
+                    <AppBadge status={doc.status} />
+                  </View>
                 ))
               )}
             </View>
           )}
 
           {activeTab === 'APPOINTMENTS' && (
-            <View style={styles.listContainer}>
+            <View style={styles.sectionBody}>
+              <Text style={styles.sectionHeading}>Consultation History</Text>
               {appointments.length === 0 ? (
-                <Text style={styles.emptyText}>No scheduled appointments.</Text>
+                <Text style={styles.emptyText}>No appointments booked.</Text>
               ) : (
                 appointments.map((apt: any) => (
-                  <AppCard key={apt.id} style={styles.listItemCard}>
-                    <View style={styles.listItemHeader}>
-                      <Text style={styles.listItemTitle}>{apt.title}</Text>
-                      <AppBadge status={apt.status} />
+                  <View key={apt.id} style={styles.detailListRow}>
+                    <View style={styles.detailListLeft}>
+                      <Text style={styles.rowTitle}>{apt.title}</Text>
+                      <Text style={styles.rowMeta}>
+                        {formatDate(apt.confirmedDate || apt.requestedDate, true)} · {apt.duration}m
+                      </Text>
                     </View>
-                    {apt.description && <Text style={styles.listItemDesc}>{apt.description}</Text>}
-                    <Text style={styles.listItemFooter}>
-                      Time: {formatDate(apt.requestedDate, true)}
-                    </Text>
-                  </AppCard>
+                    <AppBadge status={apt.status} />
+                  </View>
                 ))
               )}
             </View>
           )}
         </View>
-
-        <View style={{ height: Spacing.xl }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Spacing.base,
-  },
-  loadingText: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.base,
-    color: Colors.textSecondary,
-  },
+  safe: { flex: 1, backgroundColor: Colors.background },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xl },
+  loadingText: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.sm, color: Colors.textSecondary, marginBottom: Spacing.md },
   topBar: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
   },
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   backText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
-    color: Colors.textPrimary,
+    color: Colors.textSecondary,
   },
   scroll: {
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.xl,
+    paddingBottom: Spacing['3xl'],
   },
-  profileCard: {
-    marginBottom: Spacing.base,
+  headerBlock: {
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.lg,
+    backgroundColor: Colors.backgroundCard,
   },
-  profileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
+  refCode: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
+    marginBottom: 4,
   },
-  profileInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  profileName: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: Typography.size.lg,
+  clientTitle: {
+    fontFamily: Typography.fontFamily.displayBold,
+    fontSize: Typography.size['2xl'],
     color: Colors.primary,
   },
-  profileCode: {
+  firmSubtitle: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.sm,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  keyFactsGrid: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: Colors.hairline,
+    paddingVertical: Spacing.md,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
+  keyFactCol: {
+    flex: 1,
+  },
+  factLabel: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 9,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
+  },
+  factValue: {
+    fontFamily: Typography.fontFamily.monoBold, // mono values
+    fontSize: Typography.size.xs,
+    color: Colors.primary,
+    marginTop: 2,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.xl,
+    backgroundColor: Colors.background,
+  },
+  tabItem: {
+    paddingVertical: Spacing.md,
+    marginRight: Spacing.lg,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabItemActive: {
+    borderBottomColor: Colors.primary,
+  },
+  tabItemText: {
     fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.xs,
+    color: Colors.textTertiary,
+  },
+  tabItemTextActive: {
+    color: Colors.primary,
+    fontFamily: Typography.fontFamily.semiBold,
+  },
+  contentSection: {
+    backgroundColor: Colors.backgroundCard,
+  },
+  sectionBody: {
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.lg,
+  },
+  sectionHeading: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.sm,
+    color: Colors.primary,
+    marginBottom: Spacing.md,
+  },
+  kvRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
+  },
+  kvKey: {
+    fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.xs,
     color: Colors.textSecondary,
   },
-  badgeRow: {
-    flexDirection: 'row',
-    marginTop: 4,
-  },
-  quickActions: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginTop: Spacing.base,
-    borderTopWidth: 1,
-    borderTopColor: Colors.borderLight,
-    paddingTop: Spacing.sm,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    height: 38,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: `${Colors.secondary}12`,
-  },
-  actionButtonText: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: 12,
-    color: Colors.secondaryDark,
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
-    borderRadius: BorderRadius.md,
-    padding: 2,
-    marginBottom: Spacing.base,
-  },
-  tabButton: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-    borderRadius: BorderRadius.sm,
-  },
-  tabButtonActive: {
-    backgroundColor: Colors.backgroundCard,
-    ...Shadows.sm,
-  },
-  tabButtonText: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: 10,
-    color: Colors.textSecondary,
-  },
-  tabButtonTextActive: {
+  kvValMono: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: Typography.size.xs,
     color: Colors.primary,
-    fontFamily: Typography.fontFamily.semiBold,
   },
-  tabContent: {
-    gap: Spacing.sm,
-  },
-  contentCard: {
-    gap: Spacing.sm,
-  },
-  sectionTitle: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: Typography.size.base,
-    color: Colors.primary,
-    marginBottom: Spacing.xs,
-  },
-  detailRow: {
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
-    paddingBottom: Spacing.xs,
-    gap: 2,
-  },
-  detailLabel: {
+  kvValText: {
     fontFamily: Typography.fontFamily.medium,
-    fontSize: 11,
-    color: Colors.textSecondary,
+    fontSize: Typography.size.xs,
+    color: Colors.primary,
   },
-  detailValue: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
-    color: Colors.textPrimary,
-  },
-  listContainer: {
-    gap: Spacing.sm,
-  },
-  listItemCard: {
-    gap: Spacing.xs,
-  },
-  listItemHeader: {
+  detailListRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
   },
-  listItemTitle: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.base,
-    color: Colors.textPrimary,
+  detailListLeft: {
+    flex: 1,
+    marginRight: Spacing.md,
   },
-  listItemDesc: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-  },
-  listItemMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  detailListRight: {
+    alignItems: 'flex-end',
     gap: 4,
-    marginTop: 2,
   },
-  metaLabel: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
-    color: Colors.textSecondary,
-  },
-  metaValue: {
-    fontFamily: Typography.fontFamily.semiBold,
+  rowTitle: {
+    fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
     color: Colors.primary,
   },
-  listItemFooter: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: 11,
-    color: Colors.textTertiary,
-    marginTop: 4,
-  },
-  docAttachments: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: BorderRadius.sm,
-    padding: Spacing.xs,
-    gap: Spacing.xs,
-    marginTop: Spacing.xs,
-  },
-  attachmentsLabel: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: 10,
-    color: Colors.textSecondary,
-  },
-  fileLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  fileLinkText: {
-    fontFamily: Typography.fontFamily.medium,
+  rowTitleMono: {
+    fontFamily: Typography.fontFamily.monoBold,
     fontSize: Typography.size.sm,
-    color: Colors.secondaryDark,
-    textDecorationLine: 'underline',
+    color: Colors.primary,
+  },
+  rowDesc: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.xs,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  rowMeta: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+    marginTop: 2,
+  },
+  rowAmount: {
+    fontFamily: Typography.fontFamily.monoBold,
+    fontSize: Typography.size.sm,
+    color: Colors.primary,
   },
   emptyText: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.sm,
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.xs,
     color: Colors.textTertiary,
-    textAlign: 'center',
-    paddingVertical: Spacing.xl,
+    paddingVertical: Spacing.md,
   },
 });

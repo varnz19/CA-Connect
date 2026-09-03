@@ -17,19 +17,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 import { clientService } from '../../services/clientService';
 
 const addClientSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email address'),
-  phone: z.string().min(10, 'Phone number is required'),
-  firmName: z.string().min(2, 'Firm name is required'),
-  panNumber: z.string().min(10, 'Valid PAN is required'),
-  gstin: z.string().min(15, 'Valid GSTIN is required'),
-  gstState: z.string().min(2, 'GST state is required'),
-  address: z.string().min(5, 'Address is required'),
+  phone: z.string().min(10, 'Valid contact number required'),
+  firmName: z.string().min(2, 'Firm or business name required'),
+  panNumber: z.string().min(10, 'Valid 10-character PAN required'),
+  gstin: z.string().min(15, 'Valid 15-character GSTIN required'),
+  gstState: z.string().min(2, 'Jurisdiction state required'),
+  address: z.string().min(5, 'Billing address required'),
 });
 
 type AddClientForm = z.infer<typeof addClientSchema>;
@@ -62,14 +62,14 @@ export default function AddClientScreen() {
     try {
       const response = await clientService.createClient(data);
       if (response.data) {
-        Alert.alert('Success', 'Client account created successfully.', [
+        Alert.alert('Success', 'Client account registered in firm directory.', [
           { text: 'OK', onPress: () => router.back() }
         ]);
       } else {
         Alert.alert('Failed', 'Failed to create client.');
       }
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Something went wrong. Please check your input.';
+      const msg = err.response?.data?.message || 'Something went wrong. Please check your inputs.';
       Alert.alert('Error', msg);
     } finally {
       setIsLoading(false);
@@ -77,16 +77,15 @@ export default function AddClientScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        {/* Header */}
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <MaterialIcons name="arrow-back" size={20} color={Colors.textPrimary} />
-            <Text style={styles.backText}>Back to Clients</Text>
+            <MaterialIcons name="arrow-back" size={18} color={Colors.primary} />
+            <Text style={styles.backText}>Client Directory</Text>
           </TouchableOpacity>
         </View>
 
@@ -95,15 +94,22 @@ export default function AddClientScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <Text style={styles.brandName}>Add New Client</Text>
-            <Text style={styles.brandTagline}>Create a new client profile and secure login credentials</Text>
-          </View>
+          <View style={styles.container}>
+            {/* Header */}
+            <View style={styles.headerBlock}>
+              <Text style={styles.refCode}>DIRECTORY ONBOARDING</Text>
+              <Text style={styles.pageTitle}>Add Client Account</Text>
+              <Text style={styles.pageSubtitle}>
+                Register a new client profile, business credentials, and statutory tax details.
+              </Text>
+            </View>
 
-          {/* Form Card */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Client Information</Text>
+            <View style={styles.hairlineRule} />
+
+            {/* Flat Form: Single column with generous spacing */}
             <View style={styles.form}>
+              <Text style={styles.sectionHeading}>Contact Information</Text>
+
               <View style={styles.row}>
                 <View style={styles.half}>
                   <Controller
@@ -111,8 +117,8 @@ export default function AddClientScreen() {
                     name="firstName"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <AppInput
-                        label="First Name"
-                        placeholder="John"
+                        label="First Name *"
+                        placeholder="Rajesh"
                         value={value}
                         onChangeText={onChange}
                         onBlur={onBlur}
@@ -127,8 +133,8 @@ export default function AddClientScreen() {
                     name="lastName"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <AppInput
-                        label="Last Name"
-                        placeholder="Doe"
+                        label="Last Name *"
+                        placeholder="Kumar"
                         value={value}
                         onChangeText={onChange}
                         onBlur={onBlur}
@@ -144,8 +150,8 @@ export default function AddClientScreen() {
                 name="email"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
-                    label="Email Address"
-                    placeholder="client@firm.com"
+                    label="Official Email Address *"
+                    placeholder="rajesh.kumar@example.com"
                     keyboardType="email-address"
                     autoCapitalize="none"
                     value={value}
@@ -157,36 +163,39 @@ export default function AddClientScreen() {
               />
 
               <Controller
-              control={control}
-              name="phone"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <AppInput
-                  label="Phone Number"
-                  placeholder="e.g. +91 98765 43210"
-                  keyboardType="phone-pad"
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  error={errors.phone?.message as any}
-                />
-              )}
+                control={control}
+                name="phone"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <AppInput
+                    label="Contact Phone Number *"
+                    placeholder="+91-9876543210"
+                    keyboardType="phone-pad"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    error={errors.phone?.message as any}
+                  />
+                )}
               />
-              <Text style={[styles.cardTitle, { marginTop: Spacing.sm }]}>Business & GST Details</Text>
+
+              <View style={styles.hairlineRule} />
+              <Text style={styles.sectionHeading}>Business & Statutory Details</Text>
 
               <Controller
-              control={control}
-              name="firmName"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <AppInput
-                  label="Firm / Company Name"
-                  placeholder="e.g. ACME Corp"
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  error={errors.firmName?.message as any}
-                />
-              )}
+                control={control}
+                name="firmName"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <AppInput
+                    label="Registered Business / Firm Name *"
+                    placeholder="Kumar Trading Co."
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    error={errors.firmName?.message as any}
+                  />
+                )}
               />
+
               <View style={styles.row}>
                 <View style={styles.half}>
                   <Controller
@@ -194,7 +203,7 @@ export default function AddClientScreen() {
                     name="panNumber"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <AppInput
-                        label="PAN Card"
+                        label="PAN Card Number *"
                         placeholder="ABCDE1234F"
                         autoCapitalize="characters"
                         value={value}
@@ -211,7 +220,7 @@ export default function AddClientScreen() {
                     name="gstState"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <AppInput
-                        label="GST State"
+                        label="GST State Jurisdiction *"
                         placeholder="Maharashtra"
                         value={value}
                         onChangeText={onChange}
@@ -224,27 +233,28 @@ export default function AddClientScreen() {
               </View>
 
               <Controller
-              control={control}
-              name="gstin"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <AppInput
-                  label="GSTIN"
-                  placeholder="e.g. 27ABCDE1234F1Z5"
-                  autoCapitalize="characters"
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  error={errors.gstin?.message as any}
-                />
-              )}
+                control={control}
+                name="gstin"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <AppInput
+                    label="GSTIN Identification Number *"
+                    placeholder="27ABCDE1234F1Z5"
+                    autoCapitalize="characters"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    error={errors.gstin?.message as any}
+                  />
+                )}
               />
+
               <Controller
                 control={control}
                 name="address"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
-                    label="Address"
-                    placeholder="Office Suite, Business Complex, City"
+                    label="Registered Billing Address *"
+                    placeholder="401 Commercial Chamber, Nariman Point, Mumbai"
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
@@ -254,9 +264,10 @@ export default function AddClientScreen() {
               />
 
               <AppButton
-                title={isLoading ? 'Creating Client...' : 'Create Client Profile'}
+                title={isLoading ? 'Creating Record...' : 'Register Client Account'}
                 onPress={handleSubmit(onSubmit)}
                 loading={isLoading}
+                size="md"
                 style={styles.submitBtn}
               />
             </View>
@@ -268,65 +279,78 @@ export default function AddClientScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8FAFC' },
+  safe: { flex: 1, backgroundColor: Colors.background },
   flex: { flex: 1 },
   topBar: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
   },
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   backText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
-    color: Colors.textPrimary,
+    color: Colors.textSecondary,
   },
   scroll: {
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.xl,
+    paddingVertical: Spacing.xl,
+    paddingHorizontal: Spacing.xl,
+    alignItems: 'center',
   },
-  header: {
-    marginBottom: Spacing.base,
+  container: {
+    width: '100%',
+    maxWidth: 520,
   },
-  brandName: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: 22,
+  headerBlock: {
+    marginBottom: Spacing.md,
+  },
+  refCode: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  pageTitle: {
+    fontFamily: Typography.fontFamily.displayBold,
+    fontSize: Typography.size.xl,
     color: Colors.primary,
   },
-  brandTagline: {
+  pageSubtitle: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.xs,
     color: Colors.textSecondary,
+    lineHeight: 18,
     marginTop: 2,
   },
-  card: {
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: 16,
-    padding: Spacing.base,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    ...Shadows.sm,
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
+    marginVertical: Spacing.lg,
   },
-  cardTitle: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: Typography.size.base,
+  form: {
+    gap: Spacing.md,
+  },
+  sectionHeading: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.sm,
     color: Colors.primary,
     marginBottom: Spacing.xs,
   },
-  form: {
-    gap: Spacing.sm,
-  },
   row: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    gap: Spacing.md,
   },
   half: {
     flex: 1,
   },
   submitBtn: {
-    marginTop: Spacing.base,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.xl,
   },
 });

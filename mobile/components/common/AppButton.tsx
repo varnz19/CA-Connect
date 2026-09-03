@@ -9,7 +9,7 @@ import {
   TouchableOpacityProps,
   StyleProp,
 } from 'react-native';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: BorderRadius.sm, // More structured borders
+    borderRadius: 4, // Consistent 4px everywhere
   },
   fullWidth: {
     width: '100%',
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
 
-  // Variants
+  // Variants — flat, no elevation
   primary: {
     backgroundColor: Colors.primaryLight, // ink-700
   },
@@ -96,13 +96,13 @@ const styles = StyleSheet.create({
   outline: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: Colors.border,           // hairline rule
+    borderColor: Colors.primary,          // ink border, not hairline
   },
   ghost: {
     backgroundColor: 'transparent',
   },
   danger: {
-    backgroundColor: Colors.danger,
+    backgroundColor: Colors.danger,       // desaturated rust
   },
 
   // Sizes
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
 
   // Text styles
   text: {
-    fontFamily: Typography.fontFamily.medium, // More utilitarian
+    fontFamily: Typography.fontFamily.medium,
     letterSpacing: Typography.letterSpacing.normal,
   },
   text_primary: {
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   text_secondary: {
     color: Colors.textLight,
   },
-  text_outline: { color: Colors.primaryLight }, // ink-700 text for outline
+  text_outline: { color: Colors.primary },   // ink text for outline
   text_ghost: { color: Colors.primaryLight },
   text_danger: { color: Colors.textLight },
 

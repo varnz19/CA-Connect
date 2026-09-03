@@ -11,27 +11,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
 import { MaterialIcons } from '@expo/vector-icons';
-import { AppCard } from '../../components/common/AppCard';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 import { format, parseISO } from 'date-fns';
 import { useCalendarEvents } from '../../hooks/useQueries';
 import { calendarService } from '../../services/calendarService';
-
-const EVENT_ICONS: Record<string, keyof typeof MaterialIcons.glyphMap> = {
-  FILING: 'assignment',
-  MEETING: 'people',
-  TAX: 'account-balance',
-  REMINDER: 'alarm',
-};
-
-const EVENT_COLORS: Record<string, string> = {
-  FILING: Colors.danger,
-  MEETING: Colors.success,
-  TAX: Colors.warning,
-  REMINDER: Colors.primary,
-};
 
 export default function AdminCalendarScreen() {
   const today = format(new Date(), 'yyyy-MM-dd');
@@ -40,15 +25,11 @@ export default function AdminCalendarScreen() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // New Event Form State
   const [title, setTitle] = useState('');
-  const [type, setType] = useState<'FILING' | 'MEETING' | 'TAX' | 'REMINDER'>('MEETING');
+  const [type, setType] = useState<'FILING' | 'MEETING' | 'TAX' | 'REMINDER'>('FILING');
   const [description, setDescription] = useState('');
-  const [showPicker, setShowPicker] = useState(false);
 
-  // Map backend events into structured calendar items
   const backendEvents = (calendarRes?.data || []).map((e: any) => {
-    // Format date consistently
     let eventDate = today;
     try {
       eventDate = format(parseISO(e.date), 'yyyy-MM-dd');
@@ -56,7 +37,6 @@ export default function AdminCalendarScreen() {
       eventDate = e.date ? e.date.split('T')[0] : today;
     }
 
-    // Determine type mapping
     const mappedType = e.type === 'FILING_DEADLINE' ? 'FILING' : e.type;
 
     return {
@@ -64,7 +44,6 @@ export default function AdminCalendarScreen() {
       date: eventDate,
       title: e.title,
       type: mappedType,
-      color: EVENT_COLORS[mappedType] || Colors.primary,
       description: e.description || '',
     };
   });
@@ -77,7 +56,7 @@ export default function AdminCalendarScreen() {
         ...acc,
         [event.date]: {
           marked: true,
-          dotColor: event.color,
+          dotColor: Colors.secondary,
           selected: isSelected,
           selectedColor: Colors.primary,
           ...(existing || {}),
@@ -88,9 +67,9 @@ export default function AdminCalendarScreen() {
   );
 
   const selectedEvents = backendEvents.filter((e: any) => e.date === selected);
-  const upcomingEvents = backendEvents.filter((e: any) => e.date >= today)
-    .sort((a: any, b: any) => a.date.localeCompare(b.date))
-    .slice(0, 5);
+  const upcomingEvents = backendEvents
+    .filter((e: any) => e.date >= today)
+    .sort((a: any, b: any) => a.date.localeCompare(b.date));
 
   const handleCreateEvent = async () => {
     if (!title.trim()) {
@@ -99,23 +78,19 @@ export default function AdminCalendarScreen() {
     }
     setIsSubmitting(true);
     try {
-      const payload = {
-        title,
-        date: new Date(selected).toISOString(),
+      await calendarService.createEvent({
+        title: title.trim(),
+        description: description.trim(),
         type: type === 'FILING' ? 'FILING_DEADLINE' : type,
-        description,
-      };
-
-      const res = await calendarService.createEvent(payload);
-      if (res.data) {
-        Alert.alert('Success', 'Calendar event scheduled successfully.');
-        setTitle('');
-        setDescription('');
-        setIsModalOpen(false);
-        refetch();
-      }
+        date: selected,
+      });
+      Alert.alert('Success', 'Event added to filing schedule.');
+      setIsModalOpen(false);
+      setTitle('');
+      setDescription('');
+      refetch();
     } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.message || 'Failed to schedule event.');
+      Alert.alert('Error', err.response?.data?.message || 'Failed to create event.');
     } finally {
       setIsSubmitting(false);
     }
@@ -123,224 +98,165 @@ export default function AdminCalendarScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.title}>Calendar</Text>
-            <Text style={styles.subtitle}>Filing deadlines & appointments</Text>
+            <Text style={styles.title}>Statutory Filing Calendar</Text>
+            <Text style={styles.subtitle}>Statutory deadlines, GST cycles, and client consultations</Text>
           </View>
           <AppButton
-            title="Add Event"
+            title="Add Deadline"
             size="sm"
             onPress={() => setIsModalOpen(true)}
-            style={styles.addBtn}
           />
         </View>
 
-        {/* Calendar */}
-        <AppCard style={styles.calendarCard} noPadding>
+        <View style={styles.hairlineRule} />
+
+        {/* Minimal Calendar Component */}
+        <View style={styles.calendarWrapper}>
           <Calendar
-            current={today}
-            onDayPress={(day: { dateString: string }) => setSelected(day.dateString)}
+            current={selected}
+            onDayPress={(day) => setSelected(day.dateString)}
             markedDates={markedDates}
             theme={{
-              backgroundColor: 'transparent',
-              calendarBackground: 'transparent',
-              todayTextColor: Colors.secondary,
+              backgroundColor: Colors.backgroundCard,
+              calendarBackground: Colors.backgroundCard,
+              textSectionTitleColor: Colors.textTertiary,
               selectedDayBackgroundColor: Colors.primary,
               selectedDayTextColor: Colors.textLight,
-              dotColor: Colors.danger,
+              todayTextColor: Colors.secondaryDark,
+              dayTextColor: Colors.primary,
+              textDisabledColor: Colors.border,
+              dotColor: Colors.secondary,
+              selectedDotColor: Colors.textLight,
               arrowColor: Colors.primary,
-              monthTextColor: Colors.textPrimary,
-              textDayFontFamily: Typography.fontFamily.regular,
+              monthTextColor: Colors.primary,
+              textDayFontFamily: Typography.fontFamily.monoRegular,
               textMonthFontFamily: Typography.fontFamily.semiBold,
-              textDayHeaderFontFamily: Typography.fontFamily.medium,
-              textDayFontSize: 14,
-              textMonthFontSize: 16,
-              textDayHeaderFontSize: 12,
-              dayTextColor: Colors.textPrimary,
-              textDisabledColor: Colors.textMuted,
+              textDayHeaderFontFamily: Typography.fontFamily.monoRegular,
+              textDayFontSize: 13,
+              textMonthFontSize: 14,
+              textDayHeaderFontSize: 10,
             }}
           />
-        </AppCard>
-
-        {/* Events on Selected Date */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            {selected === today ? "Today's Events" : `Events on ${format(parseISO(selected), 'dd MMM yyyy')}`}
-          </Text>
         </View>
 
-        {selectedEvents.length === 0 ? (
-          <AppCard style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No events on this date</Text>
-          </AppCard>
-        ) : (
-          selectedEvents.map((event: any, i: number) => (
-            <AppCard key={event.id || i} style={styles.eventCard}>
-              <View style={styles.eventRow}>
-                <View style={[styles.eventIcon, { backgroundColor: `${event.color}18` }]}>
-                  <MaterialIcons name={EVENT_ICONS[event.type] || 'event'} size={18} color={event.color} />
-                </View>
-                <View style={styles.eventInfo}>
-                  <Text style={styles.eventTitle}>{event.title}</Text>
-                  {event.description && <Text style={styles.eventDescText}>{event.description}</Text>}
-                  <Text style={[styles.eventType, { color: event.color }]}>{event.type}</Text>
-                </View>
-                <View style={[styles.colorDot, { backgroundColor: event.color }]} />
-              </View>
-            </AppCard>
-          ))
-        )}
+        <View style={styles.hairlineRule} />
 
-        {/* Upcoming Deadlines */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Upcoming Deadlines</Text>
+        {/* Selected Date Filing Schedule */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionHeading}>Schedule for {format(parseISO(selected), 'dd MMM yyyy').toUpperCase()}</Text>
+          <Text style={styles.refMeta}>SELECTED</Text>
         </View>
-        <AppCard style={styles.upcomingCard} noPadding>
-          {upcomingEvents.map((event: any, i: number) => (
-            <View
-              key={event.id || i}
-              style={[styles.upcomingItem, i < upcomingEvents.length - 1 && styles.upcomingBorder]}
-            >
-              <View style={[styles.upcomingDate, { borderColor: event.color }]}>
-                <Text style={[styles.upcomingDateText, { color: event.color }]}>
-                  {format(parseISO(event.date), 'dd')}
-                </Text>
-                <Text style={[styles.upcomingMonth, { color: event.color }]}>
-                  {format(parseISO(event.date), 'MMM')}
-                </Text>
+
+        <View style={styles.filingList}>
+          {selectedEvents.map((evt: any) => (
+            <View key={evt.id} style={styles.filingRow}>
+              <View style={styles.dateCol}>
+                <Text style={styles.dateMono}>{format(parseISO(evt.date), 'dd MMM')}</Text>
               </View>
-              <View style={styles.upcomingInfo}>
-                <Text style={styles.eventTitle}>{event.title}</Text>
-                <Text style={[styles.eventType, { color: event.color }]}>{event.type}</Text>
+              <View style={styles.detailsCol}>
+                <Text style={styles.deadlineTitle}>{evt.title}</Text>
+                {evt.description ? <Text style={styles.deadlineDesc}>{evt.description}</Text> : null}
               </View>
-              <MaterialIcons name="chevron-right" size={18} color={Colors.textTertiary} />
+              <Text style={styles.typeMono}>{evt.type}</Text>
             </View>
           ))}
-          {upcomingEvents.length === 0 && (
-            <View style={styles.noUpcoming}>
-              <Text style={styles.emptyText}>No upcoming deadlines scheduled</Text>
+          {selectedEvents.length === 0 && (
+            <View style={styles.emptyRow}>
+              <Text style={styles.emptyText}>No deadlines scheduled on this date.</Text>
             </View>
           )}
-        </AppCard>
-
-        {/* Legend */}
-        <View style={styles.legend}>
-          {[
-            { color: Colors.danger, label: 'Filing Deadline' },
-            { color: Colors.warning, label: 'Tax Payment' },
-            { color: Colors.success, label: 'Meeting' },
-            { color: Colors.primary, label: 'Reminder' },
-          ].map((l) => (
-            <View key={l.label} style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: l.color }]} />
-              <Text style={styles.legendText}>{l.label}</Text>
-            </View>
-          ))}
         </View>
 
-        <View style={styles.bottomPad} />
+        <View style={styles.hairlineRule} />
+
+        {/* Upcoming Filing Calendar (reads like a formal tax calendar) */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionHeading}>Upcoming Statutory Deadlines</Text>
+          <Text style={styles.refMeta}>CHRONOLOGICAL</Text>
+        </View>
+
+        <View style={styles.filingList}>
+          {upcomingEvents.map((evt: any, index: number) => {
+            const isNext = index === 0;
+            return (
+              <View key={evt.id} style={[styles.filingRow, isNext && styles.filingRowActive]}>
+                {/* Brass accent mark ONLY on the current/upcoming item */}
+                {isNext && <View style={styles.brassAccentLine} />}
+
+                <View style={styles.dateCol}>
+                  <Text style={[styles.dateMono, isNext && styles.dateMonoActive]}>
+                    {format(parseISO(evt.date), 'dd MMM yyyy')}
+                  </Text>
+                </View>
+
+                <View style={styles.detailsCol}>
+                  <Text style={styles.deadlineTitle}>{evt.title}</Text>
+                  {evt.description ? <Text style={styles.deadlineDesc}>{evt.description}</Text> : null}
+                </View>
+
+                <Text style={[styles.typeMono, isNext && styles.typeMonoActive]}>
+                  {evt.type}
+                </Text>
+              </View>
+            );
+          })}
+          {upcomingEvents.length === 0 && (
+            <View style={styles.emptyRow}>
+              <Text style={styles.emptyText}>No statutory deadlines upcoming.</Text>
+            </View>
+          )}
+        </View>
       </ScrollView>
 
-      {/* Schedule Event Modal */}
+      {/* Add Deadline Modal */}
       <Modal
         visible={isModalOpen}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={() => setIsModalOpen(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Schedule Event</Text>
+              <Text style={styles.modalTitle}>Add Statutory Deadline</Text>
               <TouchableOpacity onPress={() => setIsModalOpen(false)}>
-                <MaterialIcons name="close" size={24} color={Colors.textPrimary} />
+                <MaterialIcons name="close" size={20} color={Colors.primary} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.modalForm}>
-              <Text style={styles.modalDateText}>
-                Date: <Text style={{ color: Colors.secondaryDark, fontWeight: 'bold' }}>{selected}</Text>
+            <View style={styles.hairlineRule} />
+
+            <View style={styles.modalForm}>
+              <Text style={styles.dateNotice}>
+                Target Date: <Text style={styles.dateNoticeMono}>{selected}</Text>
               </Text>
 
               <AppInput
-                label="Event Title"
-                placeholder="GST Compliance Consultation"
+                label="Statutory Requirement / Title *"
+                placeholder="GSTR-3B Monthly Filing"
                 value={title}
                 onChangeText={setTitle}
               />
 
-              {/* Type Select */}
-              <View style={styles.pickerField}>
-                <Text style={styles.fieldLabel}>Event Type</Text>
-                <View style={{ zIndex: 1000, position: 'relative' }}>
-                  <TouchableOpacity
-                    style={styles.selectButton}
-                    onPress={() => setShowPicker(!showPicker)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.selectButtonText}>
-                      {type === 'MEETING' ? 'Meeting' :
-                       type === 'FILING' ? 'Filing Deadline' :
-                       type === 'TAX' ? 'Tax Payment' :
-                       type === 'REMINDER' ? 'General Reminder' : 'Choose type...'}
-                    </Text>
-                    <MaterialIcons
-                      name={showPicker ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-                      size={20}
-                      color={Colors.textSecondary}
-                    />
-                  </TouchableOpacity>
-
-                  {showPicker && (
-                    <View style={styles.dropdownContainer}>
-                      <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
-                        {[
-                          { value: 'MEETING', label: 'Meeting' },
-                          { value: 'FILING', label: 'Filing Deadline' },
-                          { value: 'TAX', label: 'Tax Payment' },
-                          { value: 'REMINDER', label: 'General Reminder' },
-                        ].map((t) => (
-                          <TouchableOpacity
-                            key={t.value}
-                            style={[
-                              styles.dropdownItem,
-                              type === t.value && styles.dropdownItemSelected
-                            ]}
-                            onPress={() => {
-                              setType(t.value as any);
-                              setShowPicker(false);
-                            }}
-                          >
-                            <Text style={[
-                              styles.dropdownItemText,
-                              type === t.value && styles.dropdownItemTextSelected
-                            ]}>
-                              {t.label}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  )}
-                </View>
-              </View>
-
               <AppInput
-                label="Description / Location"
-                placeholder="Virtual Consultation via Google Meet"
+                label="Compliance Guidance / Notes"
+                placeholder="Applicable to taxpayers with turnover > 5 Cr..."
                 value={description}
                 onChangeText={setDescription}
               />
 
               <AppButton
-                title={isSubmitting ? 'Scheduling...' : 'Save Calendar Event'}
+                title={isSubmitting ? 'Recording...' : 'Save to Practice Calendar'}
                 onPress={handleCreateEvent}
                 loading={isSubmitting}
-                style={styles.modalSubmitBtn}
+                size="md"
+                style={{ marginTop: Spacing.md }}
               />
-            </ScrollView>
+            </View>
           </View>
         </View>
       </Modal>
@@ -350,265 +266,167 @@ export default function AdminCalendarScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
+  scroll: { paddingBottom: Spacing['3xl'] },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.base,
-    paddingBottom: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
   },
   title: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.displayBold,
     fontSize: Typography.size.xl,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   subtitle: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: Typography.size.xs,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
+  },
+  calendarWrapper: {
+    backgroundColor: Colors.backgroundCard,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.sm,
+  },
+  sectionHeading: {
+    fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.sm,
+    color: Colors.primary,
+    letterSpacing: 0.5,
+  },
+  refMeta: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
+  },
+  filingList: {
+    backgroundColor: Colors.backgroundCard,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: Colors.hairline,
+  },
+  filingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
+    position: 'relative',
+  },
+  filingRowActive: {
+    backgroundColor: 'rgba(184, 134, 58, 0.05)',
+  },
+  // Brass accent mark only on current/upcoming item
+  brassAccentLine: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: Colors.secondary,
+  },
+  dateCol: {
+    width: 90,
+  },
+  dateMono: {
+    fontFamily: Typography.fontFamily.monoRegular, // mono date
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
   },
-  addBtn: {},
-  calendarCard: {
-    marginHorizontal: Spacing.base,
-    overflow: 'hidden',
+  dateMonoActive: {
+    fontFamily: Typography.fontFamily.monoBold,
+    color: Colors.secondaryDark,
   },
-  sectionHeader: {
-    paddingHorizontal: Spacing.base,
-    marginTop: Spacing.base,
-    marginBottom: Spacing.sm,
+  detailsCol: {
+    flex: 1,
+    marginRight: Spacing.md,
   },
-  sectionTitle: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.base,
-    color: Colors.textPrimary,
+  deadlineTitle: {
+    fontFamily: Typography.fontFamily.medium, // Montserrat
+    fontSize: Typography.size.sm,
+    color: Colors.primary,
   },
-  emptyCard: {
-    marginHorizontal: Spacing.base,
-    padding: Spacing.lg,
+  deadlineDesc: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.xs,
+    color: Colors.textTertiary,
+    marginTop: 1,
+  },
+  typeMono: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+    textTransform: 'uppercase',
+  },
+  typeMonoActive: {
+    color: Colors.secondaryDark,
+    fontFamily: Typography.fontFamily.monoMedium,
+  },
+  emptyRow: {
+    padding: Spacing.xl,
     alignItems: 'center',
   },
   emptyText: {
     fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
+    fontSize: Typography.size.xs,
     color: Colors.textTertiary,
   },
-  eventCard: {
-    marginHorizontal: Spacing.base,
-    marginBottom: Spacing.sm,
-  },
-  eventRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  eventIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: BorderRadius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  eventInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  eventTitle: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.base,
-    color: Colors.textPrimary,
-  },
-  eventDescText: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.xs,
-    color: Colors.textSecondary,
-  },
-  eventType: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  colorDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  upcomingCard: {
-    marginHorizontal: Spacing.base,
-  },
-  upcomingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.base,
-    gap: Spacing.sm,
-  },
-  upcomingBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
-  },
-  upcomingDate: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  upcomingDateText: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: Typography.size.md,
-  },
-  upcomingMonth: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: 9,
-    textTransform: 'uppercase',
-    marginTop: -2,
-  },
-  upcomingInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  noUpcoming: {
-    padding: Spacing.base,
-    alignItems: 'center',
-  },
-  legend: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: Spacing.base,
-    marginTop: Spacing.base,
-    gap: Spacing.base,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  legendText: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.xs,
-    color: Colors.textSecondary,
-  },
-  bottomPad: { height: Spacing['3xl'] },
-  
-  // Modal layout
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: 'rgba(20, 38, 30, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: Spacing.base,
+    padding: Spacing.xl,
   },
   modalContent: {
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: 20,
     width: '100%',
     maxWidth: 480,
-    maxHeight: '90%',
+    backgroundColor: Colors.backgroundCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 4,
     overflow: 'hidden',
-    ...Shadows.lg,
   },
   modalHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: Spacing.base,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
+    justifyContent: 'space-between',
+    padding: Spacing.lg,
   },
   modalTitle: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: Typography.size.lg,
+    fontFamily: Typography.fontFamily.displayBold,
+    fontSize: Typography.size.base,
     color: Colors.primary,
   },
   modalForm: {
-    padding: Spacing.base,
-    gap: Spacing.sm,
+    padding: Spacing.lg,
+    gap: Spacing.md,
   },
-  modalDateText: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.sm,
+  dateNotice: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
     marginBottom: Spacing.xs,
   },
-  pickerField: {
-    marginBottom: Spacing.xs,
-  },
-  fieldLabel: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.sm,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.xs,
-  },
-  pickerWrapper: {
-    backgroundColor: Colors.backgroundInput,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    height: 48,
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.sm,
-  },
-  selectButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.backgroundInput,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    height: 48,
-    paddingHorizontal: Spacing.sm,
-  },
-  selectButtonText: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.base,
-    color: Colors.textPrimary,
-  },
-  dropdownContainer: {
-    backgroundColor: Colors.backgroundCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    marginTop: 4,
-    maxHeight: 180,
-    position: 'absolute',
-    top: 48,
-    left: 0,
-    right: 0,
-    zIndex: 2000,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-  },
-  dropdownScroll: {
-    paddingVertical: 4,
-  },
-  dropdownItem: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: 12,
-  },
-  dropdownItemSelected: {
-    backgroundColor: Colors.statusActive,
-  },
-  dropdownItemText: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.base,
-    color: Colors.textPrimary,
-  },
-  dropdownItemTextSelected: {
-    fontFamily: Typography.fontFamily.medium,
+  dateNoticeMono: {
+    fontFamily: Typography.fontFamily.monoBold,
     color: Colors.primary,
-  },
-  modalSubmitBtn: {
-    marginTop: Spacing.base,
   },
 });

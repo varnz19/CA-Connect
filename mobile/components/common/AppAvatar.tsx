@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, ViewStyle, StyleProp } from 'react-native';
-import { Colors, Typography, BorderRadius } from '../../constants/theme';
+import { Colors, Typography } from '../../constants/theme';
 
 type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
@@ -46,11 +46,14 @@ export const AppAvatar: React.FC<AppAvatarProps> = ({
     return fullName.slice(0, 2).toUpperCase();
   };
 
+  // Square-ish avatar with 4px radius and 1px Ink border
   const avatarStyle = {
     width: dimension,
     height: dimension,
-    borderRadius: dimension / 2,
+    borderRadius: 4,
     backgroundColor: backgroundColor || Colors.primary,
+    borderWidth: 1,
+    borderColor: Colors.primary,
   };
 
   if (uri) {

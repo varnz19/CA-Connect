@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 
 type BadgeVariant =
   | 'primary'
@@ -46,7 +46,7 @@ const STATUS_LABEL_MAP: Record<string, string> = {
   APPROVED: 'Approved',
   REJECTED: 'Rejected',
   UPLOADED: 'Uploaded',
-  UNDER_REVIEW: 'Under Review',
+  UNDER_REVIEW: 'Under review',
   REQUESTED: 'Requested',
   CONFIRMED: 'Confirmed',
   RESCHEDULED: 'Rescheduled',
@@ -59,6 +59,8 @@ interface AppBadgeProps {
   style?: ViewStyle;
 }
 
+// Text-only / minimal pill status tag — no colored backgrounds, 
+// just a thin border and mono-type text
 export const AppBadge: React.FC<AppBadgeProps> = ({ status, label, variant, style }) => {
   const resolvedVariant = variant || (status ? STATUS_VARIANT_MAP[status] : 'neutral') || 'neutral';
   const resolvedLabel = label || (status ? STATUS_LABEL_MAP[status] : '') || status || '';
@@ -75,29 +77,49 @@ export const AppBadge: React.FC<AppBadgeProps> = ({ status, label, variant, styl
 const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs - 1,
-    borderRadius: BorderRadius.full,
+    paddingVertical: 2,
+    borderRadius: 4,             // Consistent 4px, not pill
+    borderWidth: 1,
     alignSelf: 'flex-start',
   },
   text: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.xs,
+    fontFamily: Typography.fontFamily.monoMedium,
+    fontSize: 10,
     letterSpacing: Typography.letterSpacing.wide,
+    textTransform: 'uppercase',
   },
 
-  // Variants
-  primary: { backgroundColor: Colors.statusActive },
-  success: { backgroundColor: Colors.statusPaid },
-  warning: { backgroundColor: Colors.statusPending },
-  danger: { backgroundColor: Colors.statusOverdue },
-  info: { backgroundColor: Colors.infoLight },
-  neutral: { backgroundColor: Colors.backgroundInput },
+  // Variants — thin border, transparent or very subtle background
+  primary: {
+    borderColor: Colors.primary,
+    backgroundColor: 'transparent',
+  },
+  success: {
+    borderColor: Colors.success,
+    backgroundColor: 'transparent',
+  },
+  warning: {
+    borderColor: Colors.secondary,    // Brass for active/pending
+    backgroundColor: 'transparent',
+  },
+  danger: {
+    borderColor: Colors.danger,
+    backgroundColor: 'transparent',
+  },
+  info: {
+    borderColor: Colors.primaryLight,
+    backgroundColor: 'transparent',
+  },
+  neutral: {
+    borderColor: Colors.border,
+    backgroundColor: 'transparent',
+  },
 
-  // Text colors
-  text_primary: { color: Colors.statusActiveText },
-  text_success: { color: Colors.statusPaidText },
-  text_warning: { color: Colors.statusPendingText },
-  text_danger: { color: Colors.statusOverdueText },
-  text_info: { color: Colors.infoDark },
+  // Text colors — muted, not loud
+  text_primary: { color: Colors.primary },
+  text_success: { color: Colors.success },
+  text_warning: { color: Colors.secondary },    // Brass text
+  text_danger: { color: Colors.danger },
+  text_info: { color: Colors.primaryLight },
   text_neutral: { color: Colors.textSecondary },
 });

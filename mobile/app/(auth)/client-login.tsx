@@ -21,9 +21,8 @@ import { makeRedirectUri } from 'expo-auth-session';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 import { authService } from '../../services/authService';
-import { base64Encode } from '../../utils/base64';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -42,10 +41,11 @@ export default function ClientLoginScreen() {
   const {
     control,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: 'rajesh.kumar@example.com', password: 'Client@123' },
   });
 
   const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '1234567890-android.apps.googleusercontent.com';
@@ -53,7 +53,6 @@ export default function ClientLoginScreen() {
   const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '1234567890-web.apps.googleusercontent.com';
 
   const redirectUri = makeRedirectUri();
-  console.log('EXPO GENERATED REDIRECT URI (Add this to Google Cloud Console):', redirectUri);
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     androidClientId,
@@ -62,7 +61,6 @@ export default function ClientLoginScreen() {
     redirectUri,
   });
 
-  // Handle Google Auth response on all platforms
   useEffect(() => {
     if (response?.type === 'success') {
       const auth = response.authentication || (response as any).params;
@@ -75,7 +73,6 @@ export default function ClientLoginScreen() {
           .then((res) => {
             if (res.success && res.data) {
               if ((res.data as any).isNewUser) {
-                // New user — redirect to profile completion form
                 router.push({
                   pathname: '/(auth)/complete-google-profile',
                   params: {
@@ -84,7 +81,6 @@ export default function ClientLoginScreen() {
                   },
                 } as any);
               } else {
-                // Returning user — login directly
                 login(res.data.user, res.data.tokens);
               }
             } else {
@@ -134,14 +130,15 @@ export default function ClientLoginScreen() {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        {/* Header navigation back to selection */}
+        {/* Navigation Bar */}
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.replace('/(auth)/landing')}>
-            <View style={styles.backBtn}>
-              <MaterialIcons name="arrow-back" size={20} color={Colors.textPrimary} />
-              <Text style={styles.backText}>Select Portal</Text>
-            </View>
+          <TouchableOpacity onPress={() => router.replace('/(auth)/landing')} style={styles.backBtn}>
+            <MaterialIcons name="arrow-back" size={18} color={Colors.primary} />
+            <Text style={styles.backText}>Portal Selection</Text>
           </TouchableOpacity>
+          <View style={styles.portalTag}>
+            <Text style={styles.portalTagText}>CLIENT ACCESS</Text>
+          </View>
         </View>
 
         <ScrollView
@@ -149,20 +146,19 @@ export default function ClientLoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Logo & Brand */}
-          <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <MaterialIcons name="person" size={32} color={Colors.secondaryDark} />
+          <View style={styles.container}>
+            {/* Header Block */}
+            <View style={styles.headerBlock}>
+              <Text style={styles.refCode}>REF: CL-AUTH-01</Text>
+              <Text style={styles.pageTitle}>Client Sign In</Text>
+              <Text style={styles.pageSubtitle}>
+                Access your tax returns, invoices, document requests, and advisory calendar.
+              </Text>
             </View>
-            <Text style={styles.brandName}>Client Login</Text>
-            <Text style={styles.brandTagline}>CA Connect Client Portal</Text>
-          </View>
 
-          {/* Login Card */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Sign In</Text>
-            <Text style={styles.cardSubtitle}>Enter your client login credentials to proceed</Text>
+            <View style={styles.hairlineRule} />
 
+            {/* Flat Form */}
             <View style={styles.form}>
               <Controller
                 control={control}
@@ -187,8 +183,8 @@ export default function ClientLoginScreen() {
                 name="password"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
-                    label="Password"
-                    placeholder="Enter your password"
+                    label="Account Password"
+                    placeholder="Enter account password"
                     secureTextEntry
                     autoCapitalize="none"
                     value={value}
@@ -206,38 +202,44 @@ export default function ClientLoginScreen() {
                 <Text style={styles.forgotText}>Forgot password?</Text>
               </TouchableOpacity>
 
+              <View style={styles.demoBox}>
+                <Text style={styles.demoBoxTitle}>PRE-LOADED DEMO CREDENTIALS</Text>
+                <Text style={styles.demoBoxText}>rajesh.kumar@example.com  ·  Client@123</Text>
+              </View>
+
               <AppButton
-                title={isLoading ? 'Logging in...' : 'Login as Client'}
+                title={isLoading ? 'Authenticating...' : 'Sign In as Client'}
                 onPress={handleSubmit(onSubmit)}
                 loading={isLoading}
                 style={styles.loginBtn}
+                size="md"
               />
 
-              <TouchableOpacity
-                onPress={() => router.replace('/(auth)/signup')}
-                style={styles.signupLink}
-              >
-                <Text style={styles.signupLinkText}>
-                  Don't have an account? <Text style={styles.signupHighlight}>Sign Up</Text>
-                </Text>
-              </TouchableOpacity>
+              <View style={styles.linkRow}>
+                <Text style={styles.linkText}>New client? </Text>
+                <TouchableOpacity onPress={() => router.replace('/(auth)/signup')}>
+                  <Text style={styles.linkHighlight}>Register account</Text>
+                </TouchableOpacity>
+              </View>
 
-              <View style={styles.dividerContainer}>
+              <View style={styles.dividerRow}>
                 <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>or</Text>
+                <Text style={styles.dividerLabel}>AUTHENTICATION ALTERNATIVES</Text>
                 <View style={styles.dividerLine} />
               </View>
 
               <TouchableOpacity
                 style={styles.googleBtn}
                 onPress={handleGoogleLogin}
-                activeOpacity={0.85}
+                activeOpacity={0.8}
               >
-                <View style={styles.googleIconContainer}>
-                  <MaterialIcons name="g-mobiledata" size={32} color="#EA4335" />
-                </View>
                 <Text style={styles.googleBtnText}>Continue with Google</Text>
               </TouchableOpacity>
+            </View>
+
+            {/* Quiet Footer Meta */}
+            <View style={styles.footer}>
+              <Text style={styles.footerMeta}>256-BIT ENCRYPTED · SECURE CLIENT PORTAL</Text>
             </View>
           </View>
         </ScrollView>
@@ -247,141 +249,172 @@ export default function ClientLoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background }, // paper
+  safe: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
   flex: { flex: 1 },
   topBar: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
   },
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   backText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
     color: Colors.textSecondary,
   },
-  scroll: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xl,
-    alignItems: 'center', // Center content for 480px width limit
+  portalTag: {
+    borderWidth: 1,
+    borderColor: Colors.secondary,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
-  header: {
+  portalTagText: {
+    fontFamily: Typography.fontFamily.monoMedium,
+    fontSize: 9,
+    color: Colors.secondaryDark,
+    letterSpacing: 1,
+  },
+  scroll: {
+    paddingVertical: Spacing['2xl'],
+    paddingHorizontal: Spacing.xl,
     alignItems: 'center',
-    marginVertical: Spacing.xl,
+  },
+  container: {
     width: '100%',
     maxWidth: 480,
   },
-  logoContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 0,
-    backgroundColor: Colors.backgroundCard,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-    borderWidth: 1,
-    borderColor: Colors.border, // hairline
-  },
-  brandName: {
-    fontFamily: Typography.fontFamily.displayBold,
-    fontSize: 24,
-    color: Colors.primary, // ink-900
-  },
-  brandTagline: {
-    fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: Typography.size.xs,
-    color: Colors.textSecondary,
-    marginTop: 4,
-    textTransform: 'uppercase',
-  },
-  card: {
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: 0, // Structured
-    padding: Spacing.xl,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    width: '100%',
-    maxWidth: 480, // Restricted width
-  },
-  cardTitle: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.lg,
-    color: Colors.primary,
-  },
-  cardSubtitle: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.xs,
-    color: Colors.textSecondary,
-    marginTop: 4,
+  headerBlock: {
     marginBottom: Spacing.base,
   },
+  refCode: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
+    marginBottom: Spacing.xs,
+  },
+  pageTitle: {
+    fontFamily: Typography.fontFamily.displayBold,
+    fontSize: 24,
+    color: Colors.primary,
+    marginBottom: 4,
+  },
+  pageSubtitle: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.sm,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+  },
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
+    marginVertical: Spacing.xl,
+  },
   form: {
-    gap: Spacing.base,
+    gap: Spacing.lg,
   },
   forgotBtn: {
     alignSelf: 'flex-end',
+    marginTop: -Spacing.sm,
   },
   forgotText: {
     fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.sm,
-    color: Colors.primaryLight, // ink-700
+    fontSize: Typography.size.xs,
+    color: Colors.secondaryDark,
   },
   loginBtn: {
-    marginTop: Spacing.xs,
+    marginTop: Spacing.sm,
   },
-  signupLink: {
+  linkRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
     marginTop: Spacing.xs,
   },
-  signupLinkText: {
+  linkText: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.sm,
     color: Colors.textSecondary,
   },
-  signupHighlight: {
+  linkHighlight: {
     fontFamily: Typography.fontFamily.semiBold,
-    color: Colors.primaryLight,
+    fontSize: Typography.size.sm,
+    color: Colors.primary,
+    textDecorationLine: 'underline',
   },
-  dividerContainer: {
+  dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: Spacing.sm,
-    gap: 8,
+    marginVertical: Spacing.md,
+    gap: Spacing.sm,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: Colors.border,
+    backgroundColor: Colors.hairline,
   },
-  dividerText: {
-    fontFamily: Typography.fontFamily.monoMedium,
-    fontSize: 12,
+  dividerLabel: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 9,
     color: Colors.textTertiary,
-    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   googleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.backgroundCard,
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 0,
-    height: 48,
-    gap: 8,
-  },
-  googleIconContainer: {
-    width: 28,
-    height: 28,
+    borderColor: Colors.primary,
+    borderRadius: 4,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
   googleBtnText: {
-    fontFamily: Typography.fontFamily.semiBold,
+    fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
-    color: Colors.primaryLight,
+    color: Colors.primary,
+  },
+  footer: {
+    marginTop: Spacing['3xl'],
+    alignItems: 'center',
+  },
+  footerMeta: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 9,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
+  },
+  demoBox: {
+    padding: Spacing.sm,
+    backgroundColor: Colors.backgroundCard,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    borderRadius: 4,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.secondary,
+    marginBottom: Spacing.sm,
+  },
+  demoBoxTitle: {
+    fontFamily: Typography.fontFamily.monoMedium,
+    fontSize: 9,
+    color: Colors.secondaryDark,
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  demoBoxText: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 11,
+    color: Colors.primary,
   },
 });

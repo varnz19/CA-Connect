@@ -8,6 +8,12 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { Fraunces_400Regular, Fraunces_500Medium, Fraunces_600SemiBold, Fraunces_700Bold } from '@expo-google-fonts/fraunces';
 import { IBMPlexMono_400Regular, IBMPlexMono_500Medium, IBMPlexMono_600SemiBold, IBMPlexMono_700Bold } from '@expo-google-fonts/ibm-plex-mono';
+import {
+  Montserrat_400Regular,
+  Montserrat_500Medium,
+  Montserrat_600SemiBold,
+  Montserrat_700Bold,
+} from '@expo-google-fonts/montserrat';
 import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuthStore } from '../store/authStore';
@@ -84,6 +90,10 @@ export default function RootLayout() {
     IBMPlexMono_500Medium,
     IBMPlexMono_600SemiBold,
     IBMPlexMono_700Bold,
+    Montserrat_400Regular,
+    Montserrat_500Medium,
+    Montserrat_600SemiBold,
+    Montserrat_700Bold,
   });
 
   useEffect(() => {
@@ -97,8 +107,28 @@ export default function RootLayout() {
   const isWeb = Platform.OS === 'web';
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1, width: '100%', height: '100%' }}>
+      {isWeb && (
+        <style type="text/css">{`
+          html, body, #root {
+            height: 100% !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #F5F6F1 !important;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+          }
+          #root > div {
+            height: 100% !important;
+            width: 100% !important;
+            display: flex;
+            flex-direction: column;
+          }
+        `}</style>
+      )}
+      <SafeAreaProvider style={styles.safeProvider}>
         <QueryClientProvider client={queryClient}>
           <StatusBar style="dark" />
           {isWeb ? (
@@ -117,17 +147,21 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
+  safeProvider: {
+    flex: 1,
+  },
   webContainer: {
     flex: 1,
-    backgroundColor: '#F5F7FB', // Use global background
-    alignItems: 'center',
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#F5F6F1',
+    alignItems: 'stretch',
     justifyContent: 'flex-start',
   },
   appContainer: {
     flex: 1,
     width: '100%',
-    maxWidth: 1400,
-    backgroundColor: '#F5F7FB',
-    overflow: 'hidden',
+    height: '100%',
+    backgroundColor: '#F5F6F1',
   },
 });

@@ -13,12 +13,10 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
 import { AppHeader } from '../../components/common/AppHeader';
 import { Colors, Typography, Spacing } from '../../constants/theme';
-
 import { authService } from '../../services/authService';
 
 const schema = z.object({
@@ -57,7 +55,7 @@ export default function ForgotPasswordScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <AppHeader title="Forgot Password" showBack />
+      <AppHeader title="Password Recovery" showBack />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -66,74 +64,69 @@ export default function ForgotPasswordScreen() {
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
         >
-          {!sent ? (
-            <View style={styles.content}>
-              <View style={styles.iconContainer}>
-                <MaterialIcons name="lock-reset" size={40} color={Colors.primary} />
+          <View style={styles.container}>
+            {!sent ? (
+              <View style={styles.content}>
+                <Text style={styles.refCode}>AUTH-PW-RESET</Text>
+                <Text style={styles.title}>Reset Account Password</Text>
+                <Text style={styles.description}>
+                  Specify your verified email address to receive an encrypted password recovery link.
+                </Text>
+
+                <View style={styles.hairlineRule} />
+
+                <Controller
+                  control={control}
+                  name="email"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <AppInput
+                      label="Registered Email Address"
+                      placeholder="name@example.com"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      error={errors.email?.message}
+                    />
+                  )}
+                />
+
+                <AppButton
+                  title={isLoading ? 'Dispatching...' : 'Send Recovery Link'}
+                  onPress={handleSubmit(onSubmit)}
+                  loading={isLoading}
+                  fullWidth
+                  size="md"
+                  style={styles.button}
+                />
+
+                <AppButton
+                  title="Return to Sign In"
+                  onPress={() => router.back()}
+                  variant="outline"
+                  fullWidth
+                  size="md"
+                />
               </View>
-              <Text style={styles.title}>Reset your password</Text>
-              <Text style={styles.description}>
-                Enter the email address associated with your account and we'll send you a link to
-                reset your password.
-              </Text>
-
-              <Controller
-                control={control}
-                name="email"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <AppInput
-                    label="Email Address"
-                    placeholder="Enter your email"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    leftIcon="email"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={errors.email?.message}
-                  />
-                )}
-              />
-
-              <AppButton
-                title="Send Reset Link"
-                onPress={handleSubmit(onSubmit)}
-                loading={isLoading}
-                fullWidth
-                size="lg"
-                style={styles.button}
-              />
-
-              <AppButton
-                title="Back to Login"
-                onPress={() => router.back()}
-                variant="ghost"
-                fullWidth
-                size="lg"
-              />
-            </View>
-          ) : (
-            <View style={styles.content}>
-              <View style={[styles.iconContainer, styles.successIcon]}>
-                <MaterialIcons name="mark-email-read" size={40} color={Colors.success} />
+            ) : (
+              <View style={styles.content}>
+                <Text style={styles.refCode}>STATUS: DISPATCHED</Text>
+                <Text style={styles.title}>Recovery Link Sent</Text>
+                <Text style={styles.description}>
+                  A password reset dispatch has been routed to{' '}
+                  <Text style={styles.emailHighlight}>{getValues('email')}</Text>. Check your inbox or spam directory to proceed.
+                </Text>
+                <AppButton
+                  title="Return to Portal Selection"
+                  onPress={() => router.replace('/(auth)/landing')}
+                  fullWidth
+                  size="md"
+                  style={styles.button}
+                />
               </View>
-              <Text style={styles.title}>Check your email</Text>
-              <Text style={styles.description}>
-                We've sent a password reset link to{'\n'}
-                <Text style={styles.emailHighlight}>{getValues('email')}</Text>
-              </Text>
-              <Text style={styles.noteText}>
-                Didn't receive the email? Check your spam folder or try again.
-              </Text>
-              <AppButton
-                title="Back to Login"
-                onPress={() => router.replace('/(auth)/landing')}
-                fullWidth
-                size="lg"
-                style={styles.button}
-              />
-            </View>
-          )}
+            )}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -146,54 +139,46 @@ const styles = StyleSheet.create({
   scroll: {
     flexGrow: 1,
     padding: Spacing.xl,
+    alignItems: 'center',
+  },
+  container: {
+    width: '100%',
+    maxWidth: 480,
   },
   content: {
-    paddingTop: Spacing.xl,
-    backgroundColor: Colors.backgroundCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.xl,
+    paddingVertical: Spacing.xl,
   },
-  iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 0,
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.lg,
-    alignSelf: 'flex-start',
-  },
-  successIcon: {
-    borderColor: Colors.success,
+  refCode: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
+    marginBottom: Spacing.xs,
   },
   title: {
     fontFamily: Typography.fontFamily.displayBold,
     fontSize: 24,
     color: Colors.primary,
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
   description: {
     fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.base,
+    fontSize: Typography.size.sm,
     color: Colors.textSecondary,
-    lineHeight: Typography.lineHeight.md,
+    lineHeight: 22,
+    marginBottom: Spacing.lg,
+  },
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
     marginBottom: Spacing.xl,
   },
   emailHighlight: {
-    fontFamily: Typography.fontFamily.semiBold,
-    color: Colors.primaryLight,
-  },
-  noteText: {
-    fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: 12,
-    color: Colors.textTertiary,
-    marginBottom: Spacing.xl,
-    textTransform: 'uppercase',
+    fontFamily: Typography.fontFamily.monoBold,
+    color: Colors.primary,
   },
   button: {
-    marginBottom: Spacing.sm,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.md,
   },
 });

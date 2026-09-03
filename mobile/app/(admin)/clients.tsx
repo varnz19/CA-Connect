@@ -11,38 +11,32 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { AppCard } from '../../components/common/AppCard';
-import { AppAvatar } from '../../components/common/AppAvatar';
-import { StatusStamp } from '../../components/common/StatusStamp';
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
+import { AppAvatar } from '../../components/common/AppAvatar';
 import { AppEmpty } from '../../components/common/AppStates';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 import { useClients } from '../../hooks/useQueries';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { clientService } from '../../services/clientService';
 import { User } from '../../types';
 
 export default function ClientsScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
-  const { data: clientsData, isLoading, refetch } = useClients(search);
-
-  // Use real data and fallback to empty array
-  const clientsList = clientsData?.data || [];
-
-  const filtered = clientsList.filter((c) => {
-    const q = search.toLowerCase();
-    return (
-      c.firstName.toLowerCase().includes(q) ||
-      c.lastName.toLowerCase().includes(q) ||
-      c.email.toLowerCase().includes(q) ||
-      c.clientProfile?.firmName?.toLowerCase().includes(q) ||
-      c.clientProfile?.clientCode?.toLowerCase().includes(q)
-    );
-  });
-
+  const { data: clientsData, isLoading, refetch } = useClients();
   const [refreshing, setRefreshing] = useState(false);
+
+  const clients = clientsData?.data || [];
+
+  const filtered = clients.filter(
+    (c) =>
+      `${c.firstName} ${c.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
+      c.clientProfile?.firmName?.toLowerCase().includes(search.toLowerCase()) ||
+      c.clientProfile?.clientCode?.toLowerCase().includes(search.toLowerCase()) ||
+      c.clientProfile?.panNumber?.toLowerCase().includes(search.toLowerCase())
+  );
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -53,18 +47,18 @@ export default function ClientsScreen() {
   const deleteMutation = useMutation({
     mutationFn: clientService.deleteClient,
     onSuccess: () => {
-      refetch();
-      Alert.alert('Success', 'Client deleted successfully.');
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      Alert.alert('Success', 'Client record removed.');
     },
     onError: (err: any) => {
       Alert.alert('Error', err.response?.data?.message || 'Failed to delete client.');
-    }
+    },
   });
 
   const handleDelete = (client: User) => {
     Alert.alert(
-      'Delete Client',
-      `Are you sure you want to delete ${client.firstName} ${client.lastName}? This action cannot be undone.`,
+      'Delete Client Record',
+      `Are you sure you want to remove ${client.firstName} ${client.lastName}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Delete', style: 'destructive', onPress: () => deleteMutation.mutate(client.id) },
@@ -72,122 +66,135 @@ export default function ClientsScreen() {
     );
   };
 
-  const renderClient = ({ item }: { item: User }) => (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={() => router.push(`/(admin)/client-detail?id=${item.id}` as any)}
-    >
-      <AppCard style={styles.clientCard}>
-        <View style={styles.clientRow}>
-          <AppAvatar
-            name={`${item.firstName} ${item.lastName}`}
-            size="md"
-            uri={item.avatar}
-          />
+  const renderClient = ({ item }: { item: User }) => {
+    const fullName = `${item.firstName} ${item.lastName}`;
+    const profile = item.clientProfile;
+
+    return (
+      <View style={styles.clientCard}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={styles.clientHeader}
+          onPress={() => router.push(`/(admin)/client-detail?id=${item.id}` as any)}
+        >
+          {/* Avatar with initials or photo */}
+          <AppAvatar name={fullName} size="md" uri={item.avatar} />
+
+          {/* Profile details */}
           <View style={styles.clientInfo}>
-            <View style={styles.clientNameRow}>
-              <Text style={styles.clientName}>
-                {item.firstName} {item.lastName}
-              </Text>
-              <StatusStamp
-                status={item.isActive ? 'ACTIVE' : 'INACTIVE'}
-                size="sm"
-              />
+            <View style={styles.nameRow}>
+              <Text style={styles.clientName}>{fullName}</Text>
+              <AppBadge status={item.isActive ? 'ACTIVE' : 'CANCELLED'} />
             </View>
-            {item.clientProfile?.firmName && (
-              <Text style={styles.firmName}>{item.clientProfile.firmName}</Text>
+
+            {profile?.firmName && (
+              <Text style={styles.firmName} numberOfLines={1}>{profile.firmName}</Text>
             )}
-            <Text style={styles.clientEmail}>{item.email}</Text>
+
             <View style={styles.metaRow}>
-              <View style={styles.metaChip}>
-                <Text style={styles.metaText}>{item.clientProfile?.clientCode}</Text>
-              </View>
-              {item.clientProfile?.gstin && (
-                <View style={styles.metaChip}>
-                  <Text style={styles.metaText}>{item.clientProfile.gstState}</Text>
-                </View>
+              <Text style={styles.clientCode}>CODE: {profile?.clientCode || '—'}</Text>
+              {profile?.panNumber && (
+                <Text style={styles.panMeta}>· PAN: {profile.panNumber}</Text>
               )}
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
-        <View style={styles.actionRow}>
+        {/* Quick Row Actions: Profile & Direct Chat */}
+        <View style={styles.clientActionRow}>
           <TouchableOpacity
-            style={[styles.actionBtn, styles.actionBtnPrimary]}
+            style={styles.actionBtn}
             onPress={() => router.push(`/(admin)/client-detail?id=${item.id}` as any)}
+            activeOpacity={0.7}
           >
-            <MaterialIcons name="person" size={14} color={Colors.primary} />
-            <Text style={styles.actionBtnText}>View</Text>
+            <MaterialIcons name="person-outline" size={14} color={Colors.primary} />
+            <Text style={styles.actionBtnText}>Full Profile</Text>
           </TouchableOpacity>
+
+          <View style={styles.actionDivider} />
+
           <TouchableOpacity
-            style={[styles.actionBtn, styles.actionBtnSecondary]}
-            onPress={() => router.push(`/(admin)/messages?clientId=${item.id}` as any)}
+            style={styles.actionBtn}
+            onPress={() => router.push(`/(admin)/chat?clientId=${item.id}` as any)}
+            activeOpacity={0.7}
           >
-            <MaterialIcons name="chat" size={14} color={Colors.secondary} />
-            <Text style={[styles.actionBtnText, { color: Colors.secondary }]}>Message</Text>
+            <MaterialIcons name="chat-bubble-outline" size={14} color={Colors.secondaryDark} />
+            <Text style={[styles.actionBtnText, { color: Colors.secondaryDark }]}>Message</Text>
           </TouchableOpacity>
+
+          <View style={styles.actionDivider} />
+
           <TouchableOpacity
-            style={[styles.actionBtn, styles.actionBtnDanger]}
-            onPress={() => handleDelete(item)}
+            style={styles.actionBtn}
+            onPress={() => router.push(`/(admin)/create-invoice?clientId=${profile?.id || ''}` as any)}
+            activeOpacity={0.7}
           >
-            <MaterialIcons name="delete-outline" size={14} color={Colors.danger} />
-            <Text style={[styles.actionBtnText, { color: Colors.danger }]}>Delete</Text>
+            <MaterialIcons name="receipt-long" size={14} color={Colors.primary} />
+            <Text style={styles.actionBtnText}>Invoice</Text>
           </TouchableOpacity>
         </View>
-      </AppCard>
-    </TouchableOpacity>
-  );
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>Clients</Text>
-          <Text style={styles.subtitle}>{filtered.length} total clients</Text>
+          <Text style={styles.title}>Client Directory</Text>
+          <Text style={styles.subtitle}>{filtered.length} active client profiles</Text>
         </View>
         <AppButton
-          title="Add Client"
+          title="+ Add Client"
           size="sm"
           onPress={() => router.push('/(admin)/add-client' as any)}
-          style={styles.addBtn}
         />
       </View>
 
-      {/* Search */}
+      {/* Flat Search Bar */}
       <View style={styles.searchWrapper}>
         <MaterialIcons name="search" size={18} color={Colors.textTertiary} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search by name, email, firm or code..."
+          placeholder="Search by client name, firm, PAN, or code..."
           placeholderTextColor={Colors.textTertiary}
           value={search}
           onChangeText={setSearch}
         />
         {search.length > 0 && (
           <TouchableOpacity onPress={() => setSearch('')}>
-            <MaterialIcons name="close" size={18} color={Colors.textTertiary} />
+            <MaterialIcons name="close" size={16} color={Colors.textTertiary} />
           </TouchableOpacity>
         )}
       </View>
 
-      {/* List */}
+      {/* Dense List with Hairline Dividers */}
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
         renderItem={renderClient}
-        contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         refreshing={refreshing}
         onRefresh={handleRefresh}
+        contentContainerStyle={styles.list}
         ListEmptyComponent={
-          <AppEmpty
-            icon="people-outline"
-            title="No clients found"
-            description={search ? 'Try a different search term.' : 'Add your first client to get started.'}
-            actionLabel={!search ? 'Add Client' : undefined}
-            onAction={!search ? () => router.push('/(admin)/add-client' as any) : undefined}
-          />
+          !isLoading ? (
+            <AppEmpty
+              title="No clients found"
+              description={
+                search
+                  ? 'No clients matching your query. Try searching by PAN or firm name.'
+                  : 'Your client directory is currently empty.'
+              }
+              actionLabel={search ? 'Clear Search' : 'Register New Client'}
+              onAction={
+                search
+                  ? () => setSearch('')
+                  : () => router.push('/(admin)/add-client' as any)
+              }
+            />
+          ) : null
         }
       />
     </SafeAreaView>
@@ -201,7 +208,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.xl,
+    paddingTop: Spacing.md,
     paddingBottom: Spacing.sm,
   },
   title: {
@@ -211,108 +218,102 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: Typography.size.sm,
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
-    textTransform: 'uppercase',
     marginTop: 2,
   },
-  addBtn: {},
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.background,
     marginHorizontal: Spacing.xl,
-    marginBottom: Spacing.md,
-    paddingHorizontal: Spacing.sm,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    height: 40,
-    gap: Spacing.xs,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.sm,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
-  searchIcon: { marginLeft: 4 },
+  searchIcon: {
+    marginRight: Spacing.xs,
+  },
   searchInput: {
     flex: 1,
-    fontFamily: Typography.fontFamily.monoRegular,
+    fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.sm,
-    color: Colors.primary,
+    color: Colors.textPrimary,
+    padding: 0,
   },
   list: {
-    paddingHorizontal: Spacing.xl,
+    backgroundColor: Colors.backgroundCard,
     paddingBottom: Spacing['3xl'],
   },
   clientCard: {
-    marginBottom: Spacing.md,
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
   },
-  clientRow: {
+  clientHeader: {
     flexDirection: 'row',
-    gap: Spacing.lg,
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
+    gap: Spacing.md,
   },
-  clientInfo: { flex: 1 },
-  clientNameRow: {
+  clientInfo: {
+    flex: 1,
+  },
+  nameRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    gap: Spacing.xs,
   },
   clientName: {
     fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.base,
+    fontSize: Typography.size.sm,
     color: Colors.primary,
   },
   firmName: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.sm,
-    color: Colors.textSecondary,
-    marginTop: 4,
-  },
-  clientEmail: {
-    fontFamily: Typography.fontFamily.monoRegular,
+    fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.xs,
-    color: Colors.textTertiary,
-    marginTop: 4,
+    color: Colors.textSecondary,
+    marginTop: 1,
   },
   metaRow: {
     flexDirection: 'row',
-    gap: Spacing.sm,
-    marginTop: Spacing.sm,
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 3,
   },
-  metaChip: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: 2,
-  },
-  metaText: {
-    fontFamily: Typography.fontFamily.monoMedium,
+  clientCode: {
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: 10,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
+    color: Colors.textTertiary,
   },
-  actionRow: {
+  panMeta: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+  },
+  clientActionRow: {
     flexDirection: 'row',
-    gap: Spacing.md,
-    marginTop: Spacing.lg,
-    paddingTop: Spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: Colors.hairline,
+    backgroundColor: 'rgba(20, 38, 30, 0.02)',
   },
   actionBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    paddingVertical: Spacing.xs,
+    paddingVertical: 8,
   },
-  actionBtnPrimary: {},
-  actionBtnSecondary: {},
-  actionBtnDanger: {},
   actionBtnText: {
     fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.sm,
+    fontSize: 11,
     color: Colors.primary,
+  },
+  actionDivider: {
+    width: 1,
+    backgroundColor: Colors.hairline,
   },
 });

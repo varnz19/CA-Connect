@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 import { authService } from '../../services/authService';
 
 const signupSchema = z.object({
@@ -75,18 +75,16 @@ export default function ClientSignupScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.successContainer}>
-          <View style={styles.successIconContainer}>
-            <MaterialIcons name="mark-email-read" size={48} color={Colors.success} />
-          </View>
-          <Text style={styles.successTitle}>Verify your email</Text>
+          <Text style={styles.refCode}>STATUS: PENDING VERIFICATION</Text>
+          <Text style={styles.successTitle}>Verify Email Address</Text>
           <Text style={styles.successDesc}>
-            A verification link has been sent to your email address. Please click on the link in the email to activate your account.
+            A verification link has been dispatched to your email address. Please follow the instructions to complete client registration.
           </Text>
           <AppButton
-            title="Go to Login"
+            title="Proceed to Client Sign In"
             onPress={() => router.replace('/(auth)/client-login')}
-            fullWidth
             style={styles.successBtn}
+            size="md"
           />
         </View>
       </SafeAreaView>
@@ -100,12 +98,13 @@ export default function ClientSignupScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.replace('/(auth)/landing')}>
-            <View style={styles.backBtn}>
-              <MaterialIcons name="arrow-back" size={20} color={Colors.textPrimary} />
-              <Text style={styles.backText}>Select Portal</Text>
-            </View>
+          <TouchableOpacity onPress={() => router.replace('/(auth)/landing')} style={styles.backBtn}>
+            <MaterialIcons name="arrow-back" size={18} color={Colors.primary} />
+            <Text style={styles.backText}>Portal Selection</Text>
           </TouchableOpacity>
+          <View style={styles.portalTag}>
+            <Text style={styles.portalTagText}>CLIENT ONBOARDING</Text>
+          </View>
         </View>
 
         <ScrollView
@@ -113,20 +112,19 @@ export default function ClientSignupScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Logo & Header */}
-          <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <MaterialIcons name="person-add" size={32} color={Colors.secondaryDark} />
+          <View style={styles.container}>
+            {/* Header Block */}
+            <View style={styles.headerBlock}>
+              <Text style={styles.refCode}>REF: CL-REG-FORM</Text>
+              <Text style={styles.pageTitle}>Client Self-Registration</Text>
+              <Text style={styles.pageSubtitle}>
+                Register a new client profile with the firm to initiate tax filing and ledger services.
+              </Text>
             </View>
-            <Text style={styles.brandName}>Client Sign Up</Text>
-            <Text style={styles.brandTagline}>Register a new CA Connect Client Account</Text>
-          </View>
 
-          {/* Card */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Create Account</Text>
-            <Text style={styles.cardSubtitle}>Submit details below to self-register</Text>
+            <View style={styles.hairlineRule} />
 
+            {/* Flat Form */}
             <View style={styles.form}>
               <View style={styles.row}>
                 <View style={styles.half}>
@@ -135,8 +133,8 @@ export default function ClientSignupScreen() {
                     name="firstName"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <AppInput
-                        label="First Name"
-                        placeholder="John"
+                        label="First Name *"
+                        placeholder="Rajesh"
                         value={value}
                         onChangeText={onChange}
                         onBlur={onBlur}
@@ -151,8 +149,8 @@ export default function ClientSignupScreen() {
                     name="lastName"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <AppInput
-                        label="Last Name"
-                        placeholder="Doe"
+                        label="Last Name *"
+                        placeholder="Kumar"
                         value={value}
                         onChangeText={onChange}
                         onBlur={onBlur}
@@ -168,8 +166,8 @@ export default function ClientSignupScreen() {
                 name="email"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
-                    label="Email Address"
-                    placeholder="john.doe@example.com"
+                    label="Official Email *"
+                    placeholder="rajesh.kumar@example.com"
                     keyboardType="email-address"
                     autoCapitalize="none"
                     value={value}
@@ -185,8 +183,8 @@ export default function ClientSignupScreen() {
                 name="password"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
-                    label="Password"
-                    placeholder="Min 6 characters"
+                    label="Password (min. 6 characters) *"
+                    placeholder="Set account password"
                     secureTextEntry
                     autoCapitalize="none"
                     value={value}
@@ -218,8 +216,8 @@ export default function ClientSignupScreen() {
                 name="firmName"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
-                    label="Firm Name (Optional)"
-                    placeholder="John Doe Enterprises"
+                    label="Business / Firm Name (Optional)"
+                    placeholder="Kumar Enterprises"
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
@@ -244,20 +242,23 @@ export default function ClientSignupScreen() {
               />
 
               <AppButton
-                title={isLoading ? 'Registering...' : 'Register client'}
+                title={isLoading ? 'Registering...' : 'Complete Client Registration'}
                 onPress={handleSubmit(onSubmit)}
                 loading={isLoading}
                 style={styles.signupBtn}
+                size="md"
               />
 
-              <TouchableOpacity
-                onPress={() => router.replace('/(auth)/client-login')}
-                style={styles.loginLink}
-              >
-                <Text style={styles.loginText}>
-                  Already have an account? <Text style={styles.loginHighlight}>Sign In</Text>
-                </Text>
-              </TouchableOpacity>
+              <View style={styles.linkRow}>
+                <Text style={styles.linkText}>Already registered? </Text>
+                <TouchableOpacity onPress={() => router.replace('/(auth)/client-login')}>
+                  <Text style={styles.linkHighlight}>Sign in here</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.footer}>
+              <Text style={styles.footerMeta}>OFFICIAL REGISTRATION · CONFIDENTIAL LEDGER DATA</Text>
             </View>
           </View>
         </ScrollView>
@@ -267,78 +268,85 @@ export default function ClientSignupScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background }, // paper
+  safe: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
   flex: { flex: 1 },
   topBar: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
   },
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   backText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
-    color: Colors.textPrimary,
-  },
-  scroll: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xl,
-  },
-  header: {
-    alignItems: 'center',
-    marginVertical: Spacing.md,
-  },
-  logoContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 0,
-    backgroundColor: 'transparent',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-    borderWidth: 1,
-    borderColor: Colors.border, // hairline
-  },
-  brandName: {
-    fontFamily: Typography.fontFamily.displayBold,
-    fontSize: 24,
-    color: Colors.primary, // ink-900
-  },
-  brandTagline: {
-    fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
-    marginTop: 4,
-    textTransform: 'uppercase',
   },
-  card: {
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: 0,
-    padding: Spacing.xl,
+  portalTag: {
     borderWidth: 1,
     borderColor: Colors.border,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
-  cardTitle: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.lg,
-    color: Colors.primary,
-  },
-  cardSubtitle: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.xs,
+  portalTagText: {
+    fontFamily: Typography.fontFamily.monoMedium,
+    fontSize: 9,
     color: Colors.textSecondary,
-    marginTop: 4,
+    letterSpacing: 1,
+  },
+  scroll: {
+    paddingVertical: Spacing['2xl'],
+    paddingHorizontal: Spacing.xl,
+    alignItems: 'center',
+  },
+  container: {
+    width: '100%',
+    maxWidth: 480,
+  },
+  headerBlock: {
     marginBottom: Spacing.base,
   },
+  refCode: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
+    marginBottom: Spacing.xs,
+  },
+  pageTitle: {
+    fontFamily: Typography.fontFamily.displayBold,
+    fontSize: 24,
+    color: Colors.primary,
+    marginBottom: 4,
+  },
+  pageSubtitle: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.sm,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+  },
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
+    marginVertical: Spacing.xl,
+  },
   form: {
-    gap: Spacing.base,
+    gap: Spacing.lg,
   },
   row: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    gap: Spacing.md,
   },
   half: {
     flex: 1,
@@ -346,42 +354,37 @@ const styles = StyleSheet.create({
   signupBtn: {
     marginTop: Spacing.sm,
   },
-  loginLink: {
+  linkRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
     marginTop: Spacing.xs,
   },
-  loginText: {
+  linkText: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.sm,
     color: Colors.textSecondary,
   },
-  loginHighlight: {
-    fontFamily: Typography.fontFamily.bold,
-    color: Colors.secondaryDark,
+  linkHighlight: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.sm,
+    color: Colors.primary,
+    textDecorationLine: 'underline',
   },
   successContainer: {
     flex: 1,
-    paddingHorizontal: Spacing.xl,
+    paddingHorizontal: Spacing['2xl'],
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.background,
-  },
-  successIconContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 0,
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: Colors.success,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing.xl,
+    maxWidth: 480,
+    alignSelf: 'center',
   },
   successTitle: {
     fontFamily: Typography.fontFamily.displayBold,
     fontSize: 24,
     color: Colors.primary,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
+    textAlign: 'center',
   },
   successDesc: {
     fontFamily: Typography.fontFamily.regular,
@@ -389,9 +392,19 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: Spacing['3xl'],
+    marginBottom: Spacing.xl,
   },
   successBtn: {
-    marginTop: Spacing.md,
+    width: '100%',
+  },
+  footer: {
+    marginTop: Spacing['3xl'],
+    alignItems: 'center',
+  },
+  footerMeta: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 9,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
   },
 });

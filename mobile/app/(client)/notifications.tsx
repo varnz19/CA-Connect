@@ -1,29 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 import { useNotifications } from '../../hooks/useQueries';
 import { useMutation } from '@tanstack/react-query';
 import { notificationService } from '../../services/notificationService';
-import { Notification, NotificationType } from '../../types';
-import { formatDistanceFromNow } from '../../utils/formatters';
-
-const NOTIF_ICONS: Record<NotificationType, { icon: keyof typeof MaterialIcons.glyphMap; color: string }> = {
-  DOCUMENT_UPLOADED: { icon: 'cloud-upload', color: Colors.secondary },
-  APPOINTMENT_BOOKED: { icon: 'event', color: Colors.success },
-  APPOINTMENT_CONFIRMED: { icon: 'event-available', color: Colors.success },
-  APPOINTMENT_REJECTED: { icon: 'event-busy', color: Colors.danger },
-  APPOINTMENT_CANCELLED: { icon: 'cancel', color: Colors.danger },
-  INVOICE_GENERATED: { icon: 'receipt', color: Colors.warning },
-  INVOICE_PAID: { icon: 'check-circle', color: Colors.success },
-  INVOICE_VIEWED: { icon: 'visibility', color: Colors.secondary },
-  MESSAGE_RECEIVED: { icon: 'chat', color: Colors.primary },
-  SERVICE_UPDATED: { icon: 'work', color: Colors.primary },
-  DOCUMENT_APPROVED: { icon: 'task-alt', color: Colors.success },
-  DOCUMENT_REJECTED: { icon: 'cancel', color: Colors.danger },
-  PAYMENT_RECEIVED: { icon: 'payments', color: Colors.success },
-};
+import { Notification } from '../../types';
+import { format, parseISO } from 'date-fns';
 
 export default function ClientNotificationsScreen() {
   const { data: notificationsRes, refetch } = useNotifications();
@@ -47,40 +30,65 @@ export default function ClientNotificationsScreen() {
     onSuccess: () => refetch(),
   });
 
-  const renderNotification = ({ item }: { item: Notification }) => {
-    const config = NOTIF_ICONS[item.type] || { icon: 'notifications', color: Colors.primary };
+  const renderNotification = ({ item, index }: { item: Notification; index: number }) => {
     const isUnread = !item.readAt;
+    const showDayHeader =
+      index === 0 ||
+      format(parseISO(notificationsList[index - 1].createdAt), 'yyyy-MM-dd') !==
+        format(parseISO(item.createdAt), 'yyyy-MM-dd');
 
     return (
-      <TouchableOpacity activeOpacity={0.8} onPress={() => !item.readAt && markReadMutation.mutate(item.id)}>
-        <View style={[styles.notifRow, isUnread && styles.unreadRow]}>
-          {isUnread && <View style={styles.unreadIndicator} />}
-          <View style={[styles.notifIcon, { backgroundColor: `${config.color}18` }]}>
-            <MaterialIcons name={config.icon} size={20} color={config.color} />
+      <View>
+        {showDayHeader && (
+          <View style={styles.dayHeader}>
+            <Text style={styles.dayHeaderText}>
+              {format(parseISO(item.createdAt), 'EEEE, dd MMMM yyyy').toUpperCase()}
+            </Text>
+            <View style={styles.dayHairline} />
           </View>
+        )}
+
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={[styles.notifRow, isUnread && styles.notifRowUnread]}
+          onPress={() => !item.readAt && markReadMutation.mutate(item.id)}
+        >
+          {/* Small Brass dot for unread */}
+          <View style={styles.dotCol}>
+            {isUnread ? <View style={styles.brassDot} /> : <View style={styles.emptyDot} />}
+          </View>
+
           <View style={styles.notifContent}>
-            <Text style={[styles.notifTitle, isUnread && styles.boldText]}>{item.title}</Text>
-            <Text style={styles.notifBody} numberOfLines={2}>{item.body}</Text>
-            <Text style={styles.notifTime}>{formatDistanceFromNow(item.createdAt)}</Text>
+            <Text style={[styles.notifTitle, isUnread && styles.notifTitleBold]}>{item.title}</Text>
+            <Text style={styles.notifBody}>{item.body}</Text>
           </View>
-        </View>
-      </TouchableOpacity>
+
+          <Text style={styles.timestampMono}>
+            {format(parseISO(item.createdAt), 'hh:mm a')}
+          </Text>
+        </TouchableOpacity>
+      </View>
     );
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.title}>Notifications</Text>
-          {unreadCount > 0 && <Text style={styles.subtitle}>{unreadCount} unread</Text>}
+        <View>
+          <Text style={styles.title}>Practice Notices</Text>
+          <Text style={styles.subtitle}>
+            {notificationsList.length} notices{unreadCount > 0 ? ` · ${unreadCount} unread` : ''}
+          </Text>
         </View>
         {unreadCount > 0 && (
-          <TouchableOpacity style={styles.markAllBtn} onPress={() => markAllReadMutation.mutate()}>
+          <TouchableOpacity onPress={() => markAllReadMutation.mutate()}>
             <Text style={styles.markAllText}>Mark all read</Text>
           </TouchableOpacity>
         )}
       </View>
+
+      <View style={styles.hairlineRule} />
 
       <FlatList
         data={notificationsList}
@@ -90,7 +98,6 @@ export default function ClientNotificationsScreen() {
         refreshing={refreshing}
         onRefresh={handleRefresh}
         contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
     </SafeAreaView>
   );
@@ -102,88 +109,100 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.base,
-    paddingBottom: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    backgroundColor: Colors.backgroundCard,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
   },
-  headerLeft: {
-    flex: 1,
+  title: {
+    fontFamily: Typography.fontFamily.displayBold,
+    fontSize: Typography.size.xl,
+    color: Colors.primary,
   },
-  markAllBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: BorderRadius.md,
-    backgroundColor: `${Colors.primary}12`,
+  subtitle: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: Typography.size.xs,
+    color: Colors.textSecondary,
+    marginTop: 2,
   },
   markAllText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.xs,
+    color: Colors.secondaryDark,
+    textDecorationLine: 'underline',
+  },
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
+  },
+  list: {
+    backgroundColor: Colors.backgroundCard,
+    paddingBottom: Spacing['3xl'],
+  },
+  dayHeader: {
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xs,
+    backgroundColor: Colors.background,
+  },
+  dayHeaderText: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
+  },
+  dayHairline: {
+    height: 1,
+    backgroundColor: Colors.hairline,
+    marginTop: Spacing.xs,
+  },
+  notifRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
+  },
+  notifRowUnread: {
+    backgroundColor: Colors.backgroundCard,
+  },
+  dotCol: {
+    width: 16,
+    paddingTop: 5,
+  },
+  brassDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.secondary,
+  },
+  emptyDot: {
+    width: 6,
+    height: 6,
+  },
+  notifContent: {
+    flex: 1,
+    marginRight: Spacing.md,
+  },
+  notifTitle: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
     color: Colors.primary,
   },
-  title: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: Typography.size.xl,
-    color: Colors.textPrimary,
+  notifTitleBold: {
+    fontFamily: Typography.fontFamily.semiBold,
   },
-  subtitle: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
-    color: Colors.secondary,
-  },
-  list: { backgroundColor: Colors.backgroundCard, paddingBottom: Spacing['3xl'] },
-  notifRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    position: 'relative',
-  },
-  unreadRow: { backgroundColor: Colors.infoLight },
-  unreadIndicator: {
-    position: 'absolute',
-    left: 6,
-    top: '50%',
-    marginTop: -4,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.secondary,
-  },
-  notifIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  notifContent: { flex: 1 },
-  notifTitle: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.base,
-    color: Colors.textPrimary,
-  },
-  boldText: { fontFamily: Typography.fontFamily.semiBold },
   notifBody: {
     fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
     marginTop: 2,
     lineHeight: 18,
   },
-  notifTime: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.xs,
+  timestampMono: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
     color: Colors.textTertiary,
-    marginTop: 4,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: Colors.borderLight,
-    marginLeft: Spacing.base + 44 + Spacing.sm,
+    paddingTop: 2,
   },
 });

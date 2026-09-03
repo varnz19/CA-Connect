@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -8,8 +8,6 @@ import { z } from 'zod';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
-import { AppCard } from '../../components/common/AppCard';
-import { AppHeader } from '../../components/common/AppHeader';
 import { Colors, Typography, Spacing } from '../../constants/theme';
 import { format, addDays } from 'date-fns';
 import { useClients } from '../../hooks/useQueries';
@@ -61,16 +59,14 @@ export default function AdminAddAppointmentScreen() {
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
     try {
-      // Combine date and time
       const dateStr = data.requestedDate;
       const timeStr = data.requestedTime;
-      // Convert time string to proper Date
       const dateObj = new Date(dateStr);
       const isPM = timeStr.includes('PM');
       let hours = parseInt(timeStr.split(':')[0]);
       if (isPM && hours !== 12) hours += 12;
       if (!isPM && hours === 12) hours = 0;
-      dateObj.setHours(hours, parseInt(timeStr.split(':')[1].substring(0,2)), 0);
+      dateObj.setHours(hours, parseInt(timeStr.split(':')[1].substring(0, 2)), 0);
 
       const payload = {
         clientProfileId: data.clientProfileId,
@@ -80,7 +76,7 @@ export default function AdminAddAppointmentScreen() {
       };
 
       await appointmentService.createAppointment(payload);
-      Alert.alert('Success', 'Appointment created successfully.', [
+      Alert.alert('Success', 'Advisory consultation scheduled.', [
         { text: 'OK', onPress: () => router.back() }
       ]);
     } catch (err: any) {
@@ -91,95 +87,108 @@ export default function AdminAddAppointmentScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <AppHeader title="Create Appointment" showBack />
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>
-          
-          <Text style={styles.sectionTitle}>Select Client</Text>
-          <Controller
-            control={control}
-            name="clientProfileId"
-            render={({ field: { onChange, value } }) => (
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={value}
-                  onValueChange={(itemValue) => {
-                    onChange(itemValue);
-                  }}
-                  style={styles.picker}
-                >
-                  <Picker.Item label="Select a client..." value="" />
-                  {clients.map((c) => (
-                    <Picker.Item 
-                      key={c.id} 
-                      label={`${c.firstName} ${c.lastName} ${c.clientProfile?.firmName ? `(${c.clientProfile.firmName})` : ''}`} 
-                      value={c.clientProfile?.id || ''} 
-                    />
-                  ))}
-                </Picker>
-              </View>
-            )}
-          />
-          {errors.clientProfileId && (
-            <Text style={styles.errorText}>{errors.clientProfileId.message}</Text>
-          )}
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <MaterialIcons name="arrow-back" size={18} color={Colors.primary} />
+          <Text style={styles.backText}>All Appointments</Text>
+        </TouchableOpacity>
+      </View>
 
-          <Controller
-            control={control}
-            name="title"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <AppInput
-                label="Meeting Title"
-                placeholder="e.g., ITR Filing Discussion"
-                leftIcon="title"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.title?.message}
-                containerStyle={{ marginTop: Spacing.md }}
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.headerBlock}>
+            <Text style={styles.refCode}>SCHEDULE DISPATCH</Text>
+            <Text style={styles.pageTitle}>Schedule Consultation</Text>
+            <Text style={styles.pageSubtitle}>
+              Create a confirmed or proposed advisory meeting slot with a client.
+            </Text>
+          </View>
+
+          <View style={styles.hairlineRule} />
+
+          {/* Form */}
+          <View style={styles.form}>
+            {/* Client Picker */}
+            <View style={styles.pickerField}>
+              <Text style={styles.label}>Select Client *</Text>
+              <Controller
+                control={control}
+                name="clientProfileId"
+                render={({ field: { onChange, value } }) => (
+                  <View style={styles.pickerContainer}>
+                    <Picker
+                      selectedValue={value}
+                      onValueChange={(itemValue) => onChange(itemValue)}
+                      style={styles.picker}
+                    >
+                      <Picker.Item label="Select client account..." value="" />
+                      {clients.map((c) => (
+                        <Picker.Item 
+                          key={c.id} 
+                          label={`${c.firstName} ${c.lastName} ${c.clientProfile?.firmName ? `(${c.clientProfile.firmName})` : ''}`} 
+                          value={c.clientProfile?.id || ''} 
+                        />
+                      ))}
+                    </Picker>
+                  </View>
+                )}
               />
-            )}
-          />
+              {errors.clientProfileId && (
+                <Text style={styles.errorText}>{errors.clientProfileId.message}</Text>
+              )}
+            </View>
 
-          <Controller
-            control={control}
-            name="description"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <AppInput
-                label="Notes (Optional)"
-                placeholder="Any specific topics or queries"
-                leftIcon="notes"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                multiline
-                numberOfLines={3}
-                style={styles.textArea}
-              />
-            )}
-          />
+            <Controller
+              control={control}
+              name="title"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <AppInput
+                  label="Session Subject / Purpose *"
+                  placeholder="e.g. Annual Audit & GST Filing Review"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  error={errors.title?.message}
+                />
+              )}
+            />
 
-          <Text style={styles.sectionTitle}>Select Date</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dateScroll}>
-            <View style={styles.dateRow}>
-              {availableDates.map((date) => {
-                const dateStr = format(date, 'yyyy-MM-dd');
-                const isSelected = selectedDate === dateStr;
-                return (
-                  <AppCard
-                    key={dateStr}
-                    style={[styles.dateCard, isSelected && styles.dateCardSelected]}
-                    padding={Spacing.xs}
-                    noPadding
-                  >
-                    <View
-                      style={[styles.dateInner, isSelected && styles.dateInnerSelected]}
-                      // @ts-ignore
-                      onTouchEnd={() => {
+            <Controller
+              control={control}
+              name="description"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <AppInput
+                  label="Preparation Agenda & Scope (Optional)"
+                  placeholder="Review Form 26AS, AIS, and reconciliation statements..."
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  multiline
+                  numberOfLines={2}
+                />
+              )}
+            />
+
+            <View style={styles.hairlineRule} />
+
+            {/* Date Selection */}
+            <Text style={styles.sectionHeading}>Target Date</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dateScroll}>
+              <View style={styles.dateRow}>
+                {availableDates.map((date) => {
+                  const dateStr = format(date, 'yyyy-MM-dd');
+                  const isSelected = selectedDate === dateStr;
+                  return (
+                    <TouchableOpacity
+                      key={dateStr}
+                      style={[styles.dateChip, isSelected && styles.dateChipSelected]}
+                      onPress={() => {
                         setSelectedDate(dateStr);
                         setValue('requestedDate', dateStr);
                       }}
+                      activeOpacity={0.7}
                     >
                       <Text style={[styles.dateDayName, isSelected && styles.dateSelectedText]}>
                         {format(date, 'EEE')}
@@ -190,55 +199,51 @@ export default function AdminAddAppointmentScreen() {
                       <Text style={[styles.dateMonth, isSelected && styles.dateSelectedText]}>
                         {format(date, 'MMM')}
                       </Text>
-                    </View>
-                  </AppCard>
-                );
-              })}
-            </View>
-          </ScrollView>
-          {errors.requestedDate && (
-            <Text style={styles.errorText}>{errors.requestedDate.message}</Text>
-          )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+            {errors.requestedDate && (
+              <Text style={styles.errorText}>{errors.requestedDate.message}</Text>
+            )}
 
-          <Text style={styles.sectionTitle}>Select Time</Text>
-          <View style={styles.timeGrid}>
-            {TIME_SLOTS.map((time) => {
-              const isSelected = selectedTime === time;
-              return (
-                <AppCard
-                  key={time}
-                  style={[styles.timeChip, isSelected && styles.timeChipSelected]}
-                  padding={0}
-                  noPadding
-                >
-                  <View
-                    style={styles.timeChipInner}
-                    // @ts-ignore
-                    onTouchEnd={() => {
+            <View style={styles.hairlineRule} />
+
+            {/* Time Slots */}
+            <Text style={styles.sectionHeading}>Time Slot</Text>
+            <View style={styles.timeGrid}>
+              {TIME_SLOTS.map((time) => {
+                const isSelected = selectedTime === time;
+                return (
+                  <TouchableOpacity
+                    key={time}
+                    style={[styles.timeChip, isSelected && styles.timeChipSelected]}
+                    onPress={() => {
                       setSelectedTime(time);
                       setValue('requestedTime', time);
                     }}
+                    activeOpacity={0.7}
                   >
                     <Text style={[styles.timeText, isSelected && styles.timeTextSelected]}>
                       {time}
                     </Text>
-                  </View>
-                </AppCard>
-              );
-            })}
-          </View>
-          {errors.requestedTime && (
-            <Text style={styles.errorText}>{errors.requestedTime.message}</Text>
-          )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            {errors.requestedTime && (
+              <Text style={styles.errorText}>{errors.requestedTime.message}</Text>
+            )}
 
-          <AppButton
-            title="Create Appointment"
-            onPress={handleSubmit(onSubmit)}
-            loading={isLoading}
-            fullWidth
-            size="lg"
-            style={styles.submitBtn}
-          />
+            <AppButton
+              title={isLoading ? 'Booking...' : 'Confirm Consultation Session'}
+              onPress={handleSubmit(onSubmit)}
+              loading={isLoading}
+              size="md"
+              style={styles.submitBtn}
+            />
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -247,66 +252,156 @@ export default function AdminAddAppointmentScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: Spacing.base },
-  sectionTitle: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.base,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
-    marginTop: Spacing.sm,
+  topBar: {
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
   },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 8,
-    backgroundColor: Colors.backgroundCard,
-  },
-  picker: {
-    height: 50,
-  },
-  errorText: {
-    color: Colors.danger,
-    fontSize: Typography.size.xs,
-    fontFamily: Typography.fontFamily.medium,
-    marginTop: 4,
-  },
-  textArea: { height: 80, textAlignVertical: 'top' },
-  dateScroll: { marginBottom: Spacing.sm },
-  dateRow: { flexDirection: 'row', gap: Spacing.xs, paddingBottom: Spacing.xs },
-  dateCard: { width: 60 },
-  dateCardSelected: { borderColor: Colors.primary, borderWidth: 1.5 },
-  dateInner: {
+  backBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing.xs,
-    borderRadius: 10,
-    paddingVertical: Spacing.sm,
+    gap: 6,
   },
-  dateInnerSelected: { backgroundColor: Colors.primary },
-  dateDayName: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.xs,
-    color: Colors.textSecondary,
-  },
-  dateDayNum: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: Typography.size.xl,
-    color: Colors.textPrimary,
-  },
-  dateMonth: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.xs,
-    color: Colors.textTertiary,
-  },
-  dateSelectedText: { color: Colors.textLight },
-  timeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, marginBottom: Spacing.base },
-  timeChip: { width: 'auto', borderWidth: 1, borderColor: Colors.border },
-  timeChipSelected: { borderColor: Colors.primary, borderWidth: 1.5 },
-  timeChipInner: { paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs + 2 },
-  timeText: {
+  backText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
     color: Colors.textSecondary,
   },
-  timeTextSelected: { color: Colors.primary },
-  submitBtn: { marginTop: Spacing.xl, marginBottom: Spacing['2xl'] },
+  scroll: {
+    paddingVertical: Spacing.xl,
+    paddingHorizontal: Spacing.xl,
+    alignItems: 'center',
+  },
+  container: {
+    width: '100%',
+    maxWidth: 520,
+  },
+  headerBlock: {
+    marginBottom: Spacing.md,
+  },
+  refCode: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  pageTitle: {
+    fontFamily: Typography.fontFamily.displayBold,
+    fontSize: Typography.size.xl,
+    color: Colors.primary,
+  },
+  pageSubtitle: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.xs,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
+    marginVertical: Spacing.lg,
+  },
+  form: {
+    gap: Spacing.md,
+  },
+  pickerField: {
+    marginBottom: Spacing.sm,
+  },
+  label: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.sm,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.xs,
+  },
+  pickerContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  picker: {
+    height: 44,
+  },
+  sectionHeading: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.sm,
+    color: Colors.primary,
+    marginBottom: Spacing.xs,
+  },
+  dateScroll: {
+    marginVertical: Spacing.xs,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  dateChip: {
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.backgroundCard,
+    minWidth: 56,
+  },
+  dateChipSelected: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primaryLight,
+  },
+  dateDayName: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: 10,
+    color: Colors.textSecondary,
+  },
+  dateDayNum: {
+    fontFamily: Typography.fontFamily.monoBold,
+    fontSize: Typography.size.md,
+    color: Colors.primary,
+    marginVertical: 2,
+  },
+  dateMonth: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 9,
+    color: Colors.textTertiary,
+  },
+  dateSelectedText: {
+    color: Colors.textLight,
+  },
+  timeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  timeChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.backgroundCard,
+  },
+  timeChipSelected: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primaryLight,
+  },
+  timeText: {
+    fontFamily: Typography.fontFamily.monoMedium,
+    fontSize: Typography.size.xs,
+    color: Colors.primary,
+  },
+  timeTextSelected: {
+    color: Colors.textLight,
+  },
+  errorText: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.xs,
+    color: Colors.danger,
+    marginTop: Spacing.xs,
+  },
+  submitBtn: {
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.xl,
+  },
 });

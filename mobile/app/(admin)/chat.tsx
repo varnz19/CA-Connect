@@ -14,16 +14,16 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppAvatar } from '../../components/common/AppAvatar';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 import { Message } from '../../types';
 import { format, parseISO } from 'date-fns';
-import { useClient, useMessages } from '../../hooks/useQueries';
+import { useClient, useMessages, useConversations } from '../../hooks/useQueries';
 import { useMutation } from '@tanstack/react-query';
 import { messageService } from '../../services/messageService';
 import { socketService } from '../../services/socketService';
 
 export default function ChatScreen() {
-  const { conversationId, clientId } = useLocalSearchParams<{
+  const { conversationId: paramConvId, clientId } = useLocalSearchParams<{
     conversationId: string;
     clientId: string;
   }>();
@@ -33,11 +33,23 @@ export default function ChatScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const listRef = useRef<FlatList>(null);
 
-  const { data: clientRes } = useClient(clientId || '');
-  const clientUser = clientRes?.data;
-  const clientName = clientUser ? `${clientUser.firstName} ${clientUser.lastName}` : 'Client';
+  const { data: convsRes } = useConversations();
+  const matchedConv = convsRes?.data?.find(
+    (c: any) =>
+      c.clientProfile?.userId === clientId ||
+      c.client?.id === clientId ||
+      c.clientProfile?.user?.id === clientId ||
+      c.clientProfileId === clientId
+  );
 
-  const { data: messagesRes, refetch } = useMessages(conversationId || '');
+  const activeConvId = paramConvId || matchedConv?.id || '';
+
+  const { data: clientRes } = useClient(clientId || matchedConv?.clientProfile?.user?.id || '');
+  const clientUser = clientRes?.data || matchedConv?.clientProfile?.user || matchedConv?.client;
+  const clientName = clientUser ? `${clientUser.firstName} ${clientUser.lastName}` : 'Client';
+  const firmName = clientRes?.data?.clientProfile?.firmName || matchedConv?.clientProfile?.firmName;
+
+  const { data: messagesRes, refetch } = useMessages(activeConvId);
 
   useEffect(() => {
     if (messagesRes?.data) {
@@ -46,9 +58,9 @@ export default function ChatScreen() {
   }, [messagesRes?.data]);
 
   useEffect(() => {
-    if (!conversationId) return;
+    if (!activeConvId) return;
 
-    socketService.joinConversation(conversationId);
+    socketService.joinConversation(activeConvId);
 
     const handleReceive = (newMsg: Message) => {
       setMessages((prev) => {
@@ -63,7 +75,7 @@ export default function ChatScreen() {
     return () => {
       cleanup();
     };
-  }, [conversationId]);
+  }, [activeConvId]);
 
   const sendMutation = useMutation({
     mutationFn: messageService.sendMessage,
@@ -75,17 +87,17 @@ export default function ChatScreen() {
   });
 
   const sendMessage = () => {
-    if (!message.trim() || !conversationId || !clientId) return;
+    const targetReceiverId = clientId || clientUser?.id;
+    if (!message.trim() || !activeConvId || !targetReceiverId) return;
 
     sendMutation.mutate({
-      conversationId,
-      receiverId: clientId,
+      conversationId: activeConvId,
+      receiverId: targetReceiverId,
       content: message.trim(),
     });
   };
 
-  const isMyMessage = (senderId: string) =>
-    senderId === user?.id;
+  const isMyMessage = (senderId: string) => senderId === user?.id;
 
   const renderMessage = ({ item, index }: { item: Message; index: number }) => {
     const isMe = isMyMessage(item.senderId);
@@ -95,72 +107,85 @@ export default function ChatScreen() {
         format(parseISO(item.createdAt), 'dd MMM');
 
     return (
-      <>
+      <View style={styles.messageEntry}>
         {showDate && (
-          <View style={styles.dateSeparator}>
-            <View style={styles.dateLine} />
-            <Text style={styles.dateText}>
-              {format(parseISO(item.createdAt), 'dd MMM yyyy')}
+          <View style={styles.daySeparator}>
+            <View style={styles.dayLine} />
+            <Text style={styles.dayText}>
+              {format(parseISO(item.createdAt), 'dd MMMM yyyy').toUpperCase()}
             </Text>
-            <View style={styles.dateLine} />
+            <View style={styles.dayLine} />
           </View>
         )}
-        <View style={[styles.messageBubbleWrapper, isMe && styles.myWrapper]}>
-          {!isMe && (
-            <AppAvatar
-              name={clientName}
-              size="xs"
-              uri={clientUser?.avatar}
-              style={styles.bubbleAvatar}
-            />
-          )}
-          <View style={[styles.bubble, isMe ? styles.myBubble : styles.theirBubble]}>
-            {item.content && (
-              <Text style={[styles.bubbleText, isMe && styles.myBubbleText]}>
-                {item.content}
+
+        {/* Clean, generic message block */}
+        <View style={[styles.messageBlock, isMe ? styles.myBlock : styles.theirBlock]}>
+          <View style={styles.metaHeader}>
+            <Text style={styles.senderName}>{isMe ? 'You' : clientName}</Text>
+            <Text style={styles.timestampMono}>
+              {format(parseISO(item.createdAt), 'hh:mm a')}
+            </Text>
+            {isMe && (
+              <Text style={styles.statusMono}>
+                {item.readAt ? '· Read' : '· Sent'}
               </Text>
             )}
-            <View style={styles.bubbleMeta}>
-              <Text style={[styles.bubbleTime, isMe && styles.myBubbleTime]}>
-                {format(parseISO(item.createdAt), 'hh:mm a')}
-              </Text>
-              {isMe && (
-                <MaterialIcons
-                  name={item.readAt ? 'done-all' : 'done'}
-                  size={12}
-                  color={item.readAt ? Colors.secondary : 'rgba(255,255,255,0.6)'}
-                />
-              )}
-            </View>
+          </View>
+
+          <View style={[styles.contentCard, isMe ? styles.myContent : styles.theirContent]}>
+            <Text style={[styles.contentText, isMe && styles.myContentText]}>
+              {item.content}
+            </Text>
           </View>
         </View>
-      </>
+      </View>
     );
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      {/* Header */}
+      {/* Top Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color={Colors.textPrimary} />
+          <MaterialIcons name="arrow-back" size={20} color={Colors.primary} />
         </TouchableOpacity>
-        <AppAvatar name={clientName} size="sm" uri={clientUser?.avatar} />
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerName}>{clientName}</Text>
-          <Text style={styles.headerStatus}>{clientUser?.clientProfile?.firmName || 'Online'}</Text>
-        </View>
-        <TouchableOpacity style={styles.headerAction}>
-          <MaterialIcons name="more-vert" size={22} color={Colors.textSecondary} />
+
+        <TouchableOpacity
+          style={styles.headerProfile}
+          onPress={() => {
+            if (clientId || clientUser?.id) {
+              router.push(`/(admin)/client-detail?id=${clientId || clientUser?.id}` as any);
+            }
+          }}
+          activeOpacity={0.7}
+        >
+          <AppAvatar name={clientName} size="sm" uri={clientUser?.avatar} />
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerName}>{clientName}</Text>
+            <Text style={styles.headerSub}>
+              {firmName ? `${firmName} · Tap for profile` : 'Tap to view profile'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.profileQuickLink}
+          onPress={() => {
+            if (clientId || clientUser?.id) {
+              router.push(`/(admin)/client-detail?id=${clientId || clientUser?.id}` as any);
+            }
+          }}
+        >
+          <MaterialIcons name="info-outline" size={20} color={Colors.primary} />
         </TouchableOpacity>
       </View>
+
+      <View style={styles.hairlineRule} />
 
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={0}
       >
-        {/* Messages */}
         <FlatList
           ref={listRef}
           data={messages}
@@ -169,34 +194,32 @@ export default function ChatScreen() {
           contentContainerStyle={styles.messageList}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyTitle}>Direct Messages</Text>
+              <Text style={styles.emptyText}>
+                No messages yet. Send a note to start the conversation with {clientName}.
+              </Text>
+            </View>
+          }
         />
 
-        {/* Input Bar */}
+        {/* Clean, generic input bar */}
         <View style={styles.inputBar}>
-          <TouchableOpacity style={styles.attachBtn}>
-            <MaterialIcons name="attach-file" size={22} color={Colors.textSecondary} />
-          </TouchableOpacity>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Type a message..."
-              placeholderTextColor={Colors.textTertiary}
-              value={message}
-              onChangeText={setMessage}
-              multiline
-              maxLength={1000}
-            />
-          </View>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Type a message..."
+            placeholderTextColor={Colors.textTertiary}
+            value={message}
+            onChangeText={setMessage}
+            multiline
+          />
           <TouchableOpacity
-            style={[styles.sendBtn, message.trim() && styles.sendBtnActive]}
+            style={[styles.sendBtn, !message.trim() && styles.sendBtnDisabled]}
             onPress={sendMessage}
             disabled={!message.trim()}
           >
-            <MaterialIcons
-              name="send"
-              size={20}
-              color={message.trim() ? Colors.textLight : Colors.textTertiary}
-            />
+            <Text style={styles.sendBtnText}>Send</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -214,127 +237,158 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
     backgroundColor: Colors.backgroundCard,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   backBtn: { padding: 4 },
+  headerProfile: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
   headerInfo: { flex: 1 },
   headerName: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.base,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
-  headerStatus: {
+  headerSub: {
     fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.xs,
+    fontSize: 11,
+    color: Colors.textSecondary,
+    marginTop: 1,
+  },
+  profileQuickLink: {
+    padding: 6,
+  },
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
+  },
+  messageList: {
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.md,
+    flexGrow: 1,
+  },
+  messageEntry: {
+    marginBottom: Spacing.md,
+  },
+  daySeparator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginVertical: Spacing.md,
+  },
+  dayLine: { flex: 1, height: 1, backgroundColor: Colors.hairline },
+  dayText: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
+  },
+  messageBlock: {
+    maxWidth: '85%',
+  },
+  myBlock: {
+    alignSelf: 'flex-end',
+  },
+  theirBlock: {
+    alignSelf: 'flex-start',
+  },
+  metaHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    marginBottom: 4,
+  },
+  senderName: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 11,
     color: Colors.textSecondary,
   },
-  headerAction: { padding: 4 },
-  messageList: {
-    padding: Spacing.sm,
-    paddingBottom: Spacing.base,
-  },
-  dateSeparator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginVertical: Spacing.sm,
-  },
-  dateLine: { flex: 1, height: 1, backgroundColor: Colors.borderLight },
-  dateText: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.xs,
-    color: Colors.textTertiary,
-  },
-  messageBubbleWrapper: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: Spacing.xs,
-    marginBottom: Spacing.xs,
-    maxWidth: '80%',
-  },
-  myWrapper: {
-    alignSelf: 'flex-end',
-    flexDirection: 'row-reverse',
-  },
-  bubbleAvatar: { marginBottom: 2 },
-  bubble: {
-    borderRadius: 16,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs + 2,
-    maxWidth: 280,
-  },
-  myBubble: {
-    backgroundColor: Colors.primary,
-    borderBottomRightRadius: 4,
-  },
-  theirBubble: {
-    backgroundColor: Colors.backgroundCard,
-    borderBottomLeftRadius: 4,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  bubbleText: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.base,
-    color: Colors.textPrimary,
-    lineHeight: 20,
-  },
-  myBubbleText: { color: Colors.textLight },
-  bubbleMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    justifyContent: 'flex-end',
-    marginTop: 2,
-  },
-  bubbleTime: {
-    fontFamily: Typography.fontFamily.regular,
+  timestampMono: {
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: 10,
     color: Colors.textTertiary,
   },
-  myBubbleTime: { color: 'rgba(255,255,255,0.6)' },
+  statusMono: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 9,
+    color: Colors.secondaryDark,
+  },
+  contentCard: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: 4,
+    borderWidth: 1,
+  },
+  myContent: {
+    backgroundColor: Colors.backgroundCard,
+    borderColor: Colors.border,
+  },
+  theirContent: {
+    backgroundColor: Colors.backgroundCard,
+    borderColor: Colors.hairline,
+  },
+  contentText: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.sm,
+    color: Colors.primary,
+    lineHeight: 20,
+  },
+  myContentText: {
+    color: Colors.primary,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
+    marginTop: 60,
+  },
+  emptyTitle: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.base,
+    color: Colors.primary,
+    marginBottom: 4,
+  },
+  emptyText: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.xs,
+    color: Colors.textTertiary,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
   inputBar: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.sm,
+    alignItems: 'center',
+    paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
     backgroundColor: Colors.backgroundCard,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
-  attachBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  inputWrapper: {
-    flex: 1,
-    backgroundColor: Colors.backgroundInput,
-    borderRadius: BorderRadius.xl,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Platform.OS === 'ios' ? Spacing.xs + 2 : 0,
-    minHeight: 40,
-    justifyContent: 'center',
+    borderTopColor: Colors.hairline,
+    gap: Spacing.sm,
   },
   textInput: {
+    flex: 1,
     fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.base,
+    fontSize: Typography.size.sm,
     color: Colors.textPrimary,
-    maxHeight: 100,
+    minHeight: 40,
+    maxHeight: 90,
+    paddingVertical: 6,
   },
   sendBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.backgroundInput,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
+    backgroundColor: Colors.primaryLight,
+    borderRadius: 4,
   },
-  sendBtnActive: {
-    backgroundColor: Colors.primary,
+  sendBtnDisabled: {
+    opacity: 0.4,
+  },
+  sendBtnText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.xs,
+    color: Colors.textLight,
   },
 });

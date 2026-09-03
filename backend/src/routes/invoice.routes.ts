@@ -14,7 +14,7 @@ router.get('/:id/pdf', controller.downloadPdf);
 router.post('/', requireAdmin, controller.createInvoice);
 router.post('/:id/send', requireAdmin, controller.sendInvoice);
 router.put('/:id', requireAdmin, controller.updateInvoice);
-router.put('/:id/mark-paid', requireAdmin, controller.markPaid);
+router.put('/:id/mark-paid', controller.markPaid);
 router.delete('/:id', requireAdmin, controller.deleteInvoice);
 
 export default router;

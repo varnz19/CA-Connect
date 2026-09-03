@@ -8,15 +8,13 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  TextInput,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
-import { AppCard } from '../../components/common/AppCard';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 import { invoiceService } from '../../services/invoiceService';
 import { clientService } from '../../services/clientService';
 import { User } from '../../types';
@@ -39,14 +37,12 @@ export default function AdminCreateInvoiceScreen() {
   const [notes, setNotes] = useState<string>('');
   const [showPicker, setShowPicker] = useState(false);
   
-  // Invoice items state
   const [items, setItems] = useState<InvoiceItem[]>([
-    { id: '1', description: '', quantity: 1, unitPrice: 0 }
+    { id: '1', description: 'Professional Accounting Services', quantity: 1, unitPrice: 5000 }
   ]);
 
   const { clientId } = useLocalSearchParams<{ clientId: string }>();
   
-  // Load clients list on mount
   useEffect(() => {
     clientService.getClients()
       .then((res) => {
@@ -61,7 +57,6 @@ export default function AdminCreateInvoiceScreen() {
       })
       .catch((err) => console.error('Failed to load clients:', err));
 
-    // Default due date to 15 days from today
     const future = new Date();
     future.setDate(future.getDate() + 15);
     setDueDate(future.toISOString().split('T')[0]);
@@ -88,7 +83,6 @@ export default function AdminCreateInvoiceScreen() {
     }));
   };
 
-  // Math calculations
   const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
   const cgst = subtotal * (taxRate / 2) / 100;
   const sgst = cgst;
@@ -96,12 +90,12 @@ export default function AdminCreateInvoiceScreen() {
 
   const handleSubmit = async () => {
     if (!selectedClientId) {
-      Alert.alert('Validation Error', 'Please select a client.');
+      Alert.alert('Validation Error', 'Please select a client account.');
       return;
     }
     const emptyItems = items.filter(i => !i.description.trim() || i.unitPrice <= 0);
     if (emptyItems.length > 0) {
-      Alert.alert('Validation Error', 'Please make sure all items have descriptions and valid prices.');
+      Alert.alert('Validation Error', 'Please ensure all line items have descriptions and prices.');
       return;
     }
 
@@ -121,29 +115,30 @@ export default function AdminCreateInvoiceScreen() {
 
       const res = await invoiceService.createInvoice(payload);
       if (res.data) {
-        Alert.alert('Success', 'GST Invoice generated successfully.', [
+        Alert.alert('Success', 'Official GST invoice generated.', [
           { text: 'OK', onPress: () => router.back() }
         ]);
       }
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Failed to create invoice.';
+      const msg = err.response?.data?.message || 'Failed to generate invoice.';
       Alert.alert('Error', msg);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const selectedClient = clients.find(c => c.clientProfile?.id === selectedClientId);
+
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        {/* Header */}
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <MaterialIcons name="arrow-back" size={20} color={Colors.textPrimary} />
-            <Text style={styles.backText}>Back to Invoices</Text>
+            <MaterialIcons name="arrow-back" size={18} color={Colors.primary} />
+            <Text style={styles.backText}>All Invoices</Text>
           </TouchableOpacity>
         </View>
 
@@ -152,103 +147,101 @@ export default function AdminCreateInvoiceScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <Text style={styles.brandName}>Generate GST Invoice</Text>
-            <Text style={styles.brandTagline}>Compute tax rates, CGST/SGST, and output professional PDFs</Text>
-          </View>
+          <View style={styles.container}>
+            {/* Header */}
+            <View style={styles.headerBlock}>
+              <Text style={styles.refCode}>LEDGER DISPATCH</Text>
+              <Text style={styles.pageTitle}>New GST Tax Invoice</Text>
+              <Text style={styles.pageSubtitle}>
+                Generate a statutory tax invoice with CGST, SGST, and auto-computed totals.
+              </Text>
+            </View>
 
-          {/* Form */}
-          <AppCard style={styles.card}>
-            <Text style={styles.sectionTitle}>Invoice Setup</Text>
+            <View style={styles.hairlineRule} />
 
             {/* Client Picker */}
-            <View style={styles.pickerField}>
-              <Text style={styles.fieldLabel}>Select Client</Text>
-              {clients.length === 0 ? (
-                <View style={styles.pickerWrapper}>
-                  <Text style={styles.pickerEmpty}>No active client profiles</Text>
-                </View>
-              ) : (
-                <View style={{ zIndex: 1000, position: 'relative' }}>
-                  <TouchableOpacity
-                    style={styles.selectButton}
-                    onPress={() => setShowPicker(!showPicker)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.selectButtonText}>
-                      {clients.find(c => c.clientProfile?.id === selectedClientId)
-                        ? `${clients.find(c => c.clientProfile?.id === selectedClientId)?.firstName} ${clients.find(c => c.clientProfile?.id === selectedClientId)?.lastName} (${clients.find(c => c.clientProfile?.id === selectedClientId)?.clientProfile?.firmName || 'No Firm'})`
-                        : 'Choose a client...'}
-                    </Text>
-                    <MaterialIcons
-                      name={showPicker ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-                      size={20}
-                      color={Colors.textSecondary}
-                    />
-                  </TouchableOpacity>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Bill To Client *</Text>
+              <TouchableOpacity
+                style={styles.pickerTrigger}
+                onPress={() => setShowPicker(!showPicker)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.pickerText}>
+                  {selectedClient
+                    ? `${selectedClient.firstName} ${selectedClient.lastName} · ${selectedClient.clientProfile?.firmName || 'Individual'}`
+                    : 'Select a client...'}
+                </Text>
+                <MaterialIcons name={showPicker ? 'arrow-drop-up' : 'arrow-drop-down'} size={20} color={Colors.primary} />
+              </TouchableOpacity>
 
-                  {showPicker && (
-                    <View style={styles.dropdownContainer}>
-                      <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
-                        {clients.map((c) => (
-                          <TouchableOpacity
-                            key={c.id}
-                            style={[
-                              styles.dropdownItem,
-                              selectedClientId === c.clientProfile?.id && styles.dropdownItemSelected
-                            ]}
-                            onPress={() => {
-                              setSelectedClientId(c.clientProfile?.id || '');
-                              setShowPicker(false);
-                            }}
-                          >
-                            <Text style={[
-                              styles.dropdownItemText,
-                              selectedClientId === c.clientProfile?.id && styles.dropdownItemTextSelected
-                            ]}>
-                              {c.firstName} {c.lastName} ({c.clientProfile?.firmName || 'No Firm'})
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  )}
+              {showPicker && (
+                <View style={styles.dropdownList}>
+                  {clients.map((c) => (
+                    <TouchableOpacity
+                      key={c.id}
+                      style={[
+                        styles.dropdownRow,
+                        selectedClientId === c.clientProfile?.id && styles.dropdownRowSelected,
+                      ]}
+                      onPress={() => {
+                        setSelectedClientId(c.clientProfile?.id || '');
+                        setShowPicker(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownName}>{c.firstName} {c.lastName}</Text>
+                      <Text style={styles.dropdownFirm}>{c.clientProfile?.firmName || 'Individual'}</Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
               )}
             </View>
 
-            <AppInput
-              label="Due Date"
-              placeholder="YYYY-MM-DD"
-              value={dueDate}
-              onChangeText={setDueDate}
-            />
+            {/* Date & Tax inputs (Underline style) */}
+            <View style={styles.row}>
+              <View style={styles.half}>
+                <AppInput
+                  label="Due Date (YYYY-MM-DD) *"
+                  placeholder="2026-04-15"
+                  value={dueDate}
+                  onChangeText={setDueDate}
+                />
+              </View>
+              <View style={styles.half}>
+                <AppInput
+                  label="GST Tax Rate (%) *"
+                  placeholder="18"
+                  keyboardType="numeric"
+                  value={String(taxRate)}
+                  onChangeText={(val) => setTaxRate(Number(val) || 0)}
+                />
+              </View>
+            </View>
 
-            <AppInput
-              label="Tax Rate (%)"
-              placeholder="18"
-              keyboardType="numeric"
-              value={String(taxRate)}
-              onChangeText={(val) => setTaxRate(Number(val) || 0)}
-            />
+            <View style={styles.hairlineRule} />
 
-            <Text style={[styles.sectionTitle, { marginTop: Spacing.base }]}>Line Items</Text>
+            {/* Line Items: Single Column Forms */}
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionHeading}>Particulars / Line Items</Text>
+              <TouchableOpacity onPress={handleAddItem}>
+                <Text style={styles.addLink}>+ Add Item</Text>
+              </TouchableOpacity>
+            </View>
 
-            {/* Line Items Builder */}
             {items.map((item, index) => (
-              <View key={item.id} style={styles.itemRowCard}>
-                <View style={styles.itemRowHeader}>
-                  <Text style={styles.itemIndex}>Item #{index + 1}</Text>
+              <View key={item.id} style={styles.lineItemBlock}>
+                <View style={styles.lineItemTop}>
+                  <Text style={styles.itemIndex}>ITEM {index + 1}</Text>
                   {items.length > 1 && (
                     <TouchableOpacity onPress={() => handleRemoveItem(item.id)}>
-                      <MaterialIcons name="delete-forever" size={20} color={Colors.danger} />
+                      <Text style={styles.removeLink}>Remove</Text>
                     </TouchableOpacity>
                   )}
                 </View>
-                
+
                 <AppInput
-                  label="Description"
-                  placeholder="GST Compliance Filing Fee"
+                  label="Particulars / Description"
+                  placeholder="Audit & Assurance Services"
                   value={item.description}
                   onChangeText={(val) => handleUpdateItem(item.id, 'description', val)}
                 />
@@ -256,7 +249,7 @@ export default function AdminCreateInvoiceScreen() {
                 <View style={styles.row}>
                   <View style={styles.half}>
                     <AppInput
-                      label="Quantity"
+                      label="Quantity / Units"
                       placeholder="1"
                       keyboardType="numeric"
                       value={String(item.quantity)}
@@ -265,7 +258,7 @@ export default function AdminCreateInvoiceScreen() {
                   </View>
                   <View style={styles.half}>
                     <AppInput
-                      label="Unit Price (INR)"
+                      label="Unit Rate (INR)"
                       placeholder="5000"
                       keyboardType="numeric"
                       value={String(item.unitPrice)}
@@ -276,46 +269,50 @@ export default function AdminCreateInvoiceScreen() {
               </View>
             ))}
 
-            <TouchableOpacity style={styles.addItemBtn} onPress={handleAddItem}>
-              <MaterialIcons name="add-circle-outline" size={18} color={Colors.secondary} />
-              <Text style={styles.addItemText}>Add Line Item</Text>
-            </TouchableOpacity>
+            <View style={styles.hairlineRule} />
+
+            {/* Ledger Table Breakdown (Actual paper invoice ledger) */}
+            <View style={styles.ledgerTableBlock}>
+              <Text style={styles.sectionHeading}>Financial Breakdown</Text>
+              
+              <View style={styles.ledgerRow}>
+                <Text style={styles.ledgerLabel}>Subtotal</Text>
+                <Text style={styles.ledgerValMono}>{formatCurrency(subtotal)}</Text>
+              </View>
+
+              <View style={styles.ledgerRow}>
+                <Text style={styles.ledgerLabel}>CGST ({taxRate / 2}%)</Text>
+                <Text style={styles.ledgerValMono}>{formatCurrency(cgst)}</Text>
+              </View>
+
+              <View style={styles.ledgerRow}>
+                <Text style={styles.ledgerLabel}>SGST ({taxRate / 2}%)</Text>
+                <Text style={styles.ledgerValMono}>{formatCurrency(sgst)}</Text>
+              </View>
+
+              <View style={[styles.hairlineRule, { marginVertical: Spacing.sm }]} />
+
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>TOTAL INVOICE AMOUNT</Text>
+                <Text style={styles.totalValMono}>{formatCurrency(total)}</Text>
+              </View>
+            </View>
 
             <AppInput
-              label="Notes (Optional)"
-              placeholder="Thank you for your business!"
+              label="Payment Instructions & Terms (Optional)"
+              placeholder="Payment due within 15 days via NEFT / RTGS..."
               value={notes}
               onChangeText={setNotes}
             />
 
-            {/* Financial Summary */}
-            <View style={styles.summaryCard}>
-              <View style={styles.sumRow}>
-                <Text style={styles.sumLabel}>Subtotal</Text>
-                <Text style={styles.sumValue}>{formatCurrency(subtotal)}</Text>
-              </View>
-              <View style={styles.sumRow}>
-                <Text style={styles.sumLabel}>CGST ({taxRate / 2}%)</Text>
-                <Text style={styles.sumValue}>{formatCurrency(cgst)}</Text>
-              </View>
-              <View style={styles.sumRow}>
-                <Text style={styles.sumLabel}>SGST ({taxRate / 2}%)</Text>
-                <Text style={styles.sumValue}>{formatCurrency(sgst)}</Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.sumRow}>
-                <Text style={styles.grandLabel}>Total (INR)</Text>
-                <Text style={styles.grandValue}>{formatCurrency(total)}</Text>
-              </View>
-            </View>
-
             <AppButton
-              title={isLoading ? 'Generating Invoice...' : 'Generate & Issue Invoice'}
+              title={isLoading ? 'Generating Record...' : 'Generate Official GST Invoice'}
               onPress={handleSubmit}
               loading={isLoading}
+              size="md"
               style={styles.submitBtn}
             />
-          </AppCard>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -323,210 +320,198 @@ export default function AdminCreateInvoiceScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8FAFC' },
+  safe: { flex: 1, backgroundColor: Colors.background },
   flex: { flex: 1 },
   topBar: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
   },
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   backText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
-    color: Colors.textPrimary,
+    color: Colors.textSecondary,
   },
   scroll: {
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.xl,
+    paddingVertical: Spacing.xl,
+    paddingHorizontal: Spacing.xl,
+    alignItems: 'center',
   },
-  header: {
-    marginBottom: Spacing.base,
+  container: {
+    width: '100%',
+    maxWidth: 540,
   },
-  brandName: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: 22,
+  headerBlock: {
+    marginBottom: Spacing.md,
+  },
+  refCode: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  pageTitle: {
+    fontFamily: Typography.fontFamily.displayBold,
+    fontSize: Typography.size.xl,
     color: Colors.primary,
   },
-  brandTagline: {
+  pageSubtitle: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.xs,
     color: Colors.textSecondary,
+    lineHeight: 18,
     marginTop: 2,
   },
-  card: {
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: 16,
-    padding: Spacing.base,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    ...Shadows.sm,
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
+    marginVertical: Spacing.lg,
   },
-  sectionTitle: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: Typography.size.base,
-    color: Colors.primary,
-    marginBottom: Spacing.xs,
+  formGroup: {
+    marginBottom: Spacing.base,
   },
-  pickerField: {
-    marginBottom: Spacing.sm,
-  },
-  fieldLabel: {
+  label: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
-    color: Colors.textSecondary,
+    color: Colors.textPrimary,
     marginBottom: Spacing.xs,
   },
-  pickerWrapper: {
-    backgroundColor: Colors.backgroundInput,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    height: 48,
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.sm,
-  },
-  selectButton: {
+  pickerTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.backgroundInput,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    height: 48,
-    paddingHorizontal: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    paddingVertical: Spacing.sm,
   },
-  selectButtonText: {
+  pickerText: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.base,
-    color: Colors.textPrimary,
-  },
-  dropdownContainer: {
-    backgroundColor: Colors.backgroundCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    marginTop: 4,
-    maxHeight: 180,
-    position: 'absolute',
-    top: 48,
-    left: 0,
-    right: 0,
-    zIndex: 2000,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-  },
-  dropdownScroll: {
-    paddingVertical: 4,
-  },
-  dropdownItem: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: 12,
-  },
-  dropdownItemSelected: {
-    backgroundColor: Colors.statusActive,
-  },
-  dropdownItemText: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.base,
-    color: Colors.textPrimary,
-  },
-  dropdownItemTextSelected: {
-    fontFamily: Typography.fontFamily.medium,
     color: Colors.primary,
   },
-  pickerEmpty: {
+  dropdownList: {
+    backgroundColor: Colors.backgroundCard,
+    borderWidth: 1,
+    borderColor: Colors.hairline,
+    borderRadius: 4,
+    marginTop: 4,
+    maxHeight: 180,
+  },
+  dropdownRow: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
+  },
+  dropdownRowSelected: {
+    backgroundColor: 'rgba(184, 134, 58, 0.08)',
+  },
+  dropdownName: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.sm,
+    color: Colors.primary,
+  },
+  dropdownFirm: {
     fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.base,
-    color: Colors.textTertiary,
+    fontSize: Typography.size.xs,
+    color: Colors.textSecondary,
+    marginTop: 1,
   },
   row: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    gap: Spacing.md,
   },
   half: {
     flex: 1,
   },
-  itemRowCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: Spacing.sm,
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: Spacing.sm,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
   },
-  itemRowHeader: {
+  sectionHeading: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.sm,
+    color: Colors.primary,
+  },
+  addLink: {
+    fontFamily: Typography.fontFamily.monoMedium,
+    fontSize: Typography.size.xs,
+    color: Colors.secondaryDark,
+  },
+  lineItemBlock: {
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
+    marginBottom: Spacing.md,
+  },
+  lineItemTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: Spacing.xs,
   },
   itemIndex: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: Typography.size.sm,
-    color: Colors.secondaryDark,
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
   },
-  addItemBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    height: 40,
+  removeLink: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.danger,
+  },
+  ledgerTableBlock: {
+    padding: Spacing.md,
+    backgroundColor: Colors.backgroundCard,
     borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: Colors.secondary,
-    borderRadius: 8,
-    marginBottom: Spacing.sm,
+    borderColor: Colors.hairline,
+    borderRadius: 4,
+    marginBottom: Spacing.lg,
   },
-  addItemText: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.sm,
-    color: Colors.secondaryDark,
-  },
-  summaryCard: {
-    backgroundColor: Colors.backgroundInput,
-    borderRadius: 12,
-    padding: Spacing.base,
-    marginVertical: Spacing.base,
-    gap: Spacing.xs,
-  },
-  sumRow: {
+  ledgerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    paddingVertical: 3,
   },
-  sumLabel: {
+  ledgerLabel: {
     fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
   },
-  sumValue: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.sm,
-    color: Colors.textPrimary,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.border,
-    marginVertical: Spacing.xs,
-  },
-  grandLabel: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: Typography.size.base,
+  ledgerValMono: {
+    fontFamily: Typography.fontFamily.monoMedium,
+    fontSize: Typography.size.xs,
     color: Colors.primary,
   },
-  grandValue: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: Typography.size.base,
-    color: Colors.secondaryDark,
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    paddingTop: 2,
+  },
+  totalLabel: {
+    fontFamily: Typography.fontFamily.monoMedium,
+    fontSize: 11,
+    color: Colors.primary,
+    letterSpacing: 0.5,
+  },
+  totalValMono: {
+    fontFamily: Typography.fontFamily.monoBold, // Hero amount
+    fontSize: Typography.size.lg,
+    color: Colors.primary,
   },
   submitBtn: {
-    marginTop: Spacing.sm,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.xl,
   },
 });

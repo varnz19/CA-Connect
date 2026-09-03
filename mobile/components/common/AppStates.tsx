@@ -1,11 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
 import { AppButton } from './AppButton';
 import { Colors, Typography, Spacing } from '../../constants/theme';
 
+// ─── Empty state: plain text, no illustration, no icon ──────────────────────
+
 interface AppEmptyProps {
-  icon?: keyof typeof MaterialIcons.glyphMap;
+  icon?: string; // kept for API compat but not rendered
   title: string;
   description?: string;
   actionLabel?: string;
@@ -14,7 +15,6 @@ interface AppEmptyProps {
 }
 
 export const AppEmpty: React.FC<AppEmptyProps> = ({
-  icon = 'inbox',
   title,
   description,
   actionLabel,
@@ -23,15 +23,13 @@ export const AppEmpty: React.FC<AppEmptyProps> = ({
 }) => {
   return (
     <View style={[styles.container, style]}>
-      <View style={styles.iconWrapper}>
-        <MaterialIcons name={icon} size={48} color={Colors.textMuted} />
-      </View>
       <Text style={styles.title}>{title}</Text>
       {description && <Text style={styles.description}>{description}</Text>}
       {actionLabel && onAction && (
         <AppButton
           title={actionLabel}
           onPress={onAction}
+          variant="outline"
           style={styles.button}
           size="sm"
         />
@@ -39,6 +37,8 @@ export const AppEmpty: React.FC<AppEmptyProps> = ({
     </View>
   );
 };
+
+// ─── Error state ────────────────────────────────────────────────────────────
 
 interface AppErrorProps {
   message?: string;
@@ -53,14 +53,11 @@ export const AppError: React.FC<AppErrorProps> = ({
 }) => {
   return (
     <View style={[styles.container, style]}>
-      <View style={[styles.iconWrapper, styles.errorIconWrapper]}>
-        <MaterialIcons name="error-outline" size={48} color={Colors.danger} />
-      </View>
-      <Text style={styles.title}>Oops!</Text>
+      <Text style={styles.title}>Something went wrong</Text>
       <Text style={styles.description}>{message}</Text>
       {onRetry && (
         <AppButton
-          title="Try Again"
+          title="Try again"
           onPress={onRetry}
           variant="outline"
           style={styles.button}
@@ -71,6 +68,8 @@ export const AppError: React.FC<AppErrorProps> = ({
   );
 };
 
+// ─── Loader (skeleton) ──────────────────────────────────────────────────────
+
 interface AppLoaderProps {
   text?: string;
   style?: ViewStyle;
@@ -80,12 +79,9 @@ export const AppLoader: React.FC<AppLoaderProps> = ({ text, style }) => {
   return (
     <View style={[styles.loaderContainer, style]}>
       {[1, 2, 3].map((i) => (
-        <View key={i} style={styles.skeletonCard}>
-          <View style={styles.skeletonAvatar} />
-          <View style={styles.skeletonContent}>
-            <View style={[styles.skeletonLine, { width: '70%' }]} />
-            <View style={[styles.skeletonLine, { width: '50%', marginTop: 8 }]} />
-          </View>
+        <View key={i} style={styles.skeletonRow}>
+          <View style={[styles.skeletonLine, { width: '60%' }]} />
+          <View style={[styles.skeletonLine, { width: '30%', marginTop: 6 }]} />
         </View>
       ))}
       {text && <Text style={styles.loaderText}>{text}</Text>}
@@ -94,6 +90,7 @@ export const AppLoader: React.FC<AppLoaderProps> = ({ text, style }) => {
 };
 
 const styles = StyleSheet.create({
+  // Empty & Error — simple centered text, no icon/illustration
   container: {
     flex: 1,
     alignItems: 'center',
@@ -101,66 +98,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing['2xl'],
     paddingVertical: Spacing['3xl'],
   },
-  iconWrapper: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.lg,
-  },
-  errorIconWrapper: {
-    backgroundColor: Colors.dangerLight,
-  },
   title: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.lg,
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.base,
     color: Colors.textPrimary,
     textAlign: 'center',
     marginBottom: Spacing.xs,
   },
   description: {
     fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.base,
+    fontSize: Typography.size.sm,
     color: Colors.textSecondary,
     textAlign: 'center',
-    lineHeight: Typography.lineHeight.md,
+    lineHeight: Typography.lineHeight.base,
     marginBottom: Spacing.base,
   },
   button: {
-    marginTop: Spacing.xs,
+    marginTop: Spacing.sm,
   },
+
+  // Skeleton loader — flat rows, no cards, no avatars
   loaderContainer: {
     padding: Spacing.base,
-    gap: Spacing.md,
+    gap: Spacing.lg,
   },
-  skeletonCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: 12,
-    padding: Spacing.base,
-    gap: Spacing.md,
-  },
-  skeletonAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.backgroundInput,
-  },
-  skeletonContent: {
-    flex: 1,
+  skeletonRow: {
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
   },
   skeletonLine: {
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: Colors.backgroundInput,
+    height: 10,
+    borderRadius: 4,
+    backgroundColor: Colors.borderLight,
   },
   loaderText: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.sm,
-    color: Colors.textSecondary,
+    color: Colors.textTertiary,
     textAlign: 'center',
     marginTop: Spacing.sm,
   },

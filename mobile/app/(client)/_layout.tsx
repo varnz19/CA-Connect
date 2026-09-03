@@ -14,9 +14,8 @@ interface TabIconProps {
 
 const TabIcon = ({ icon, color, focused, label }: TabIconProps) => (
   <View style={tabStyles.tab}>
-    <View style={[tabStyles.iconWrapper, focused && tabStyles.iconWrapperFocused]}>
-      <MaterialIcons name={icon} size={22} color={color} />
-    </View>
+    {focused && <View style={tabStyles.topIndicator} />}
+    <MaterialIcons name={icon} size={20} color={color} />
     <Text style={[tabStyles.label, { color, fontFamily: focused ? Typography.fontFamily.semiBold : Typography.fontFamily.medium }]}>
       {label}
     </Text>
@@ -27,18 +26,22 @@ const tabStyles = StyleSheet.create({
   tab: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: 3,
     height: '100%',
+    position: 'relative',
+    paddingTop: 4,
   },
-  iconWrapper: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
+  topIndicator: {
+    position: 'absolute',
+    top: 0,
+    width: 24,
+    height: 2,
+    backgroundColor: Colors.secondary,
   },
-  iconWrapperFocused: {
-    backgroundColor: `${Colors.secondary}20`,
+  label: {
+    fontSize: 10,
+    letterSpacing: 0.2,
   },
-  label: { fontSize: 11 },
 });
 
 export default function ClientLayout() {
@@ -47,11 +50,11 @@ export default function ClientLayout() {
   const isDesktop = width >= 768 && Platform.OS === 'web';
 
   const sidebarItems = [
-    { name: 'index', label: 'Home', icon: 'home' as const, route: '/' },
+    { name: 'index', label: 'Dashboard', icon: 'home' as const, route: '/' },
     { name: 'services', label: 'Services', icon: 'work' as const, route: '/services' },
-    { name: 'documents', label: 'Docs', icon: 'folder' as const, route: '/documents' },
+    { name: 'documents', label: 'Documents', icon: 'folder' as const, route: '/documents' },
     { name: 'calendar', label: 'Calendar', icon: 'event' as const, route: '/calendar' },
-    { name: 'messages', label: 'Chat', icon: 'chat' as const, route: '/messages' },
+    { name: 'messages', label: 'Messages', icon: 'chat' as const, route: '/messages' },
     { name: 'profile', label: 'Profile', icon: 'person' as const, route: '/profile' },
   ];
 
@@ -63,12 +66,12 @@ export default function ClientLayout() {
           screenOptions={{
             headerShown: false,
             tabBarStyle: isDesktop ? { display: 'none' } : {
-              backgroundColor: Colors.tabBarBackground,
-              borderTopColor: Colors.primaryLight,
+              backgroundColor: Colors.backgroundCard,
+              borderTopColor: Colors.hairline,
               borderTopWidth: 1,
-              height: 72 + insets.bottom,
-              paddingBottom: insets.bottom + 8,
-              paddingTop: 8,
+              height: 56 + insets.bottom,
+              paddingBottom: insets.bottom + 4,
+              paddingTop: 0,
             },
             tabBarShowLabel: false,
           }}
@@ -80,7 +83,7 @@ export default function ClientLayout() {
                 <TabIcon icon="home" color={color} focused={focused} label="Home" />
               ),
               tabBarActiveTintColor: Colors.secondary,
-              tabBarInactiveTintColor: Colors.tabBarInactive,
+              tabBarInactiveTintColor: Colors.textTertiary,
             }}
           />
           <Tabs.Screen
@@ -90,7 +93,7 @@ export default function ClientLayout() {
                 <TabIcon icon="work" color={color} focused={focused} label="Services" />
               ),
               tabBarActiveTintColor: Colors.secondary,
-              tabBarInactiveTintColor: Colors.tabBarInactive,
+              tabBarInactiveTintColor: Colors.textTertiary,
             }}
           />
           <Tabs.Screen
@@ -100,7 +103,7 @@ export default function ClientLayout() {
                 <TabIcon icon="folder" color={color} focused={focused} label="Docs" />
               ),
               tabBarActiveTintColor: Colors.secondary,
-              tabBarInactiveTintColor: Colors.tabBarInactive,
+              tabBarInactiveTintColor: Colors.textTertiary,
             }}
           />
           <Tabs.Screen
@@ -110,7 +113,7 @@ export default function ClientLayout() {
                 <TabIcon icon="event" color={color} focused={focused} label="Calendar" />
               ),
               tabBarActiveTintColor: Colors.secondary,
-              tabBarInactiveTintColor: Colors.tabBarInactive,
+              tabBarInactiveTintColor: Colors.textTertiary,
             }}
           />
           <Tabs.Screen
@@ -120,7 +123,7 @@ export default function ClientLayout() {
                 <TabIcon icon="chat" color={color} focused={focused} label="Chat" />
               ),
               tabBarActiveTintColor: Colors.secondary,
-              tabBarInactiveTintColor: Colors.tabBarInactive,
+              tabBarInactiveTintColor: Colors.textTertiary,
             }}
           />
           <Tabs.Screen
@@ -130,7 +133,7 @@ export default function ClientLayout() {
                 <TabIcon icon="person" color={color} focused={focused} label="Profile" />
               ),
               tabBarActiveTintColor: Colors.secondary,
-              tabBarInactiveTintColor: Colors.tabBarInactive,
+              tabBarInactiveTintColor: Colors.textTertiary,
             }}
           />
           <Tabs.Screen name="book-appointment" options={{ href: null }} />

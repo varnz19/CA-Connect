@@ -3,26 +3,21 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   FlatList,
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
-import { AppCard } from '../../components/common/AppCard';
 import { AppAvatar } from '../../components/common/AppAvatar';
 import { AppEmpty } from '../../components/common/AppStates';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 import { useConversations } from '../../hooks/useQueries';
 import { Conversation } from '../../types';
 import { formatRelativeTime } from '../../utils/formatters';
 
 export default function AdminMessagesScreen() {
   const router = useRouter();
-  const [search, setSearch] = useState('');
   const { data: conversationsData, isLoading, refetch } = useConversations();
-  
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async () => {
@@ -47,53 +42,44 @@ export default function AdminMessagesScreen() {
 
     return (
       <TouchableOpacity
-        activeOpacity={0.8}
+        activeOpacity={0.7}
+        style={[styles.conversationRow, hasUnread && styles.unreadRow]}
         onPress={() => router.push(`/(admin)/chat?conversationId=${item.id}&clientId=${userProfile.id}` as any)}
       >
-        <View style={[styles.conversationRow, hasUnread && styles.unreadRow]}>
-          <View style={styles.avatarWrapper}>
-            <AppAvatar name={fullName} size="md" uri={userProfile.avatar} />
-            <View style={styles.onlineDot} />
-          </View>
-          <View style={styles.convInfo}>
-            <View style={styles.convTop}>
-              <Text style={[styles.clientName, hasUnread && styles.boldText]}>{fullName}</Text>
-              {item.lastMessageAt && (
-                <Text style={styles.timestamp}>{formatRelativeTime(item.lastMessageAt)}</Text>
-              )}
-            </View>
-            {firmName && (
-              <Text style={styles.firmName}>{firmName}</Text>
-            )}
-            {item.lastMessage && (
-              <Text
-                style={[styles.lastMessage, hasUnread && styles.boldText]}
-                numberOfLines={1}
-              >
-                {item.lastMessage.senderId === 'admin-001' ? 'You: ' : ''}
-                {item.lastMessage.content || '📎 Attachment'}
-              </Text>
+        <AppAvatar name={fullName} size="md" uri={userProfile.avatar} />
+        <View style={styles.convInfo}>
+          <View style={styles.convTop}>
+            <Text style={[styles.clientName, hasUnread && styles.boldText]}>{fullName}</Text>
+            {item.lastMessageAt && (
+              <Text style={styles.timestamp}>{formatRelativeTime(item.lastMessageAt)}</Text>
             )}
           </View>
-          {hasUnread && (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadText}>{item.unreadCount}</Text>
-            </View>
+          {firmName && (
+            <Text style={styles.firmName}>{firmName}</Text>
+          )}
+          {item.lastMessage && (
+            <Text
+              style={[styles.lastMessage, hasUnread && styles.boldText]}
+              numberOfLines={1}
+            >
+              {item.lastMessage.content || 'Attachment'}
+            </Text>
           )}
         </View>
+        {hasUnread && <View style={styles.brassDot} />}
       </TouchableOpacity>
     );
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Messages</Text>
-        <Text style={styles.subtitle}>{sorted.length} conversations</Text>
+        <Text style={styles.subtitle}>{sorted.length} active conversations</Text>
       </View>
 
-      {/* Conversation List */}
+      <View style={styles.hairlineRule} />
+
       <FlatList
         data={sorted}
         keyExtractor={(item) => item.id}
@@ -102,12 +88,10 @@ export default function AdminMessagesScreen() {
         showsVerticalScrollIndicator={false}
         refreshing={refreshing}
         onRefresh={handleRefresh}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={
           <AppEmpty
-            icon="chat-bubble-outline"
-            title="No conversations yet"
-            description="Messages from clients will appear here."
+            title="No conversations"
+            description="Client message threads will appear here once communication begins."
           />
         }
       />
@@ -118,100 +102,78 @@ export default function AdminMessagesScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
   header: {
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.base,
-    paddingBottom: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    backgroundColor: Colors.backgroundCard,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
   },
   title: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.displayBold,
     fontSize: Typography.size.xl,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   subtitle: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
   },
   list: {
-    paddingBottom: Spacing['3xl'],
     backgroundColor: Colors.backgroundCard,
   },
   conversationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
-    backgroundColor: Colors.backgroundCard,
+    paddingHorizontal: Spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
+    gap: Spacing.md,
   },
   unreadRow: {
-    backgroundColor: Colors.infoLight,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.secondary, // Brass accent for unread
   },
-  avatarWrapper: {
-    position: 'relative',
+  convInfo: {
+    flex: 1,
   },
-  onlineDot: {
-    position: 'absolute',
-    bottom: 1,
-    right: 1,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: Colors.success,
-    borderWidth: 1.5,
-    borderColor: Colors.backgroundCard,
-  },
-  convInfo: { flex: 1 },
   convTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 2,
   },
   clientName: {
     fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.base,
-    color: Colors.textPrimary,
+    fontSize: Typography.size.sm,
+    color: Colors.primary,
   },
   boldText: {
     fontFamily: Typography.fontFamily.semiBold,
   },
+  timestamp: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+  },
   firmName: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.xs,
-    color: Colors.secondary,
-    marginTop: 1,
+    color: Colors.textSecondary,
+    marginBottom: 2,
   },
-  timestamp: {
+  lastMessage: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.xs,
     color: Colors.textTertiary,
   },
-  lastMessage: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  unreadBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 5,
-  },
-  unreadText: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: 10,
-    color: Colors.textLight,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: Colors.borderLight,
-    marginLeft: Spacing.base + 44 + Spacing.sm,
+  brassDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.secondary,
   },
 });

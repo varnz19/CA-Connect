@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 import { profileService } from '../../services/profileService';
 
 const passwordSchema = z.object({
@@ -56,12 +56,12 @@ export default function ClientChangePasswordScreen() {
         newPassword: data.newPassword,
       });
       if (response.success) {
-        Alert.alert('Success', 'Password changed successfully.', [
+        Alert.alert('Success', 'Access credentials updated successfully.', [
           { text: 'OK', onPress: () => router.replace('/(client)/profile') }
         ]);
       }
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Failed to change password. Make sure current password is correct.';
+      const msg = err.response?.data?.message || 'Verification failed. Please check current password.';
       Alert.alert('Error', msg);
     } finally {
       setIsLoading(false);
@@ -69,15 +69,15 @@ export default function ClientChangePasswordScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.replace('/(client)/profile')} style={styles.backBtn}>
-            <MaterialIcons name="arrow-back" size={20} color={Colors.textPrimary} />
-            <Text style={styles.backText}>Back to Settings</Text>
+            <MaterialIcons name="arrow-back" size={18} color={Colors.primary} />
+            <Text style={styles.backText}>Profile</Text>
           </TouchableOpacity>
         </View>
 
@@ -86,22 +86,28 @@ export default function ClientChangePasswordScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <Text style={styles.title}>Change Password</Text>
-            <Text style={styles.subtitle}>Update your login credentials securely</Text>
-          </View>
+          <View style={styles.container}>
+            {/* Header */}
+            <View style={styles.headerBlock}>
+              <Text style={styles.refCode}>SECURITY CREDENTIALS</Text>
+              <Text style={styles.pageTitle}>Change Account Password</Text>
+              <Text style={styles.pageSubtitle}>
+                Update your client portal password to maintain secure access to your statutory records.
+              </Text>
+            </View>
 
-          <View style={styles.card}>
+            <View style={styles.hairlineRule} />
+
+            {/* Flat Form */}
             <View style={styles.form}>
               <Controller
                 control={control}
                 name="currentPassword"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
-                    label="Current Password"
-                    placeholder="Current Password"
-                    secureTextEntry
-                    autoCapitalize="none"
+                    label="Current Password *"
+                    placeholder="Enter current password"
+                    isPassword
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
@@ -115,10 +121,9 @@ export default function ClientChangePasswordScreen() {
                 name="newPassword"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
-                    label="New Password"
-                    placeholder="Min 8 characters"
-                    secureTextEntry
-                    autoCapitalize="none"
+                    label="New Secure Password *"
+                    placeholder="Minimum 8 characters"
+                    isPassword
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
@@ -132,10 +137,9 @@ export default function ClientChangePasswordScreen() {
                 name="confirmPassword"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
-                    label="Confirm New Password"
-                    placeholder="Confirm New Password"
-                    secureTextEntry
-                    autoCapitalize="none"
+                    label="Re-enter New Password *"
+                    placeholder="Confirm new password"
+                    isPassword
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
@@ -145,9 +149,10 @@ export default function ClientChangePasswordScreen() {
               />
 
               <AppButton
-                title={isLoading ? 'Updating...' : 'Update Password'}
+                title={isLoading ? 'Verifying...' : 'Update Password'}
                 onPress={handleSubmit(onSubmit)}
                 loading={isLoading}
+                size="md"
                 style={styles.submitBtn}
               />
             </View>
@@ -159,52 +164,65 @@ export default function ClientChangePasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8FAFC' },
+  safe: { flex: 1, backgroundColor: Colors.background },
   flex: { flex: 1 },
   topBar: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
   },
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   backText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
-    color: Colors.textPrimary,
+    color: Colors.textSecondary,
   },
   scroll: {
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.xl,
+    paddingVertical: Spacing.xl,
+    paddingHorizontal: Spacing.xl,
+    alignItems: 'center',
   },
-  header: {
-    marginBottom: Spacing.base,
+  container: {
+    width: '100%',
+    maxWidth: 480,
   },
-  title: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: 22,
+  headerBlock: {
+    marginBottom: Spacing.md,
+  },
+  refCode: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  pageTitle: {
+    fontFamily: Typography.fontFamily.displayBold,
+    fontSize: Typography.size.xl,
     color: Colors.primary,
   },
-  subtitle: {
+  pageSubtitle: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.xs,
     color: Colors.textSecondary,
+    lineHeight: 18,
     marginTop: 2,
   },
-  card: {
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: 16,
-    padding: Spacing.base,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    ...Shadows.sm,
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
+    marginVertical: Spacing.lg,
   },
   form: {
-    gap: Spacing.sm,
+    gap: Spacing.md,
   },
   submitBtn: {
-    marginTop: Spacing.base,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.xl,
   },
 });

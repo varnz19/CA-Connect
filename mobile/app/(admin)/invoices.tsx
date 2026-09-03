@@ -9,16 +9,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
-import { AppCard } from '../../components/common/AppCard';
-import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
 import { AppEmpty } from '../../components/common/AppStates';
 import { InvoiceCard } from '../../components/common/EntityCards';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 import { useInvoices } from '../../hooks/useQueries';
 import { Invoice, InvoiceStatus } from '../../types';
 import { formatCurrency } from '../../utils/formatters';
+import { InvoiceDetailModal } from '../../components/invoices/InvoiceDetailModal';
+import { invoiceService } from '../../services/invoiceService';
 
 type FilterTab = 'ALL' | InvoiceStatus;
 
@@ -32,11 +31,12 @@ const FILTERS: { key: FilterTab; label: string }[] = [
 export default function InvoicesScreen() {
   const router = useRouter();
   const [filter, setFilter] = useState<FilterTab>('ALL');
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [isMarkingPaid, setIsMarkingPaid] = useState(false);
+
   const { data: invoicesData, isLoading, refetch } = useInvoices(filter === 'ALL' ? undefined : filter);
 
-  // Real API invoices array
   const invoicesList = invoicesData?.data || [];
-
   const filtered = filter === 'ALL' ? invoicesList : invoicesList.filter((i) => i.status === filter);
 
   const totalPending = invoicesList
@@ -57,6 +57,22 @@ export default function InvoicesScreen() {
     setRefreshing(false);
   };
 
+  const handleMarkPaid = async (id: string) => {
+    setIsMarkingPaid(true);
+    try {
+      await invoiceService.markPaid(id);
+      Alert.alert('Success', 'Invoice recorded as settled/paid.');
+      await refetch();
+      if (selectedInvoice && selectedInvoice.id === id) {
+        setSelectedInvoice({ ...selectedInvoice, status: 'PAID', paidAt: new Date().toISOString() });
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.message || 'Failed to update invoice status.');
+    } finally {
+      setIsMarkingPaid(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <FlatList
@@ -69,41 +85,47 @@ export default function InvoicesScreen() {
             {/* Header */}
             <View style={styles.header}>
               <View>
-                <Text style={styles.title}>Invoices</Text>
-                <Text style={styles.subtitle}>{invoicesList.length} total invoices</Text>
+                <Text style={styles.title}>GST Invoices</Text>
+                <Text style={styles.subtitle}>{invoicesList.length} total billing records · Tap to inspect</Text>
               </View>
               <AppButton
-                title="New Invoice"
+                title="+ New Invoice"
                 size="sm"
                 onPress={() => router.push('/(admin)/create-invoice' as any)}
               />
             </View>
 
-            {/* Summary Cards */}
-            <View style={styles.summaryRow}>
-              {[
-                { label: 'Pending', amount: totalPending, color: Colors.warning, bg: Colors.warningLight },
-                { label: 'Overdue', amount: totalOverdue, color: Colors.danger, bg: Colors.dangerLight },
-                { label: 'Collected', amount: totalPaid, color: Colors.success, bg: Colors.successLight },
-              ].map((s) => (
-                <AppCard key={s.label} style={[styles.summaryCard, { borderTopColor: s.color, borderTopWidth: 3 }]}>
-                  <Text style={[styles.summaryAmount, { color: s.color }]}>
-                    {formatCurrency(s.amount)}
-                  </Text>
-                  <Text style={styles.summaryLabel}>{s.label}</Text>
-                </AppCard>
-              ))}
+            <View style={styles.hairlineRule} />
+
+            {/* Plain Stat Blocks */}
+            <View style={styles.summaryContainer}>
+              <View style={styles.statBlock}>
+                <Text style={styles.statAmount}>{formatCurrency(totalPending)}</Text>
+                <Text style={styles.statLabel}>Pending Fee</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statBlock}>
+                <Text style={[styles.statAmount, { color: Colors.danger }]}>{formatCurrency(totalOverdue)}</Text>
+                <Text style={styles.statLabel}>Overdue</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statBlock}>
+                <Text style={styles.statAmount}>{formatCurrency(totalPaid)}</Text>
+                <Text style={styles.statLabel}>Collected</Text>
+              </View>
             </View>
 
-            {/* Filter Tabs */}
-            <View style={styles.filterRow}>
+            <View style={styles.hairlineRule} />
+
+            {/* Flat Filter Bar */}
+            <View style={styles.filterBar}>
               {FILTERS.map((f) => (
                 <TouchableOpacity
                   key={f.key}
-                  style={[styles.filterTab, filter === f.key && styles.filterTabActive]}
+                  style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
                   onPress={() => setFilter(f.key)}
                 >
-                  <Text style={[styles.filterTabText, filter === f.key && styles.filterTabTextActive]}>
+                  <Text style={[styles.filterChipText, filter === f.key && styles.filterChipTextActive]}>
                     {f.label}
                   </Text>
                 </TouchableOpacity>
@@ -112,25 +134,34 @@ export default function InvoicesScreen() {
           </>
         }
         renderItem={({ item }) => (
-          <View style={styles.cardWrapper}>
-            <InvoiceCard
-              invoice={item}
-              showClient
-              onPress={() => router.push(`/(admin)/invoice-detail?id=${item.id}` as any)}
-            />
-          </View>
+          <InvoiceCard
+            invoice={item}
+            showClient
+            onPress={() => setSelectedInvoice(item)}
+          />
         )}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <AppEmpty
-            icon="receipt-long"
-            title="No invoices found"
-            description="Generate your first invoice to get started."
-            actionLabel="New Invoice"
-            onAction={() => router.push('/(admin)/create-invoice' as any)}
-          />
+          !isLoading ? (
+            <AppEmpty
+              title="No invoices found"
+              description="Generate a GST tax invoice to initiate fee collection."
+              actionLabel="Create Invoice"
+              onAction={() => router.push('/(admin)/create-invoice' as any)}
+            />
+          ) : null
         }
+      />
+
+      {/* Full Detailed Tax Invoice Modal */}
+      <InvoiceDetailModal
+        invoice={selectedInvoice}
+        visible={!!selectedInvoice}
+        onClose={() => setSelectedInvoice(null)}
+        isAdmin={true}
+        onMarkPaid={handleMarkPaid}
+        isProcessing={isMarkingPaid}
       />
     </SafeAreaView>
   );
@@ -143,7 +174,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.xl,
+    paddingTop: Spacing.lg,
     paddingBottom: Spacing.md,
   },
   title: {
@@ -153,67 +184,69 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: Typography.size.sm,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    marginTop: 2,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.sm,
-    marginBottom: Spacing.md,
-  },
-  summaryCard: {
-    flex: 1,
-    padding: Spacing.sm,
-    gap: 4,
-    borderRadius: 0,
-    borderWidth: 1,
-    borderTopWidth: 2,
-    borderColor: Colors.border,
-  },
-  summaryAmount: {
-    fontFamily: Typography.fontFamily.monoBold,
-    fontSize: Typography.size.base,
-  },
-  summaryLabel: {
-    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.xs,
     color: Colors.textSecondary,
-    textTransform: 'uppercase',
+    marginTop: 2,
   },
-  filterRow: {
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
+  },
+  summaryContainer: {
     flexDirection: 'row',
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.xs,
-    marginBottom: Spacing.md,
+    backgroundColor: Colors.backgroundCard,
+    paddingVertical: Spacing.md,
   },
-  filterTab: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: 4,
+  statBlock: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statAmount: {
+    fontFamily: Typography.fontFamily.monoBold,
+    fontSize: Typography.size.md,
+    color: Colors.primary,
+  },
+  statLabel: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: 10,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: Colors.hairline,
+  },
+  filterBar: {
+    flexDirection: 'row',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.sm,
     backgroundColor: Colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
+  },
+  filterChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 5,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: Colors.border,
+    backgroundColor: Colors.backgroundCard,
   },
-  filterTabActive: {
+  filterChipActive: {
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
   },
-  filterTabText: {
-    fontFamily: Typography.fontFamily.monoMedium,
-    fontSize: Typography.size.sm,
+  filterChipText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
-    textTransform: 'uppercase',
   },
-  filterTabTextActive: {
+  filterChipTextActive: {
     color: Colors.textLight,
   },
   list: {
+    backgroundColor: Colors.backgroundCard,
     paddingBottom: Spacing['3xl'],
-  },
-  cardWrapper: {
-    paddingHorizontal: Spacing.xl,
   },
 });

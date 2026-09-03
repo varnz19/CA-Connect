@@ -5,15 +5,13 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
 import { AppButton } from '../../components/common/AppButton';
 import { DocumentCard } from '../../components/common/EntityCards';
 import { AppEmpty } from '../../components/common/AppStates';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 import { useDocuments } from '../../hooks/useQueries';
 import { DocumentStatus } from '../../types';
 
@@ -52,22 +50,26 @@ export default function AdminDocumentsScreen() {
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         ListHeaderComponent={
           <>
             <View style={styles.header}>
               <View>
-                <Text style={styles.title}>Documents</Text>
-                <Text style={styles.subtitle}>{documentsList.length} requests</Text>
+                <Text style={styles.title}>Document Requests</Text>
+                <Text style={styles.subtitle}>{documentsList.length} total filing requirements</Text>
               </View>
               <AppButton
-                title="Request"
+                title="Request Doc"
                 size="sm"
                 onPress={() => router.push('/(admin)/request-document' as any)}
               />
             </View>
 
-            {/* Filter Tabs */}
-            <View style={styles.filterScroll}>
+            <View style={styles.hairlineRule} />
+
+            {/* Flat Filter Bar */}
+            <View style={styles.filterBar}>
               <FlatList
                 horizontal
                 data={FILTERS}
@@ -76,13 +78,13 @@ export default function AdminDocumentsScreen() {
                 contentContainerStyle={styles.filterRow}
                 renderItem={({ item: f }) => (
                   <TouchableOpacity
-                    style={[styles.filterTab, filter === f.key && styles.filterTabActive]}
+                    style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
                     onPress={() => setFilter(f.key)}
                   >
                     <Text
                       style={[
-                        styles.filterTabText,
-                        filter === f.key && styles.filterTabTextActive,
+                        styles.filterChipText,
+                        filter === f.key && styles.filterChipTextActive,
                       ]}
                     >
                       {f.label}
@@ -94,24 +96,19 @@ export default function AdminDocumentsScreen() {
           </>
         }
         renderItem={({ item }) => (
-          <View style={styles.cardWrapper}>
-            <DocumentCard
-              doc={item}
-              showClient
-              onPress={() => router.push(`/(admin)/document-detail?id=${item.id}` as any)}
-            />
-          </View>
+          <DocumentCard
+            doc={item}
+            showClient
+            onPress={() => router.push(`/(admin)/request-document` as any)}
+          />
         )}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
         ListEmptyComponent={
           <AppEmpty
-            icon="folder-open"
-            title="No documents found"
-            description="Request documents from your clients to get started."
-            actionLabel="Request Document"
+            title="No document requests"
+            description="Request compliance documents from clients to initiate review."
+            actionLabel="Request Doc"
             onAction={() => router.push('/(admin)/request-document' as any)}
           />
         }
@@ -127,7 +124,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.xl,
+    paddingTop: Spacing.lg,
     paddingBottom: Spacing.md,
   },
   title: {
@@ -137,29 +134,45 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: Typography.size.sm,
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
-    textTransform: 'uppercase',
     marginTop: 2,
   },
-  filterScroll: { paddingLeft: Spacing.xl },
-  filterRow: { gap: Spacing.xs, marginBottom: Spacing.md, paddingRight: Spacing.xl },
-  filterTab: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: 4,
-    backgroundColor: Colors.background,
-    borderWidth: 1,
-    borderColor: Colors.border,
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
   },
-  filterTabActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  filterTabText: {
+  filterBar: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
+    backgroundColor: Colors.background,
+  },
+  filterRow: {
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.xs,
+  },
+  filterChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 4,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  filterChipActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.backgroundCard,
+  },
+  filterChipText: {
     fontFamily: Typography.fontFamily.monoMedium,
-    fontSize: Typography.size.sm,
+    fontSize: 11,
     color: Colors.textSecondary,
     textTransform: 'uppercase',
   },
-  filterTabTextActive: { color: Colors.textLight },
-  list: { paddingBottom: Spacing['3xl'] },
-  cardWrapper: { paddingHorizontal: Spacing.xl },
+  filterChipTextActive: {
+    color: Colors.primary,
+  },
+  list: {
+    backgroundColor: Colors.backgroundCard,
+  },
 });

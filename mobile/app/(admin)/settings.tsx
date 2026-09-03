@@ -12,39 +12,36 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { AppCard } from '../../components/common/AppCard';
 import { AppAvatar } from '../../components/common/AppAvatar';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 
-interface SettingsItemProps {
-  icon: keyof typeof MaterialIcons.glyphMap;
+interface SettingsRowProps {
   label: string;
   value?: string;
   onPress?: () => void;
   showArrow?: boolean;
-  danger?: boolean;
   rightElement?: React.ReactNode;
 }
 
-const SettingsItem = ({
-  icon,
+const SettingsRow = ({
   label,
   value,
   onPress,
   showArrow = true,
-  danger = false,
   rightElement,
-}: SettingsItemProps) => (
-  <TouchableOpacity style={styles.settingsItem} onPress={onPress} activeOpacity={0.7}>
-    <View style={[styles.settingsIcon, danger && styles.settingsIconDanger]}>
-      <MaterialIcons name={icon} size={18} color={danger ? Colors.danger : Colors.primary} />
-    </View>
-    <Text style={[styles.settingsLabel, danger && styles.dangerText]}>{label}</Text>
-    <View style={styles.settingsRight}>
-      {value && <Text style={styles.settingsValue}>{value}</Text>}
+}: SettingsRowProps) => (
+  <TouchableOpacity
+    style={styles.settingsRow}
+    onPress={onPress}
+    disabled={!onPress}
+    activeOpacity={onPress ? 0.7 : 1}
+  >
+    <Text style={styles.rowLabel}>{label}</Text>
+    <View style={styles.rowRight}>
+      {value && <Text style={styles.rowValueMono}>{value}</Text>}
       {rightElement}
-      {showArrow && !rightElement && (
+      {showArrow && onPress && (
         <MaterialIcons name="chevron-right" size={18} color={Colors.textTertiary} />
       )}
     </View>
@@ -69,14 +66,14 @@ export default function AdminSettingsScreen() {
     };
 
     if (Platform.OS === 'web') {
-      if (window.confirm('Are you sure you want to logout?')) {
+      if (window.confirm('Are you sure you want to end your current session?')) {
         performLogout();
       }
     } else {
-      Alert.alert('Logout', 'Are you sure you want to logout?', [
+      Alert.alert('Sign Out', 'Are you sure you want to end your session?', [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Logout',
+          text: 'Sign Out',
           style: 'destructive',
           onPress: performLogout,
         },
@@ -86,66 +83,64 @@ export default function AdminSettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Settings</Text>
+          <Text style={styles.title}>Practice Settings</Text>
+          <Text style={styles.subtitle}>Administrative preferences, firm data, and account access</Text>
         </View>
 
-        {/* Profile Section */}
+        <View style={styles.hairlineRule} />
+
+        {/* Profile Card Header */}
         <TouchableOpacity
-          activeOpacity={0.8}
+          style={styles.profileHeader}
+          activeOpacity={0.7}
           onPress={() => router.push('/(admin)/edit-profile' as any)}
         >
-          <AppCard style={styles.profileCard}>
-            <View style={styles.profileRow}>
-              <AppAvatar
-                name={`${user?.firstName} ${user?.lastName}`}
-                size="lg"
-                uri={user?.avatar}
-              />
-              <View style={styles.profileInfo}>
-                <Text style={styles.profileName}>
-                  {user?.firstName} {user?.lastName}
-                </Text>
-                <Text style={styles.profileEmail}>{user?.email}</Text>
-                <View style={styles.roleBadge}>
-                  <MaterialIcons name="verified" size={12} color={Colors.secondary} />
-                  <Text style={styles.roleText}>Chartered Accountant · Admin</Text>
-                </View>
-              </View>
-              <MaterialIcons name="edit" size={18} color={Colors.textTertiary} />
-            </View>
-          </AppCard>
+          <AppAvatar
+            name={`${user?.firstName} ${user?.lastName}`}
+            size="lg"
+            uri={user?.avatar}
+          />
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileName}>{user?.firstName} {user?.lastName}</Text>
+            <Text style={styles.profileEmail}>{user?.email}</Text>
+            <Text style={styles.profileRole}>ROLE: PRINCIPAL CHARTERED ACCOUNTANT</Text>
+          </View>
+          <MaterialIcons name="chevron-right" size={18} color={Colors.textTertiary} />
         </TouchableOpacity>
 
+        <View style={styles.hairlineRule} />
+
         {/* Account Section */}
-        <Text style={styles.sectionLabel}>Account</Text>
-        <AppCard style={styles.section} noPadding>
-          <SettingsItem
-            icon="person-outline"
-            label="Edit Profile"
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionHeading}>Account & Credentials</Text>
+        </View>
+        <View style={styles.sectionBody}>
+          <SettingsRow
+            label="Edit profile details"
             onPress={() => router.push('/(admin)/edit-profile' as any)}
           />
-          <View style={styles.divider} />
-          <SettingsItem
-            icon="lock-outline"
-            label="Change Password"
+          <SettingsRow
+            label="Change master password"
             onPress={() => router.push('/(admin)/change-password' as any)}
           />
-          <View style={styles.divider} />
-          <SettingsItem
-            icon="business"
-            label="Firm Information"
+          <SettingsRow
+            label="Firm registration details"
             onPress={() => router.push('/(admin)/firm-info' as any)}
           />
-        </AppCard>
+        </View>
 
-        {/* Preferences */}
-        <Text style={styles.sectionLabel}>Preferences</Text>
-        <AppCard style={styles.section} noPadding>
-          <SettingsItem
-            icon="notifications-none"
-            label="Push Notifications"
+        <View style={styles.hairlineRule} />
+
+        {/* System Preferences */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionHeading}>Preferences</Text>
+        </View>
+        <View style={styles.sectionBody}>
+          <SettingsRow
+            label="System push notifications"
             showArrow={false}
             rightElement={
               <Switch
@@ -156,10 +151,8 @@ export default function AdminSettingsScreen() {
               />
             }
           />
-          <View style={styles.divider} />
-          <SettingsItem
-            icon="email"
-            label="Email Alerts"
+          <SettingsRow
+            label="Statutory email reminders"
             showArrow={false}
             rightElement={
               <Switch
@@ -170,75 +163,43 @@ export default function AdminSettingsScreen() {
               />
             }
           />
-          <View style={styles.divider} />
-          <SettingsItem
-            icon="language"
-            label="Language"
-            value="English"
-            onPress={() => {}}
+          <SettingsRow
+            label="Portal language"
+            value="English (IN)"
           />
-        </AppCard>
+        </View>
 
-        {/* Integrations */}
-        <Text style={styles.sectionLabel}>Integrations</Text>
-        <AppCard style={styles.section} noPadding>
-          <SettingsItem
-            icon="videocam"
-            label="Google Meet"
-            value="Not Connected"
-            onPress={() => {}}
-          />
-          <View style={styles.divider} />
-          <SettingsItem
-            icon="video-label"
-            label="Microsoft Teams"
-            value="Not Connected"
-            onPress={() => {}}
-          />
-          <View style={styles.divider} />
-          <SettingsItem
-            icon="cloud"
-            label="Cloud Storage"
-            value="AWS S3"
-            onPress={() => {}}
-          />
-        </AppCard>
+        <View style={styles.hairlineRule} />
 
-        {/* Support */}
-        <Text style={styles.sectionLabel}>Support</Text>
-        <AppCard style={styles.section} noPadding>
-          <SettingsItem
-            icon="help-outline"
-            label="Help & FAQ"
-            onPress={() => {}}
+        {/* Audit & Compliance */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionHeading}>System Audit & Storage</Text>
+        </View>
+        <View style={styles.sectionBody}>
+          <SettingsRow
+            label="Secure file storage"
+            value="AWS S3 (Encrypted)"
           />
-          <View style={styles.divider} />
-          <SettingsItem
-            icon="privacy-tip"
-            label="Privacy Policy"
-            onPress={() => {}}
+          <SettingsRow
+            label="System encryption standard"
+            value="AES-256 / TLS 1.3"
           />
-          <View style={styles.divider} />
-          <SettingsItem
-            icon="info-outline"
-            label="App Version"
-            value="1.0.0"
-            showArrow={false}
+          <SettingsRow
+            label="Software build version"
+            value="v1.0.4-ledger"
           />
-        </AppCard>
+        </View>
 
-        {/* Logout */}
-        <AppCard style={styles.section} noPadding>
-          <SettingsItem
-            icon="logout"
-            label="Logout"
-            danger
+        {/* Destructive Action: generous whitespace and outline border in Rust/red */}
+        <View style={styles.destructiveArea}>
+          <TouchableOpacity
+            style={styles.outlineDangerBtn}
             onPress={handleLogout}
-            showArrow={false}
-          />
-        </AppCard>
-
-        <View style={styles.bottomPad} />
+            activeOpacity={0.7}
+          >
+            <Text style={styles.outlineDangerText}>Sign Out of Practice Portal</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -246,103 +207,119 @@ export default function AdminSettingsScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
+  scroll: { paddingBottom: Spacing['3xl'] },
   header: {
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.base,
-    paddingBottom: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
   },
   title: {
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.displayBold,
     fontSize: Typography.size.xl,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
-  profileCard: {
-    marginHorizontal: Spacing.base,
-    marginBottom: Spacing.sm,
-  },
-  profileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  profileInfo: { flex: 1 },
-  profileName: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.base,
-    color: Colors.textPrimary,
-  },
-  profileEmail: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
+  subtitle: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
     marginTop: 2,
   },
-  roleBadge: {
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
+  },
+  profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: Spacing.xs,
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+    backgroundColor: Colors.backgroundCard,
+    gap: Spacing.md,
   },
-  roleText: {
-    fontFamily: Typography.fontFamily.medium,
+  profileInfo: {
+    flex: 1,
+  },
+  profileName: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.base,
+    color: Colors.primary,
+  },
+  profileEmail: {
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: Typography.size.xs,
-    color: Colors.secondary,
+    color: Colors.textSecondary,
+    marginTop: 2,
   },
-  sectionLabel: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.sm,
+  profileRole: {
+    fontFamily: Typography.fontFamily.monoMedium,
+    fontSize: 9,
+    color: Colors.secondaryDark,
+    letterSpacing: 0.5,
+    marginTop: 4,
+  },
+  sectionHeader: {
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xs,
+    backgroundColor: Colors.background,
+  },
+  sectionHeading: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.xs,
     color: Colors.textTertiary,
-    letterSpacing: Typography.letterSpacing.wide,
-    paddingHorizontal: Spacing.base,
-    marginBottom: Spacing.xs,
-    marginTop: Spacing.base,
     textTransform: 'uppercase',
+    letterSpacing: 1,
   },
-  section: {
-    marginHorizontal: Spacing.base,
-    marginBottom: Spacing.xs,
+  sectionBody: {
+    backgroundColor: Colors.backgroundCard,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: Colors.hairline,
   },
-  settingsItem: {
+  settingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
+  },
+  rowLabel: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.sm,
+    color: Colors.primary,
+  },
+  rowRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
   },
-  settingsIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: Colors.statusActive,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  settingsIconDanger: {
-    backgroundColor: Colors.dangerLight,
-  },
-  settingsLabel: {
-    flex: 1,
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.base,
-    color: Colors.textPrimary,
-  },
-  dangerText: {
-    color: Colors.danger,
-  },
-  settingsRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  settingsValue: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
+  rowValueMono: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: Typography.size.xs,
     color: Colors.textTertiary,
   },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.borderLight,
-    marginLeft: Spacing.base + 32 + Spacing.sm,
+  // Destructive area: generous whitespace and outline border in Rust/red
+  destructiveArea: {
+    marginTop: Spacing['3xl'],
+    paddingHorizontal: Spacing.xl,
+    alignItems: 'center',
   },
-  bottomPad: { height: Spacing['2xl'] },
+  outlineDangerBtn: {
+    borderWidth: 1,
+    borderColor: Colors.danger, // Rust border
+    borderRadius: 4,
+    paddingVertical: 12,
+    paddingHorizontal: Spacing.xl,
+    backgroundColor: 'transparent', // outlined, not solid
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 360,
+  },
+  outlineDangerText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.sm,
+    color: Colors.danger, // Rust text
+  },
 });

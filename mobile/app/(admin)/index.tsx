@@ -7,16 +7,13 @@ import {
   TouchableOpacity,
   RefreshControl,
   useWindowDimensions,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { AppCard } from '../../components/common/AppCard';
 import { AppAvatar } from '../../components/common/AppAvatar';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
-import { mockAdminDashboard } from '../../utils/mockData';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 import {
   useClients,
   useDocuments,
@@ -26,32 +23,6 @@ import {
   useNotifications,
 } from '../../hooks/useQueries';
 import { format } from 'date-fns';
-import { formatRelativeTime, formatDate } from '../../utils/formatters';
-
-interface StatCardProps {
-  icon: keyof typeof MaterialIcons.glyphMap;
-  label: string;
-  value: number | string;
-  color: string;
-  bg: string;
-  onPress?: () => void;
-}
-
-const StatCard = ({ icon, label, value, color, bg, onPress }: StatCardProps) => (
-  <TouchableOpacity style={styles.statCard} onPress={onPress} activeOpacity={0.8}>
-    <AppCard style={styles.statCardInner} padding={Spacing.base}>
-      <View style={styles.statHeaderRow}>
-        <View style={[styles.statIconBg, { backgroundColor: bg }]}>
-          <MaterialIcons name={icon} size={24} color={color} />
-        </View>
-      </View>
-      <View style={styles.statContent}>
-        <Text style={styles.statValue}>{value}</Text>
-        <Text style={styles.statLabel}>{label}</Text>
-      </View>
-    </AppCard>
-  </TouchableOpacity>
-);
 
 export default function AdminDashboard() {
   const { user } = useAuthStore();
@@ -79,49 +50,6 @@ export default function AdminDashboard() {
   );
   const todayAppointments = todayAptsList.length;
 
-  const liveActivities: any[] = [];
-  (invoicesRes?.data || []).forEach((inv: any) => {
-    liveActivities.push({
-      id: `invoice-${inv.id}`,
-      icon: 'receipt',
-      color: Colors.secondary,
-      action: inv.status === 'PAID' ? 'Invoice Paid' : 'Invoice Generated',
-      description: `Invoice ${inv.invoiceNumber} for ${inv.client?.firmName || 'Client'}`,
-      timestamp: inv.updatedAt || inv.issueDate,
-    });
-  });
-  (docsRes?.data || []).forEach((doc: any) => {
-    liveActivities.push({
-      id: `doc-${doc.id}`,
-      icon: doc.status === 'APPROVED' ? 'check-circle' : 'folder',
-      color: doc.status === 'APPROVED' ? Colors.success : Colors.primary,
-      action: doc.status === 'UPLOADED' ? 'Document Uploaded' : doc.status === 'APPROVED' ? 'Document Approved' : 'Document Requested',
-      description: `${doc.name} for request`,
-      timestamp: doc.updatedAt || doc.createdAt,
-    });
-  });
-  (appointmentsRes?.data || []).forEach((apt: any) => {
-    liveActivities.push({
-      id: `apt-${apt.id}`,
-      icon: 'event',
-      color: '#8B5CF6',
-      action: apt.status === 'CONFIRMED' ? 'Appointment Confirmed' : 'Appointment Requested',
-      description: `Meeting: ${apt.purpose}`,
-      timestamp: apt.updatedAt || apt.createdAt,
-    });
-  });
-  const recentActivities = liveActivities
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    .slice(0, 5);
-
-  const stats = {
-    totalClients,
-    pendingDocuments,
-    pendingInvoices,
-    upcomingDeadlines,
-    todayAppointments,
-    recentActivities,
-  };
   const unreadNotifications = (notificationsRes?.data || []).filter((n) => !n.readAt).length;
 
   const onRefresh = async () => {
@@ -137,471 +65,435 @@ export default function AdminDashboard() {
     setRefreshing(false);
   };
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
   const { width } = useWindowDimensions();
   const isDesktop = width > 768;
+
+  const attentionItems = [
+    {
+      id: 'pending-docs',
+      label: 'Pending Document Requests',
+      count: pendingDocuments,
+      meta: 'Awaiting client uploads or approval',
+      route: '/(admin)/documents',
+      alert: pendingDocuments > 0,
+    },
+    {
+      id: 'pending-invoices',
+      label: 'Unpaid GST Invoices',
+      count: pendingInvoices,
+      meta: 'Pending receipt & reconciliation',
+      route: '/(admin)/invoices',
+      alert: pendingInvoices > 0,
+    },
+    {
+      id: 'filing-deadlines',
+      label: 'Filing & Statutory Deadlines',
+      count: upcomingDeadlines,
+      meta: 'Upcoming GST & Income Tax calendar',
+      route: '/(admin)/calendar',
+      alert: upcomingDeadlines > 0,
+    },
+    {
+      id: 'unread-notifs',
+      label: 'Unread Practice Notices',
+      count: unreadNotifications,
+      meta: 'System notices & client submissions',
+      route: '/(admin)/notifications',
+      alert: unreadNotifications > 0,
+    },
+  ];
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
         style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.greeting}>Good morning,</Text>
-            <Text style={styles.userName}>
-              {user?.firstName} {user?.lastName}
+        {/* Top Header: Dynamic Greeting + Date + Profile */}
+        <View style={styles.topHeader}>
+          <View style={styles.topHeaderLeft}>
+            <Text style={styles.greetingText}>
+              {getGreeting()}, {user?.firstName || 'Admin'}
             </Text>
+            <Text style={styles.dateLabel}>{format(new Date(), 'EEEE, dd MMMM yyyy')}</Text>
           </View>
-          <View style={styles.headerRight}>
+
+          <View style={styles.topHeaderRight}>
             <TouchableOpacity
-              style={styles.notifBtn}
+              style={styles.notifButton}
               onPress={() => router.push('/(admin)/notifications' as any)}
             >
-              <MaterialIcons name="notifications-none" size={24} color={Colors.textPrimary} />
-              {unreadNotifications > 0 && (
-                <View style={styles.notifBadge}>
-                  <Text style={styles.notifBadgeText}>{unreadNotifications}</Text>
-                </View>
-              )}
+              <MaterialIcons name="notifications-none" size={20} color={Colors.primary} />
+              {unreadNotifications > 0 && <View style={styles.notifDot} />}
             </TouchableOpacity>
-            <AppAvatar
-              name={`${user?.firstName} ${user?.lastName}`}
-              size="sm"
-              uri={user?.avatar}
-            />
+            <TouchableOpacity onPress={() => router.push('/(admin)/settings' as any)}>
+              <AppAvatar
+                name={`${user?.firstName} ${user?.lastName}`}
+                size="sm"
+                uri={user?.avatar}
+              />
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* Quick Stats Grid */}
-        <View style={styles.statsGrid}>
-          <StatCard
-            icon="people"
-            label="Total Clients"
-            value={stats.totalClients}
-            color={Colors.primary}
-            bg={Colors.statusActive}
+        <View style={styles.hairlineRule} />
+
+        {/* Compact Key Metrics Strip */}
+        <View style={styles.statBlocksContainer}>
+          <TouchableOpacity
+            style={styles.statBlock}
+            activeOpacity={0.7}
             onPress={() => router.push('/(admin)/clients')}
-          />
-          <StatCard
-            icon="folder-open"
-            label="Pending Docs"
-            value={stats.pendingDocuments}
-            color={Colors.warning}
-            bg={Colors.warningLight}
+          >
+            <Text style={styles.statNumber}>{totalClients}</Text>
+            <Text style={styles.statLabel}>Clients</Text>
+          </TouchableOpacity>
+
+          <View style={styles.statDivider} />
+
+          <TouchableOpacity
+            style={styles.statBlock}
+            activeOpacity={0.7}
             onPress={() => router.push('/(admin)/documents' as any)}
-          />
-          <StatCard
-            icon="receipt"
-            label="Pending Invoices"
-            value={stats.pendingInvoices}
-            color={Colors.danger}
-            bg={Colors.dangerLight}
+          >
+            <Text style={styles.statNumber}>{pendingDocuments}</Text>
+            <Text style={styles.statLabel}>Docs Due</Text>
+          </TouchableOpacity>
+
+          <View style={styles.statDivider} />
+
+          <TouchableOpacity
+            style={styles.statBlock}
+            activeOpacity={0.7}
             onPress={() => router.push('/(admin)/invoices')}
-          />
-          <StatCard
-            icon="event"
-            label="Upcoming Deadlines"
-            value={stats.upcomingDeadlines}
-            color={Colors.secondary}
-            bg={Colors.infoLight}
-            onPress={() => router.push('/(admin)/calendar' as any)}
-          />
-          <StatCard
-            icon="today"
-            label="Today's Appointments"
-            value={stats.todayAppointments}
-            color={Colors.success}
-            bg={Colors.successLight}
+          >
+            <Text style={styles.statNumber}>{pendingInvoices}</Text>
+            <Text style={styles.statLabel}>Unpaid</Text>
+          </TouchableOpacity>
+
+          <View style={styles.statDivider} />
+
+          <TouchableOpacity
+            style={styles.statBlock}
+            activeOpacity={0.7}
             onPress={() => router.push('/(admin)/appointments' as any)}
-          />
+          >
+            <Text style={styles.statNumber}>{todayAppointments}</Text>
+            <Text style={styles.statLabel}>Today</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Desktop Layout Wrapper */}
-        <View style={[styles.mainLayout, isDesktop && styles.mainLayoutDesktop]}>
-          <View style={styles.mainColumn}>
-            {/* Quick Actions */}
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Quick Actions</Text>
-            </View>
-            <View style={styles.actionGrid}>
-              {[
-                { icon: 'person-add', label: 'Add Client', route: '/(admin)/clients' },
-                { icon: 'post-add', label: 'New Invoice', route: '/(admin)/invoices' },
-                { icon: 'assignment', label: 'Doc Request', route: '/(admin)/documents' },
-                { icon: 'event-available', label: 'Appointments', route: '/(admin)/appointments' },
-                { icon: 'calendar-today', label: 'Calendar', route: '/(admin)/calendar' },
-              ].map((action) => (
-                <TouchableOpacity
-                  key={action.label}
-                  style={styles.actionChip}
-                  onPress={() => router.push(action.route as any)}
-                  activeOpacity={0.8}
-                >
-                  <AppCard style={styles.actionIconBg} noPadding>
-                    <MaterialIcons name={action.icon as any} size={24} color={Colors.primary} />
-                  </AppCard>
-                  <Text style={styles.actionLabel}>{action.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+        <View style={styles.hairlineRule} />
 
-            {/* Upcoming Appointments */}
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Today's Appointments</Text>
-              <TouchableOpacity onPress={() => router.push('/(admin)/appointments' as any)}>
-                <Text style={styles.seeAll}>See all</Text>
-              </TouchableOpacity>
-            </View>
-            {todayAptsList.slice(0, 3).map((apt) => (
+        {/* Quick Tools Row (Compact pills) */}
+        <View style={styles.toolsRow}>
+          {[
+            { label: '+ Client', route: '/(admin)/add-client' },
+            { label: '+ Invoice', route: '/(admin)/create-invoice' },
+            { label: '+ Request Doc', route: '/(admin)/request-document' },
+            { label: '+ Meeting', route: '/(admin)/add-appointment' },
+            { label: 'Calendar', route: '/(admin)/calendar' },
+          ].map((tool) => (
+            <TouchableOpacity
+              key={tool.label}
+              style={styles.toolChip}
+              onPress={() => router.push(tool.route as any)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.toolChipText}>{tool.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.hairlineRule} />
+
+        {/* Compact Needs Attention List */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionHeading}>Needs Attention</Text>
+          <Text style={styles.refMeta}>TODAY</Text>
+        </View>
+
+        <View style={styles.attentionList}>
+          {attentionItems.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.attentionRow}
+              activeOpacity={0.7}
+              onPress={() => router.push(item.route as any)}
+            >
+              <View style={styles.attentionInfo}>
+                <Text style={styles.attentionLabel}>{item.label}</Text>
+                <Text style={styles.attentionMeta}>{item.meta}</Text>
+              </View>
+              <View style={styles.attentionRight}>
+                <Text style={[styles.attentionCount, item.alert && styles.attentionCountAlert]}>
+                  {item.count}
+                </Text>
+                <MaterialIcons name="chevron-right" size={16} color={Colors.textTertiary} />
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Today's Schedule - Clean, compact section */}
+        <View style={[styles.sectionHeaderRow, { marginTop: Spacing.md }]}>
+          <Text style={styles.sectionHeading}>Today's Schedule ({todayAppointments})</Text>
+          <TouchableOpacity onPress={() => router.push('/(admin)/appointments' as any)}>
+            <Text style={styles.seeAllLink}>View all</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.scheduleBlock}>
+          {todayAptsList.length > 0 ? (
+            todayAptsList.slice(0, 3).map((apt) => (
               <TouchableOpacity
                 key={apt.id}
-                activeOpacity={0.8}
+                style={styles.scheduleRow}
                 onPress={() => router.push(`/(admin)/appointment-detail?id=${apt.id}` as any)}
+                activeOpacity={0.7}
               >
-                <AppCard style={styles.aptCard}>
-                  <View style={styles.aptRow}>
-                    <View style={styles.aptTimeBadge}>
-                      <Text style={styles.aptTime}>
-                        {new Date(apt.confirmedDate || apt.requestedDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                      </Text>
-                    </View>
-                    <View style={styles.aptInfo}>
-                      <Text style={styles.aptTitle}>{apt.title}</Text>
-                      <Text style={styles.aptClient}>
-                        {apt.clientProfile?.user ? `${apt.clientProfile.user.firstName} ${apt.clientProfile.user.lastName}` : 'Client'}
-                      </Text>
-                    </View>
-                    <View style={styles.aptDuration}>
-                      <MaterialIcons name="schedule" size={14} color={Colors.textTertiary} />
-                      <Text style={styles.aptDurationText}>{apt.duration}m</Text>
-                    </View>
-                  </View>
-                </AppCard>
-              </TouchableOpacity>
-            ))}
-            {todayAptsList.length === 0 && (
-              <AppCard style={styles.emptyCard}>
-                <Text style={styles.emptyText}>No appointments scheduled for today</Text>
-              </AppCard>
-            )}
-          </View>
-
-          <View style={styles.sideColumn}>
-            {/* Recent Activity */}
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Recent Activity</Text>
-            </View>
-            <AppCard style={styles.activityCard} noPadding>
-              {stats.recentActivities.length > 0 ? (
-                stats.recentActivities.map((activity: any, index: number) => (
-                  <View
-                    key={activity.id}
-                    style={[
-                      styles.activityItem,
-                      index < stats.recentActivities.length - 1 && styles.activityBorder,
-                    ]}
-                  >
-                    <View style={[styles.activityIconBg, { backgroundColor: `${activity.color}15` }]}>
-                      <MaterialIcons
-                        name={activity.icon as any}
-                        size={18}
-                        color={activity.color}
-                      />
-                    </View>
-                    <View style={styles.activityInfo}>
-                      <Text style={styles.activityAction}>{activity.action}</Text>
-                      <Text style={styles.activityDesc}>{activity.description}</Text>
-                    </View>
-                    <Text style={styles.activityTime}>{formatRelativeTime(activity.timestamp)}</Text>
-                  </View>
-                ))
-              ) : (
-                <View style={styles.emptyCard}>
-                  <Text style={styles.emptyText}>No recent activity</Text>
+                <Text style={styles.scheduleTime}>
+                  {format(new Date(apt.confirmedDate || apt.requestedDate), 'hh:mm a')}
+                </Text>
+                <View style={styles.scheduleDetails}>
+                  <Text style={styles.scheduleTitle} numberOfLines={1}>{apt.title}</Text>
+                  <Text style={styles.scheduleClient} numberOfLines={1}>
+                    {apt.clientProfile?.user
+                      ? `${apt.clientProfile.user.firstName} ${apt.clientProfile.user.lastName}`
+                      : 'Client'}
+                  </Text>
                 </View>
-              )}
-            </AppCard>
-          </View>
+                <MaterialIcons name="chevron-right" size={16} color={Colors.textTertiary} />
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={styles.emptyRow}>
+              <Text style={styles.emptyText}>No appointments scheduled today.</Text>
+            </View>
+          )}
         </View>
-
-        <View style={styles.bottomPad} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background }, // paper
+  safe: { flex: 1, backgroundColor: Colors.background },
   scroll: { flex: 1 },
-  header: {
+  scrollContent: { paddingBottom: Spacing.xl },
+  topHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.md,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
   },
-  headerLeft: { flex: 1 },
-  greeting: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.sm,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  userName: {
+  topHeaderLeft: { flex: 1 },
+  greetingText: {
     fontFamily: Typography.fontFamily.displayBold,
-    fontSize: Typography.size['2xl'],
-    color: Colors.primary, // ink-900
-    marginTop: Spacing.xs,
-  },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.base },
-  notifBtn: { position: 'relative', padding: 4 },
-  notifBadge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: Colors.secondary, // brass
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  notifBadgeText: {
-    fontFamily: Typography.fontFamily.monoMedium,
-    fontSize: 9,
-    color: Colors.background,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.xl,
-    marginTop: Spacing.xl,
-    marginBottom: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    paddingBottom: Spacing.xs,
-  },
-  sectionTitle: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.base,
+    fontSize: Typography.size.lg,
     color: Colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
-  seeAll: {
-    fontFamily: Typography.fontFamily.monoMedium,
-    fontSize: Typography.size.sm,
-    color: Colors.secondaryDark,
+  dateLabel: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: 11,
+    color: Colors.textSecondary,
+    marginTop: 1,
   },
-  statsGrid: {
+  topHeaderRight: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.base,
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
-  statCard: {
-    flexGrow: 1,
-    flexBasis: 160,
-    minWidth: 140,
+  notifButton: {
+    padding: 6,
+    position: 'relative',
   },
-  statCardInner: {
-    height: 110,
-    justifyContent: 'space-between',
-    borderRadius: 4, // structural
-    borderWidth: 1,
-    borderColor: Colors.border,
+  notifDot: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.secondary,
+  },
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
+  },
+  // Compact stat strip
+  statBlocksContainer: {
+    flexDirection: 'row',
     backgroundColor: Colors.backgroundCard,
-    padding: Spacing.base,
+    paddingVertical: Spacing.sm,
   },
-  statHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  statBlock: {
+    flex: 1,
     alignItems: 'center',
+    paddingVertical: 2,
   },
-  statIconBg: {
-    width: 32,
-    height: 32,
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  statContent: {
-    alignItems: 'flex-start',
-  },
-  statValue: {
-    fontFamily: Typography.fontFamily.monoBold, // Ledger style numbers
-    fontSize: Typography.size['2xl'],
+  statNumber: {
+    fontFamily: Typography.fontFamily.monoBold,
+    fontSize: Typography.size.lg,
     color: Colors.primary,
   },
   statLabel: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.xs,
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: 10,
     color: Colors.textSecondary,
-    textTransform: 'uppercase',
+    marginTop: 1,
   },
-  mainLayout: {
-    flexDirection: 'column',
-    width: '100%',
+  statDivider: {
+    width: 1,
+    backgroundColor: Colors.hairline,
   },
-  mainLayoutDesktop: {
-    flexDirection: 'row',
-    paddingRight: Spacing.xl,
-  },
-  mainColumn: {
-    flex: 2,
-  },
-  sideColumn: {
-    flex: 1,
-    paddingLeft: Spacing.xl,
-    borderLeftWidth: 1,
-    borderLeftColor: Colors.border,
-  },
-  actionGrid: {
+  // Compact Tools Row
+  toolsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: Spacing.xs,
     paddingHorizontal: Spacing.xl,
-    gap: Spacing.base,
-  },
-  actionChip: {
-    alignItems: 'center',
-    width: 72,
-  },
-  actionIconBg: {
-    width: 56,
-    height: 56,
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.xs,
-    backgroundColor: Colors.backgroundCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  actionLabel: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: 10,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-  },
-  aptCard: {
-    marginHorizontal: Spacing.xl,
-    marginBottom: Spacing.sm,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: 0, // We want the time badge to touch edges
-    overflow: 'hidden',
-  },
-  aptRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  aptTimeBadge: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: `${Colors.primaryLight}15`, // light ink
-    paddingVertical: Spacing.base,
-    paddingHorizontal: Spacing.base,
-    minWidth: 70,
-    borderRightWidth: 1,
-    borderRightColor: Colors.border,
-  },
-  aptTime: {
-    fontFamily: Typography.fontFamily.monoBold,
-    fontSize: Typography.size.sm,
-    color: Colors.primary,
-  },
-  aptAm: {
-    fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: Typography.size.xs,
-    color: Colors.textSecondary,
-  },
-  aptInfo: { flex: 1, paddingHorizontal: Spacing.base },
-  aptTitle: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.sm,
-    color: Colors.primary,
-  },
-  aptClient: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.xs,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  aptDuration: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingRight: Spacing.base },
-  aptDurationText: {
-    fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: Typography.size.xs,
-    color: Colors.textTertiary,
-  },
-  activityCard: {
-    marginHorizontal: Spacing.xl,
-    backgroundColor: Colors.backgroundCard,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.base,
-    padding: Spacing.base,
-  },
-  activityBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border, // hairline
-  },
-  activityIconBg: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
+    paddingVertical: Spacing.sm,
     backgroundColor: Colors.background,
   },
-  activityInfo: { flex: 1 },
-  activityAction: {
+  toolChip: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.backgroundCard,
+  },
+  toolChipText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 11,
+    color: Colors.primary,
+  },
+  // Attention section
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xs,
+  },
+  sectionHeading: {
     fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.xs,
+    color: Colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  refMeta: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 9,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
+  },
+  seeAllLink: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.xs,
+    color: Colors.secondaryDark,
+  },
+  attentionList: {
+    backgroundColor: Colors.backgroundCard,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: Colors.hairline,
+  },
+  attentionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: Spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
+  },
+  attentionInfo: {
+    flex: 1,
+    marginRight: Spacing.sm,
+  },
+  attentionLabel: {
+    fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
     color: Colors.primary,
   },
-  activityDesc: {
+  attentionMeta: {
     fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.xs,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  activityTime: {
-    fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: 10,
+    fontSize: 11,
     color: Colors.textTertiary,
-    marginTop: Spacing.xs,
+    marginTop: 1,
   },
-  emptyCard: {
-    marginHorizontal: Spacing.xl,
+  attentionRight: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.xl,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 4,
-    borderStyle: 'dashed',
+    gap: Spacing.xs,
+  },
+  attentionCount: {
+    fontFamily: Typography.fontFamily.monoMedium,
+    fontSize: Typography.size.sm,
+    color: Colors.textSecondary,
+  },
+  attentionCountAlert: {
+    color: Colors.secondaryDark,
+    fontFamily: Typography.fontFamily.monoBold,
+  },
+  // Schedule section
+  scheduleBlock: {
+    backgroundColor: Colors.backgroundCard,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: Colors.hairline,
+  },
+  scheduleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: Spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
+  },
+  scheduleTime: {
+    fontFamily: Typography.fontFamily.monoMedium,
+    fontSize: 11,
+    color: Colors.secondaryDark,
+    width: 75,
+  },
+  scheduleDetails: {
+    flex: 1,
+    marginRight: Spacing.sm,
+  },
+  scheduleTitle: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.sm,
+    color: Colors.primary,
+  },
+  scheduleClient: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: 11,
+    color: Colors.textTertiary,
+    marginTop: 1,
+  },
+  emptyRow: {
+    padding: Spacing.md,
+    alignItems: 'center',
   },
   emptyText: {
-    fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: Typography.size.sm,
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.xs,
     color: Colors.textTertiary,
   },
-  bottomPad: { height: Spacing.xl },
 });

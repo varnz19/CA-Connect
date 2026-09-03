@@ -1,156 +1,96 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView, Platform } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing } from '../../constants/theme';
 
-const { width } = Dimensions.get('window');
-
-// Colors from prompt to guarantee exact match
-const INK = '#14261E';
-const DEEP_GREEN = '#1F3D2E';
-const PAPER = '#F5F6F1';
-const PAPER_CARD = '#FBFBF8';
-const BRASS = '#B8863A';
-const SOFT_BRASS = '#EFE3C8';
-const HAIRLINE = '#DAD9CE';
-const SEC_TEXT = '#5B6560';
-const RUST = '#A34B34';
-
 export default function LandingScreen() {
   const router = useRouter();
-  
-  // Hover states for web
-  const [hoveredAdmin, setHoveredAdmin] = useState(false);
-  const [hoveredClient, setHoveredClient] = useState(false);
-  const [hoveredReg, setHoveredReg] = useState(false);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <View style={styles.container}>
-        
-        {/* LEFT PANEL */}
-        <View style={styles.leftPanel}>
-          <View style={styles.leftContent}>
-            <View style={styles.logoWrapper}>
-              <MaterialIcons name="account-balance" size={48} color={PAPER} />
-            </View>
-            
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.container}>
+          {/* Brand Header */}
+          <View style={styles.brandSection}>
+            <Text style={styles.brandEyebrow}>Chartered Accountant Portal</Text>
             <Text style={styles.brandTitle}>CA CONNECT</Text>
-            
-            <View style={styles.brassDivider} />
-            
-            <Text style={styles.brandSubtitle}>Official Financial & Compliance Portal</Text>
-            <Text style={styles.brandTagline}>
-              Securely manage your records, audit logs, and accounting journals with uncompromising precision.
+            <View style={styles.hairlineRule} />
+            <Text style={styles.brandDesc}>
+              Firm ledger, compliance filing, GST records, and client communications portal.
             </Text>
           </View>
-        </View>
 
-        {/* RIGHT PANEL */}
-        <ScrollView 
-          style={styles.rightScroll} 
-          contentContainerStyle={styles.rightPanelContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.rightContent}>
-            
-            <View style={styles.headerArea}>
-              <Text style={styles.monoHeading}>Select Portal</Text>
-              <Text style={styles.largeHeading}>Welcome Back</Text>
-              <Text style={styles.supportingCopy}>
-                Please choose your designated portal to access secure records and services.
-              </Text>
-            </View>
+          {/* Portal Selector Choices */}
+          <View style={styles.selectorSection}>
+            <Text style={styles.sectionLabel}>Select Access Level</Text>
 
-            <View style={styles.cardsArea}>
-              {/* Admin Card */}
-              <TouchableOpacity
-                style={[
-                  styles.portalCard, 
-                  styles.adminCard,
-                  Platform.OS === 'web' && hoveredAdmin && styles.portalCardHover
-                ]}
-                activeOpacity={0.9}
-                onPress={() => router.push('/(auth)/admin-login')}
-                onMouseEnter={() => setHoveredAdmin(true)}
-                onMouseLeave={() => setHoveredAdmin(false)}
-              >
-                <View style={styles.cardIconWrapper}>
-                  <MaterialIcons name="security" size={32} color={INK} />
+            {/* Admin Portal Row */}
+            <TouchableOpacity
+              style={styles.portalRow}
+              activeOpacity={0.7}
+              onPress={() => router.push('/(auth)/admin-login')}
+            >
+              <View style={styles.brassAccentLine} />
+              <View style={styles.portalTextCol}>
+                <View style={styles.titleRow}>
+                  <Text style={styles.portalTitle}>Admin Workspace</Text>
+                  <Text style={styles.roleTag}>Firm Internal</Text>
                 </View>
-                <View style={styles.cardTextWrapper}>
-                  <Text style={styles.cardTitle}>Admin Portal</Text>
-                  <Text style={styles.cardDesc}>
-                    Manage ledgers, issue invoices, review client files, and oversee compliance tasks.
-                  </Text>
-                </View>
-                <View style={styles.arrowWrapper}>
-                  <MaterialIcons name="arrow-forward" size={24} color={BRASS} />
-                </View>
-              </TouchableOpacity>
+                <Text style={styles.portalDesc}>
+                  Ledgers, invoice generation, compliance management, client records, and filings.
+                </Text>
+              </View>
+              <MaterialIcons name="arrow-forward" size={18} color={Colors.primary} />
+            </TouchableOpacity>
 
-              {/* Client Card */}
-              <TouchableOpacity
-                style={[
-                  styles.portalCard, 
-                  styles.clientCard,
-                  Platform.OS === 'web' && hoveredClient && styles.portalCardHover
-                ]}
-                activeOpacity={0.9}
-                onPress={() => router.push('/(auth)/client-login')}
-                onMouseEnter={() => setHoveredClient(true)}
-                onMouseLeave={() => setHoveredClient(false)}
-              >
-                <View style={styles.cardIconWrapper}>
-                  <MaterialIcons name="person" size={32} color={BRASS} />
+            {/* Client Portal Row */}
+            <TouchableOpacity
+              style={styles.portalRow}
+              activeOpacity={0.7}
+              onPress={() => router.push('/(auth)/client-login')}
+            >
+              <View style={[styles.brassAccentLine, { backgroundColor: Colors.secondary }]} />
+              <View style={styles.portalTextCol}>
+                <View style={styles.titleRow}>
+                  <Text style={styles.portalTitle}>Client Portal</Text>
+                  <Text style={[styles.roleTag, { borderColor: Colors.secondary, color: Colors.secondaryDark }]}>Client Access</Text>
                 </View>
-                <View style={styles.cardTextWrapper}>
-                  <Text style={styles.cardTitle}>Client Portal</Text>
-                  <Text style={styles.cardDesc}>
-                    Access financial records, upload secure documents, and book advisory sessions.
-                  </Text>
-                </View>
-                <View style={styles.arrowWrapper}>
-                  <MaterialIcons name="arrow-forward" size={24} color={BRASS} />
-                </View>
-              </TouchableOpacity>
-            </View>
+                <Text style={styles.portalDesc}>
+                  View tax records, upload requested documents, track invoices, and book advisory sessions.
+                </Text>
+              </View>
+              <MaterialIcons name="arrow-forward" size={18} color={Colors.primary} />
+            </TouchableOpacity>
+          </View>
 
-            {/* Registration Panel */}
-            <View style={styles.registrationPanel}>
-              <View style={styles.regTextWrapper}>
-                <Text style={styles.regHeading}>New Client?</Text>
-                <Text style={styles.regCopy}>
-                  Establish a secure connection with our firm to initiate services.
+          {/* New Client Registration */}
+          <View style={styles.registerSection}>
+            <View style={styles.registerInner}>
+              <View style={styles.registerTextCol}>
+                <Text style={styles.registerHeading}>New Client Registration</Text>
+                <Text style={styles.registerDesc}>
+                  Register your business or firm account to initiate CA advisory and filing services.
                 </Text>
               </View>
               <TouchableOpacity
-                style={[
-                  styles.createBtn,
-                  Platform.OS === 'web' && hoveredReg && styles.createBtnHover
-                ]}
-                activeOpacity={0.9}
+                style={styles.createBtn}
+                activeOpacity={0.8}
                 onPress={() => router.push('/(auth)/signup')}
-                onMouseEnter={() => setHoveredReg(true)}
-                onMouseLeave={() => setHoveredReg(false)}
               >
                 <Text style={styles.createBtnText}>Create Account</Text>
-                <MaterialIcons name="person-add" size={18} color={PAPER} style={{ marginLeft: 8 }} />
               </TouchableOpacity>
             </View>
-
-            {/* Footer */}
-            <View style={styles.footer}>
-              <MaterialIcons name="lock-outline" size={14} color={SEC_TEXT} style={{ marginRight: 6 }} />
-              <Text style={styles.footerText}>Secure 256-bit SSL encrypted connection</Text>
-            </View>
-
           </View>
-        </ScrollView>
-        
-      </View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerMeta}>256-BIT ENCRYPTION · SOC 2 COMPLIANT</Text>
+            <Text style={styles.footerCopy}>CA Connect System</Text>
+          </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -158,203 +98,166 @@ export default function LandingScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: PAPER,
+    backgroundColor: Colors.background,
+  },
+  scroll: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: Spacing['2xl'],
+    paddingHorizontal: Spacing.xl,
   },
   container: {
-    flex: 1,
-    flexDirection: width > 768 ? 'row' : 'column',
-  },
-  leftPanel: {
-    width: width > 768 ? '35%' : '100%',
-    backgroundColor: INK,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Spacing['3xl'],
-    borderRightWidth: width > 768 ? 1 : 0,
-    borderBottomWidth: width > 768 ? 0 : 1,
-    borderColor: BRASS, // Thin brass divider from prompt
-  },
-  leftContent: {
     width: '100%',
-    maxWidth: 400,
-    alignItems: 'center',
+    maxWidth: 520,
+    alignSelf: 'center',
   },
-  logoWrapper: {
-    marginBottom: Spacing.xl,
-    justifyContent: 'center',
-    alignItems: 'center',
+  brandSection: {
+    marginBottom: Spacing['2xl'],
+  },
+  brandEyebrow: {
+    fontFamily: Typography.fontFamily.monoMedium,
+    fontSize: 11,
+    color: Colors.textSecondary,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: Spacing.xs,
   },
   brandTitle: {
     fontFamily: Typography.fontFamily.displayBold,
-    fontSize: 42,
-    color: PAPER,
+    fontSize: 32,
+    color: Colors.primary,
     letterSpacing: 1,
-    textAlign: 'center',
   },
-  brassDivider: {
-    width: 60,
+  hairlineRule: {
     height: 1,
-    backgroundColor: BRASS,
-    marginVertical: Spacing.xl,
+    backgroundColor: Colors.hairline,
+    marginVertical: Spacing.md,
   },
-  brandSubtitle: {
+  brandDesc: {
     fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.lg,
-    color: PAPER,
-    textAlign: 'center',
-    marginBottom: Spacing.md,
+    fontSize: Typography.size.sm,
+    color: Colors.textSecondary,
+    lineHeight: 22,
   },
-  brandTagline: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: 13,
-    color: SOFT_BRASS,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  rightScroll: {
-    flex: 1,
-    backgroundColor: PAPER,
-  },
-  rightPanelContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: width > 768 ? Spacing['3xl'] : Spacing.xl,
-  },
-  rightContent: {
-    width: '100%',
-    maxWidth: 600, // Editorial grid max width
-  },
-  headerArea: {
+  selectorSection: {
     marginBottom: Spacing['2xl'],
   },
-  monoHeading: {
-    fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: 12,
-    color: SEC_TEXT,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: Spacing.sm,
-  },
-  largeHeading: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: 36,
-    color: INK,
-    marginBottom: Spacing.sm,
-  },
-  supportingCopy: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.md,
-    color: SEC_TEXT,
-    lineHeight: 24,
-  },
-  cardsArea: {
-    gap: Spacing.lg,
-    marginBottom: Spacing['3xl'],
-  },
-  portalCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: PAPER_CARD,
-    borderWidth: 1,
-    borderColor: HAIRLINE,
-    borderRadius: 0,
-    padding: Spacing.xl,
-    ...Platform.select({
-      web: { transition: 'all 200ms ease' }
-    }),
-  },
-  portalCardHover: {
-    transform: [{ translateY: -2 }],
-    borderColor: SEC_TEXT,
-  },
-  adminCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: INK,
-  },
-  clientCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: BRASS,
-  },
-  cardIconWrapper: {
-    marginRight: Spacing.xl,
-  },
-  cardTextWrapper: {
-    flex: 1,
-  },
-  cardTitle: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: 18,
-    color: INK,
-    marginBottom: 4,
-  },
-  cardDesc: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: 14,
-    color: SEC_TEXT,
-    lineHeight: 20,
-  },
-  arrowWrapper: {
-    marginLeft: Spacing.base,
-  },
-  registrationPanel: {
-    flexDirection: width > 480 ? 'row' : 'column',
-    alignItems: width > 480 ? 'center' : 'stretch',
-    backgroundColor: PAPER_CARD,
-    borderWidth: 1,
-    borderColor: HAIRLINE,
-    borderRadius: 0,
-    padding: Spacing.xl,
-    gap: Spacing.lg,
-    marginBottom: Spacing['3xl'],
-  },
-  regTextWrapper: {
-    flex: 1,
-  },
-  regHeading: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: 18,
-    color: INK,
-    marginBottom: 4,
-  },
-  regCopy: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: 14,
-    color: SEC_TEXT,
-  },
-  createBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: INK,
-    paddingVertical: 14,
-    paddingHorizontal: Spacing.xl,
-    borderRadius: 0,
-    ...Platform.select({
-      web: { transition: 'background-color 200ms ease' }
-    }),
-  },
-  createBtnHover: {
-    backgroundColor: DEEP_GREEN,
-  },
-  createBtnText: {
-    fontFamily: Typography.fontFamily.semiBold, // Inter
-    fontSize: 14,
-    color: PAPER,
-  },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.xl,
-    borderTopWidth: 1,
-    borderTopColor: HAIRLINE,
-  },
-  footerText: {
+  sectionLabel: {
     fontFamily: Typography.fontFamily.monoRegular,
     fontSize: 11,
-    color: SEC_TEXT,
+    color: Colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: Spacing.md,
+  },
+  portalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.backgroundCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 4,
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.base,
+    marginBottom: Spacing.md,
+    position: 'relative',
+  },
+  brassAccentLine: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: Colors.primary,
+    borderTopLeftRadius: 4,
+    borderBottomLeftRadius: 4,
+  },
+  portalTextCol: {
+    flex: 1,
+    paddingLeft: Spacing.sm,
+    paddingRight: Spacing.md,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: 4,
+  },
+  portalTitle: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.md,
+    color: Colors.primary,
+  },
+  roleTag: {
+    fontFamily: Typography.fontFamily.monoMedium,
+    fontSize: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+    color: Colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  portalDesc: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.xs,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+  },
+  registerSection: {
+    backgroundColor: Colors.backgroundCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 4,
+    padding: Spacing.lg,
+    marginBottom: Spacing['2xl'],
+  },
+  registerInner: {
+    gap: Spacing.md,
+  },
+  registerTextCol: {},
+  registerHeading: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.base,
+    color: Colors.primary,
+    marginBottom: 2,
+  },
+  registerDesc: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.xs,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+  },
+  createBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.primaryLight,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 10,
+    borderRadius: 4,
+  },
+  createBtnText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.sm,
+    color: Colors.textLight,
+  },
+  footer: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.hairline,
+    paddingTop: Spacing.lg,
+    alignItems: 'center',
+    gap: 4,
+  },
+  footerMeta: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
+  },
+  footerCopy: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: 11,
+    color: Colors.textSecondary,
   },
 });

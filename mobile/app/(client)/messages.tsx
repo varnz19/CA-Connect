@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,19 +10,16 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppAvatar } from '../../components/common/AppAvatar';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 import { Message } from '../../types';
 import { format, parseISO } from 'date-fns';
-import * as DocumentPicker from 'expo-document-picker';
 import { useConversations, useMessages } from '../../hooks/useQueries';
 import { useMutation } from '@tanstack/react-query';
 import { messageService } from '../../services/messageService';
 import { socketService } from '../../services/socketService';
-import { useEffect } from 'react';
 
 export default function ClientMessagesScreen() {
   const { user } = useAuthStore();
@@ -73,10 +70,6 @@ export default function ClientMessagesScreen() {
 
   const sendMessage = () => {
     if (!message.trim() || !conversationId) return;
-    
-    // Receiver is the CA admin.
-    // If the conversation metadata contains admin details, use that.
-    // Otherwise fallback to default admin.
     const receiverId = conversation?.clientProfile?.adminId || 'admin-user-id';
 
     sendMutation.mutate({
@@ -86,24 +79,7 @@ export default function ClientMessagesScreen() {
     });
   };
 
-  const handleAttach = async () => {
-    const result = await DocumentPicker.getDocumentAsync({ multiple: false });
-    if (!result.canceled && result.assets[0]) {
-      const newMsg: Message = {
-        id: `msg-${Date.now()}`,
-        conversationId: 'conv-001',
-        senderId: user?.id || 'client-001',
-        receiverId: 'admin-001',
-        fileName: result.assets[0].name,
-        fileType: result.assets[0].mimeType || 'application/octet-stream',
-        createdAt: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, newMsg]);
-    }
-  };
-
-  const isMyMessage = (senderId: string) =>
-    senderId === user?.id;
+  const isMyMessage = (senderId: string) => senderId === user?.id;
 
   const renderMessage = ({ item, index }: { item: Message; index: number }) => {
     const isMe = isMyMessage(item.senderId);
@@ -113,62 +89,52 @@ export default function ClientMessagesScreen() {
         format(parseISO(item.createdAt), 'dd MMM');
 
     return (
-      <>
+      <View style={styles.messageEntry}>
         {showDate && (
-          <View style={styles.dateSeparator}>
-            <View style={styles.dateLine} />
-            <Text style={styles.dateText}>{format(parseISO(item.createdAt), 'dd MMM yyyy')}</Text>
-            <View style={styles.dateLine} />
+          <View style={styles.daySeparator}>
+            <View style={styles.dayLine} />
+            <Text style={styles.dayText}>
+              {format(parseISO(item.createdAt), 'dd MMMM yyyy').toUpperCase()}
+            </Text>
+            <View style={styles.dayLine} />
           </View>
         )}
-        <View style={[styles.bubbleWrapper, isMe && styles.myWrapper]}>
-          {!isMe && (
-            <AppAvatar
-              name="Admin CA"
-              size="xs"
-            />
-          )}
-          <View style={[styles.bubble, isMe ? styles.myBubble : styles.theirBubble]}>
-            {item.fileName ? (
-              <View style={styles.fileAttach}>
-                <MaterialIcons name="insert-drive-file" size={20} color={isMe ? Colors.textLight : Colors.secondary} />
-                <Text style={[styles.fileName, isMe && styles.myText]} numberOfLines={1}>{item.fileName}</Text>
-              </View>
-            ) : (
-              <Text style={[styles.bubbleText, isMe && styles.myText]}>{item.content}</Text>
-            )}
-            <View style={styles.bubbleMeta}>
-              <Text style={[styles.bubbleTime, isMe && styles.myBubbleTime]}>
-                {format(parseISO(item.createdAt), 'hh:mm a')}
+
+        <View style={[styles.messageBlock, isMe ? styles.myBlock : styles.theirBlock]}>
+          <View style={styles.metaHeader}>
+            <Text style={styles.senderName}>{isMe ? 'You' : 'Accountant'}</Text>
+            <Text style={styles.timestampMono}>
+              {format(parseISO(item.createdAt), 'hh:mm a')}
+            </Text>
+            {isMe && (
+              <Text style={styles.statusMono}>
+                {item.readAt ? '· Read' : '· Sent'}
               </Text>
-              {isMe && (
-                <MaterialIcons
-                  name={item.readAt ? 'done-all' : 'done'}
-                  size={12}
-                  color={item.readAt ? Colors.secondary : 'rgba(255,255,255,0.6)'}
-                />
-              )}
-            </View>
+            )}
+          </View>
+
+          <View style={[styles.contentCard, isMe ? styles.myContent : styles.theirContent]}>
+            <Text style={[styles.contentText, isMe && styles.myContentText]}>
+              {item.content}
+            </Text>
           </View>
         </View>
-      </>
+      </View>
     );
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      {/* Header */}
+      {/* Generic, clean header */}
       <View style={styles.header}>
-        <AppAvatar name="Admin CA" size="sm" />
+        <AppAvatar name="CA Firm" size="sm" />
         <View style={styles.headerInfo}>
-          <Text style={styles.headerName}>CA Admin Portal</Text>
-          <Text style={styles.headerSub}>Your Assigned Chartered Accountant</Text>
-        </View>
-        <View style={styles.onlineIndicator}>
-          <View style={styles.onlineDot} />
-          <Text style={styles.onlineText}>Online</Text>
+          <Text style={styles.headerName}>Chartered Accountant</Text>
+          <Text style={styles.headerSub}>Active chat</Text>
         </View>
       </View>
+
+      <View style={styles.hairlineRule} />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -182,34 +148,32 @@ export default function ClientMessagesScreen() {
           contentContainerStyle={styles.messageList}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyTitle}>Messages</Text>
+              <Text style={styles.emptyText}>
+                Need help with taxes, filings, or invoices? Type a message below to consult your CA.
+              </Text>
+            </View>
+          }
         />
 
-        {/* Input Bar */}
+        {/* Clean, generic input bar */}
         <View style={styles.inputBar}>
-          <TouchableOpacity style={styles.attachBtn} onPress={handleAttach}>
-            <MaterialIcons name="attach-file" size={22} color={Colors.textSecondary} />
-          </TouchableOpacity>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Message your CA..."
-              placeholderTextColor={Colors.textTertiary}
-              value={message}
-              onChangeText={setMessage}
-              multiline
-              maxLength={1000}
-            />
-          </View>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Type a message..."
+            placeholderTextColor={Colors.textTertiary}
+            value={message}
+            onChangeText={setMessage}
+            multiline
+          />
           <TouchableOpacity
-            style={[styles.sendBtn, message.trim() && styles.sendBtnActive]}
+            style={[styles.sendBtn, !message.trim() && styles.sendBtnDisabled]}
             onPress={sendMessage}
             disabled={!message.trim()}
           >
-            <MaterialIcons
-              name="send"
-              size={20}
-              color={message.trim() ? Colors.textLight : Colors.textTertiary}
-            />
+            <Text style={styles.sendBtnText}>Send</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -227,127 +191,148 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
     backgroundColor: Colors.backgroundCard,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   headerInfo: { flex: 1 },
   headerName: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.base,
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   headerSub: {
     fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.xs,
+    fontSize: 11,
+    color: Colors.textSecondary,
+    marginTop: 1,
+  },
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
+  },
+  messageList: {
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.md,
+    flexGrow: 1,
+  },
+  messageEntry: {
+    marginBottom: Spacing.md,
+  },
+  daySeparator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginVertical: Spacing.md,
+  },
+  dayLine: { flex: 1, height: 1, backgroundColor: Colors.hairline },
+  dayText: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
+    letterSpacing: 1,
+  },
+  messageBlock: {
+    maxWidth: '85%',
+  },
+  myBlock: {
+    alignSelf: 'flex-end',
+  },
+  theirBlock: {
+    alignSelf: 'flex-start',
+  },
+  metaHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    marginBottom: 4,
+  },
+  senderName: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 11,
     color: Colors.textSecondary,
   },
-  onlineIndicator: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  onlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.success },
-  onlineText: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.xs,
-    color: Colors.success,
-  },
-  messageList: { padding: Spacing.sm, paddingBottom: Spacing.base },
-  dateSeparator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginVertical: Spacing.sm,
-  },
-  dateLine: { flex: 1, height: 1, backgroundColor: Colors.borderLight },
-  dateText: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.xs,
-    color: Colors.textTertiary,
-  },
-  bubbleWrapper: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: Spacing.xs,
-    marginBottom: Spacing.xs,
-    maxWidth: '80%',
-  },
-  myWrapper: { alignSelf: 'flex-end', flexDirection: 'row-reverse' },
-  bubble: {
-    borderRadius: 16,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs + 2,
-    maxWidth: 280,
-  },
-  myBubble: { backgroundColor: Colors.primary, borderBottomRightRadius: 4 },
-  theirBubble: {
-    backgroundColor: Colors.backgroundCard,
-    borderBottomLeftRadius: 4,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  bubbleText: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.base,
-    color: Colors.textPrimary,
-    lineHeight: 20,
-  },
-  myText: { color: Colors.textLight },
-  fileAttach: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  fileName: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.sm,
-    color: Colors.textPrimary,
-    maxWidth: 200,
-  },
-  bubbleMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    justifyContent: 'flex-end',
-    marginTop: 2,
-  },
-  bubbleTime: {
-    fontFamily: Typography.fontFamily.regular,
+  timestampMono: {
+    fontFamily: Typography.fontFamily.monoRegular,
     fontSize: 10,
     color: Colors.textTertiary,
   },
-  myBubbleTime: { color: 'rgba(255,255,255,0.6)' },
+  statusMono: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 9,
+    color: Colors.secondaryDark,
+  },
+  contentCard: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: 4,
+    borderWidth: 1,
+  },
+  myContent: {
+    backgroundColor: Colors.backgroundCard,
+    borderColor: Colors.border,
+  },
+  theirContent: {
+    backgroundColor: Colors.backgroundCard,
+    borderColor: Colors.hairline,
+  },
+  contentText: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.sm,
+    color: Colors.primary,
+    lineHeight: 20,
+  },
+  myContentText: {
+    color: Colors.primary,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
+    marginTop: 60,
+  },
+  emptyTitle: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.base,
+    color: Colors.primary,
+    marginBottom: 4,
+  },
+  emptyText: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.xs,
+    color: Colors.textTertiary,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
   inputBar: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.sm,
+    alignItems: 'center',
+    paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
     backgroundColor: Colors.backgroundCard,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
-  attachBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  inputWrapper: {
-    flex: 1,
-    backgroundColor: Colors.backgroundInput,
-    borderRadius: BorderRadius.xl,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Platform.OS === 'ios' ? Spacing.xs + 2 : 0,
-    minHeight: 40,
-    justifyContent: 'center',
+    borderTopColor: Colors.hairline,
+    gap: Spacing.sm,
   },
   textInput: {
+    flex: 1,
     fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.base,
+    fontSize: Typography.size.sm,
     color: Colors.textPrimary,
-    maxHeight: 100,
+    minHeight: 40,
+    maxHeight: 90,
+    paddingVertical: 6,
   },
   sendBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.backgroundInput,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
+    backgroundColor: Colors.primaryLight,
+    borderRadius: 4,
   },
-  sendBtnActive: { backgroundColor: Colors.primary },
+  sendBtnDisabled: {
+    opacity: 0.4,
+  },
+  sendBtnText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.xs,
+    color: Colors.textLight,
+  },
 });

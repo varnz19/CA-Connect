@@ -33,6 +33,9 @@ export interface ClientProfileResponse {
   firmName?: string;
   clientCode?: string;
   gstState?: string;
+  gstin?: string;
+  panNumber?: string;
+  address?: string;
   user: {
     id: string;
     firstName: string;

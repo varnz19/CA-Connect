@@ -11,14 +11,12 @@ import {
 import { documentService } from '../../services/documentService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { AppCard } from '../../components/common/AppCard';
-import { StatusStamp } from '../../components/common/StatusStamp';
 import { AppBadge } from '../../components/common/AppBadge';
 import { AppButton } from '../../components/common/AppButton';
 import { AppEmpty } from '../../components/common/AppStates';
 import { useAuthStore } from '../../store/authStore';
 import { api } from '../../services/api';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 import { useDocuments } from '../../hooks/useQueries';
 import { DocumentRequest } from '../../types';
 import { formatDate, formatFileSize } from '../../utils/formatters';
@@ -26,7 +24,6 @@ import * as DocumentPicker from 'expo-document-picker';
 
 export default function ClientDocumentsScreen() {
   const { user } = useAuthStore();
-  const clientId = user?.clientProfile?.id || 'cp-001';
   const { data: documentsData, refetch } = useDocuments();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -37,7 +34,6 @@ export default function ClientDocumentsScreen() {
   };
 
   const documentsList = documentsData?.data || [];
-  const myDocs = documentsList; // Backend already filters for user
   const [uploadingId, setUploadingId] = useState<string | null>(null);
 
   const resolveDocUrl = (url: string) => {
@@ -89,73 +85,60 @@ export default function ClientDocumentsScreen() {
     const canUpload = item.status === 'REQUESTED' || item.status === 'REJECTED';
 
     return (
-      <AppCard style={styles.card}>
-        {/* Request Header */}
-        <View style={styles.cardHeader}>
-          <View style={styles.docIcon}>
-            <MaterialIcons name="folder-open" size={20} color={Colors.secondary} />
-          </View>
-          <View style={styles.cardInfo}>
+      <View style={styles.docRow}>
+        <View style={styles.docTop}>
+          <View style={styles.docInfo}>
             <Text style={styles.docName}>{item.name}</Text>
             {item.description && (
-              <Text style={styles.docDesc} numberOfLines={2}>{item.description}</Text>
+              <Text style={styles.docDesc}>{item.description}</Text>
+            )}
+            {item.dueDate && (
+              <Text style={styles.docDue}>Due: {formatDate(item.dueDate)}</Text>
             )}
           </View>
-          <StatusStamp status={item.status} />
+          <AppBadge status={item.status} />
         </View>
 
-        {/* Admin Comment */}
         {item.adminComment && (
           <View style={styles.commentBox}>
-            <MaterialIcons name="comment" size={12} color={Colors.statusPendingText} />
+            <Text style={styles.commentLabel}>CA INSTRUCTION:</Text>
             <Text style={styles.commentText}>{item.adminComment}</Text>
           </View>
         )}
 
-        {/* Uploaded Documents */}
         {item.documents.length > 0 && (
-          <View style={styles.uploadedList}>
-            <Text style={styles.uploadedLabel}>Uploaded Files</Text>
+          <View style={styles.filesList}>
             {item.documents.map((doc) => (
-              <View key={doc.id} style={styles.fileRow}>
-                <MaterialIcons name="insert-drive-file" size={16} color={Colors.secondary} />
+              <View key={doc.id} style={styles.fileItem}>
                 <Text style={styles.fileName} numberOfLines={1}>{doc.fileName}</Text>
                 <Text style={styles.fileSize}>{formatFileSize(doc.fileSize)}</Text>
                 <TouchableOpacity onPress={() => Linking.openURL(resolveDocUrl(doc.fileUrl))}>
-                  <MaterialIcons name="cloud-download" size={16} color={Colors.primary} />
+                  <Text style={styles.downloadLink}>Download</Text>
                 </TouchableOpacity>
               </View>
             ))}
           </View>
         )}
 
-        {/* Footer */}
-        <View style={styles.cardFooter}>
-          {item.dueDate && (
-            <View style={styles.dueDateRow}>
-              <MaterialIcons name="schedule" size={12} color={Colors.textTertiary} />
-              <Text style={styles.dueDate}>Due: {formatDate(item.dueDate)}</Text>
-            </View>
-          )}
-          {canUpload && (
+        {canUpload && (
+          <View style={styles.uploadRow}>
             <AppButton
-              title={uploadingId === item.id ? 'Uploading...' : 'Upload Document'}
-              variant="primary"
+              title={uploadingId === item.id ? 'Uploading...' : 'Upload Required File'}
+              variant="outline"
               size="sm"
               loading={uploadingId === item.id}
               onPress={() => handleUpload(item.id)}
-              style={styles.uploadBtn}
             />
-          )}
-        </View>
-      </AppCard>
+          </View>
+        )}
+      </View>
     );
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <FlatList
-        data={myDocs}
+        data={documentsList}
         keyExtractor={(item) => item.id}
         renderItem={renderRequest}
         contentContainerStyle={styles.list}
@@ -163,16 +146,18 @@ export default function ClientDocumentsScreen() {
         refreshing={refreshing}
         onRefresh={handleRefresh}
         ListHeaderComponent={
-          <View style={styles.header}>
-            <Text style={styles.title}>Documents</Text>
-            <Text style={styles.subtitle}>{myDocs.length} request(s)</Text>
-          </View>
+          <>
+            <View style={styles.header}>
+              <Text style={styles.title}>Document Submissions</Text>
+              <Text style={styles.subtitle}>{documentsList.length} compliance requirement(s)</Text>
+            </View>
+            <View style={styles.hairlineRule} />
+          </>
         }
         ListEmptyComponent={
           <AppEmpty
-            icon="folder-open"
             title="No document requests"
-            description="Your CA will request documents here when needed."
+            description="Your CA firm will publish compliance file requests here."
           />
         }
       />
@@ -184,7 +169,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
   header: {
     paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.xl,
+    paddingTop: Spacing.lg,
     paddingBottom: Spacing.md,
   },
   title: {
@@ -194,31 +179,32 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: Typography.size.sm,
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
-    textTransform: 'uppercase',
     marginTop: 2,
   },
-  list: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing['3xl'] },
-  card: {
-    marginBottom: Spacing.md,
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.lg,
+  hairlineRule: {
+    height: 1,
+    backgroundColor: Colors.hairline,
   },
-  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md },
-  docIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 0,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
+  list: {
+    backgroundColor: Colors.backgroundCard,
   },
-  cardInfo: { flex: 1 },
+  docRow: {
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.hairline,
+  },
+  docTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+  },
+  docInfo: {
+    flex: 1,
+  },
   docName: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.base,
@@ -226,76 +212,65 @@ const styles = StyleSheet.create({
   },
   docDesc: {
     fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
+    marginTop: 2,
+    lineHeight: 18,
+  },
+  docDue: {
+    fontFamily: Typography.fontFamily.monoRegular,
+    fontSize: 10,
+    color: Colors.textTertiary,
     marginTop: 4,
   },
   commentBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+    padding: Spacing.sm,
     backgroundColor: Colors.background,
     borderLeftWidth: 2,
-    borderLeftColor: Colors.warning,
-    padding: Spacing.sm,
-    marginTop: Spacing.sm,
+    borderLeftColor: Colors.secondary,
+  },
+  commentLabel: {
+    fontFamily: Typography.fontFamily.monoMedium,
+    fontSize: 9,
+    color: Colors.secondaryDark,
+    letterSpacing: 0.5,
   },
   commentText: {
-    flex: 1,
-    fontFamily: Typography.fontFamily.monoRegular,
+    fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.xs,
-    color: Colors.textSecondary,
+    color: Colors.primary,
+    marginTop: 2,
   },
-  uploadedList: {
-    marginTop: Spacing.md,
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    borderStyle: 'dashed',
-    gap: Spacing.xs,
+  filesList: {
+    marginTop: Spacing.sm,
+    gap: 4,
   },
-  uploadedLabel: {
-    fontFamily: Typography.fontFamily.monoMedium,
-    fontSize: Typography.size.xs,
-    color: Colors.textTertiary,
-    marginBottom: 4,
-    textTransform: 'uppercase',
-  },
-  fileRow: {
+  fileItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 4,
     gap: Spacing.sm,
-    backgroundColor: Colors.backgroundCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.sm,
   },
   fileName: {
     flex: 1,
-    fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: Typography.size.sm,
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.xs,
     color: Colors.primary,
   },
   fileSize: {
     fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: Typography.size.xs,
+    fontSize: 10,
     color: Colors.textTertiary,
   },
-  cardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: Spacing.md,
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
-  dueDateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  dueDate: {
-    fontFamily: Typography.fontFamily.monoRegular,
+  downloadLink: {
+    fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.xs,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
+    color: Colors.secondaryDark,
+    textDecorationLine: 'underline',
   },
-  uploadBtn: {},
+  uploadRow: {
+    marginTop: Spacing.md,
+    alignItems: 'flex-start',
+  },
 });
