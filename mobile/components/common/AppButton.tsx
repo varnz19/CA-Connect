@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 4, // Consistent 4px everywhere
+    borderRadius: BorderRadius.md,
   },
   fullWidth: {
     width: '100%',
@@ -86,23 +86,38 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
 
-  // Variants — flat, no elevation
+  // Variants
   primary: {
-    backgroundColor: Colors.primaryLight, // ink-700
+    backgroundColor: Colors.primaryLight,
+    shadowColor: Colors.primaryLight,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
   },
   secondary: {
-    backgroundColor: Colors.secondary,    // brass
+    backgroundColor: Colors.secondary,
+    shadowColor: Colors.secondary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: Colors.primary,          // ink border, not hairline
+    backgroundColor: Colors.backgroundCard,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
   },
   ghost: {
     backgroundColor: 'transparent',
   },
   danger: {
-    backgroundColor: Colors.danger,       // desaturated rust
+    backgroundColor: Colors.danger,
+    shadowColor: Colors.danger,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
   },
 
   // Sizes
@@ -110,22 +125,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs + 2,
     minHeight: 36,
+    borderRadius: BorderRadius.sm,
   },
   size_md: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm + 2,
-    minHeight: 44,
+    minHeight: 46,
+    borderRadius: BorderRadius.md,
   },
   size_lg: {
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
     minHeight: 52,
+    borderRadius: BorderRadius.md,
   },
 
   // Text styles
   text: {
-    fontFamily: Typography.fontFamily.medium,
-    letterSpacing: Typography.letterSpacing.normal,
+    fontFamily: Typography.fontFamily.semiBold,
+    letterSpacing: 0.2,
   },
   text_primary: {
     color: Colors.textLight,
@@ -133,7 +151,7 @@ const styles = StyleSheet.create({
   text_secondary: {
     color: Colors.textLight,
   },
-  text_outline: { color: Colors.primary },   // ink text for outline
+  text_outline: { color: Colors.textPrimary },
   text_ghost: { color: Colors.primaryLight },
   text_danger: { color: Colors.textLight },
 
@@ -141,3 +159,4 @@ const styles = StyleSheet.create({
   text_size_md: { fontSize: Typography.size.base },
   text_size_lg: { fontSize: Typography.size.md },
 });
+

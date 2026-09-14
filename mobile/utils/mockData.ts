@@ -18,7 +18,7 @@ export const mockAdminUser: User = {
   email: 'admin@caconnect.in',
   role: 'ADMIN',
   firstName: 'CA',
-  lastName: 'Priya Sharma',
+  lastName: 'Admin',
   phone: '+91-9876543210',
   isActive: true,
   createdAt: '2024-01-01T00:00:00Z',

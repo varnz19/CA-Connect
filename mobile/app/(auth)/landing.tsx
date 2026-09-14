@@ -1,93 +1,130 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing } from '../../constants/theme';
+import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 
 export default function LandingScreen() {
   const router = useRouter();
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.container}>
-          {/* Brand Header */}
-          <View style={styles.brandSection}>
-            <Text style={styles.brandEyebrow}>Chartered Accountant Portal</Text>
-            <Text style={styles.brandTitle}>CA CONNECT</Text>
-            <View style={styles.hairlineRule} />
-            <Text style={styles.brandDesc}>
-              Firm ledger, compliance filing, GST records, and client communications portal.
+          {/* Top Brand Bar */}
+          <View style={styles.brandRow}>
+            <View style={styles.logoCluster}>
+              <View style={styles.logoOrb}>
+                <Ionicons name="sparkles" size={16} color="#FFFFFF" />
+              </View>
+              <Text style={styles.brandName}>CA CONNECT</Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.topSignInBtn}
+              onPress={() => router.push('/(auth)/portal-select')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.topSignInBtnText}>Sign In</Text>
+              <Ionicons name="arrow-forward" size={12} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Hero Editorial Typography */}
+          <View style={styles.heroBlock}>
+            <Text style={styles.heroPreTitle}>FINANCIAL & TAX PRACTICE</Text>
+            <Text style={styles.heroTitle}>
+              Chartered accounting,{'\n'}
+              <Text style={styles.heroTitleGradient}>beautifully simplified.</Text>
+            </Text>
+            <Text style={styles.heroSubtitle}>
+              The unified client portal and practice management system built for high-performing CA firms and modern businesses.
             </Text>
           </View>
 
-          {/* Portal Selector Choices */}
-          <View style={styles.selectorSection}>
-            <Text style={styles.sectionLabel}>Select Access Level</Text>
-
-            {/* Admin Portal Row */}
+          {/* Action Callout Card: Navigate to Choose How You Enter (Next Page) */}
+          <View style={styles.heroCtaCard}>
+            <View style={styles.heroCtaLeft}>
+              <Text style={styles.heroCtaTitle}>Ready to enter your portal?</Text>
+              <Text style={styles.heroCtaSubtitle}>
+                Choose between Client Portal and CA Admin Workspace.
+              </Text>
+            </View>
             <TouchableOpacity
-              style={styles.portalRow}
-              activeOpacity={0.7}
-              onPress={() => router.push('/(auth)/admin-login')}
+              style={styles.heroCtaBtn}
+              onPress={() => router.push('/(auth)/portal-select')}
+              activeOpacity={0.85}
             >
-              <View style={styles.brassAccentLine} />
-              <View style={styles.portalTextCol}>
-                <View style={styles.titleRow}>
-                  <Text style={styles.portalTitle}>Admin Workspace</Text>
-                  <Text style={styles.roleTag}>Firm Internal</Text>
-                </View>
-                <Text style={styles.portalDesc}>
-                  Ledgers, invoice generation, compliance management, client records, and filings.
-                </Text>
-              </View>
-              <MaterialIcons name="arrow-forward" size={18} color={Colors.primary} />
-            </TouchableOpacity>
-
-            {/* Client Portal Row */}
-            <TouchableOpacity
-              style={styles.portalRow}
-              activeOpacity={0.7}
-              onPress={() => router.push('/(auth)/client-login')}
-            >
-              <View style={[styles.brassAccentLine, { backgroundColor: Colors.secondary }]} />
-              <View style={styles.portalTextCol}>
-                <View style={styles.titleRow}>
-                  <Text style={styles.portalTitle}>Client Portal</Text>
-                  <Text style={[styles.roleTag, { borderColor: Colors.secondary, color: Colors.secondaryDark }]}>Client Access</Text>
-                </View>
-                <Text style={styles.portalDesc}>
-                  View tax records, upload requested documents, track invoices, and book advisory sessions.
-                </Text>
-              </View>
-              <MaterialIcons name="arrow-forward" size={18} color={Colors.primary} />
+              <Text style={styles.heroCtaBtnText}>Choose How You Enter</Text>
+              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
 
-          {/* New Client Registration */}
-          <View style={styles.registerSection}>
-            <View style={styles.registerInner}>
-              <View style={styles.registerTextCol}>
-                <Text style={styles.registerHeading}>New Client Registration</Text>
-                <Text style={styles.registerDesc}>
-                  Register your business or firm account to initiate CA advisory and filing services.
-                </Text>
+          {/* Quick Capability Highlights Strip */}
+          <View style={styles.quickHighlightsBlock}>
+            <Text style={styles.highlightsHeader}>BUILT FOR EFFICIENCY & TRUST</Text>
+
+            <View style={styles.highlightItemsStack}>
+              <View style={styles.highlightRow}>
+                <View style={[styles.iconBullet, { backgroundColor: '#EFF6FF' }]}>
+                  <Ionicons name="receipt-outline" size={18} color="#2563EB" />
+                </View>
+                <View style={styles.highlightRowText}>
+                  <Text style={styles.highlightRowTitle}>Compliant GST Invoicing</Text>
+                  <Text style={styles.highlightRowDesc}>Calculates CGST, SGST & IGST with instant PDF generation.</Text>
+                </View>
               </View>
-              <TouchableOpacity
-                style={styles.createBtn}
-                activeOpacity={0.8}
-                onPress={() => router.push('/(auth)/signup')}
-              >
-                <Text style={styles.createBtnText}>Create Account</Text>
-              </TouchableOpacity>
+
+              <View style={styles.highlightRow}>
+                <View style={[styles.iconBullet, { backgroundColor: '#FFFBEB' }]}>
+                  <Ionicons name="cloud-upload-outline" size={18} color="#D97706" />
+                </View>
+                <View style={styles.highlightRowText}>
+                  <Text style={styles.highlightRowTitle}>Secure Document Exchange</Text>
+                  <Text style={styles.highlightRowDesc}>Request, upload, review, and approve files with full audit history.</Text>
+                </View>
+              </View>
+
+              <View style={styles.highlightRow}>
+                <View style={[styles.iconBullet, { backgroundColor: '#ECFDF5' }]}>
+                  <Ionicons name="calendar-outline" size={18} color="#059669" />
+                </View>
+                <View style={styles.highlightRowText}>
+                  <Text style={styles.highlightRowTitle}>Statutory Tax Deadlines</Text>
+                  <Text style={styles.highlightRowDesc}>Pre-loaded reminders for GSTR-1, 3B, Advance Tax and ITR.</Text>
+                </View>
+              </View>
+
+              <View style={styles.highlightRow}>
+                <View style={[styles.iconBullet, { backgroundColor: '#FAF5FF' }]}>
+                  <Ionicons name="chatbubbles-outline" size={18} color="#7C3AED" />
+                </View>
+                <View style={styles.highlightRowText}>
+                  <Text style={styles.highlightRowTitle}>Direct Advisory Messaging</Text>
+                  <Text style={styles.highlightRowDesc}>Live messaging between client and CA without scattered email chains.</Text>
+                </View>
+              </View>
             </View>
           </View>
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerMeta}>256-BIT ENCRYPTION · SOC 2 COMPLIANT</Text>
-            <Text style={styles.footerCopy}>CA Connect System</Text>
+          {/* Security Stamp & Footer */}
+          <View style={styles.footerContainer}>
+            <View style={styles.securitySeal}>
+              <Ionicons name="lock-closed" size={14} color="#059669" />
+              <Text style={styles.securitySealText}>256-BIT ENCRYPTED · SOC-2 READY · IT ACT 2000</Text>
+            </View>
+            <Text style={styles.footerNote}>CA Connect · Next-Gen CA Management Platform</Text>
           </View>
         </View>
       </ScrollView>
@@ -98,166 +135,423 @@ export default function LandingScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#F8FAFC',
   },
   scroll: {
     flexGrow: 1,
-    justifyContent: 'center',
-    paddingVertical: Spacing['2xl'],
-    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.base,
+    alignItems: 'center',
   },
   container: {
     width: '100%',
-    maxWidth: 520,
-    alignSelf: 'center',
+    maxWidth: 460,
   },
-  brandSection: {
-    marginBottom: Spacing['2xl'],
+
+  // Brand Row
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.sm,
+    marginBottom: Spacing.md,
   },
-  brandEyebrow: {
-    fontFamily: Typography.fontFamily.monoMedium,
-    fontSize: 11,
-    color: Colors.textSecondary,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    marginBottom: Spacing.xs,
+  logoCluster: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  brandTitle: {
+  logoOrb: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  brandName: {
     fontFamily: Typography.fontFamily.displayBold,
-    fontSize: 32,
-    color: Colors.primary,
-    letterSpacing: 1,
+    fontSize: 16,
+    color: '#0F172A',
+    letterSpacing: 1.2,
   },
-  hairlineRule: {
-    height: 1,
-    backgroundColor: Colors.hairline,
-    marginVertical: Spacing.md,
-  },
-  brandDesc: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-  },
-  selectorSection: {
-    marginBottom: Spacing['2xl'],
-  },
-  sectionLabel: {
-    fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: 11,
-    color: Colors.textTertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: Spacing.md,
-  },
-  portalRow: {
+  topPillBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.backgroundCard,
+    gap: 6,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 4,
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.base,
-    marginBottom: Spacing.md,
-    position: 'relative',
+    borderColor: '#E2E8F0',
+    ...Shadows.sm,
   },
-  brassAccentLine: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    backgroundColor: Colors.primary,
-    borderTopLeftRadius: 4,
-    borderBottomLeftRadius: 4,
+  greenLiveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
   },
-  portalTextCol: {
-    flex: 1,
-    paddingLeft: Spacing.sm,
-    paddingRight: Spacing.md,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginBottom: 4,
-  },
-  portalTitle: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.md,
-    color: Colors.primary,
-  },
-  roleTag: {
-    fontFamily: Typography.fontFamily.monoMedium,
+  topPillText: {
+    fontFamily: Typography.fontFamily.monoBold,
     fontSize: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 4,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
+    color: '#475569',
     letterSpacing: 0.5,
   },
-  portalDesc: {
+
+  // Hero Section
+  heroBlock: {
+    marginVertical: Spacing.md,
+  },
+  heroPreTitle: {
+    fontFamily: Typography.fontFamily.monoBold,
+    fontSize: 11,
+    color: '#2563EB',
+    letterSpacing: 1.5,
+    marginBottom: 6,
+  },
+  heroTitle: {
+    fontFamily: Typography.fontFamily.displayBold,
+    fontSize: 28,
+    color: '#0F172A',
+    lineHeight: 36,
+    letterSpacing: -0.5,
+    marginBottom: Spacing.sm,
+  },
+  heroTitleGradient: {
+    color: '#2563EB',
+  },
+  heroSubtitle: {
     fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.xs,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-  },
-  registerSection: {
-    backgroundColor: Colors.backgroundCard,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 4,
-    padding: Spacing.lg,
-    marginBottom: Spacing['2xl'],
-  },
-  registerInner: {
-    gap: Spacing.md,
-  },
-  registerTextCol: {},
-  registerHeading: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.base,
-    color: Colors.primary,
-    marginBottom: 2,
-  },
-  registerDesc: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.xs,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-  },
-  createBtn: {
-    alignSelf: 'flex-start',
-    backgroundColor: Colors.primaryLight,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: 10,
-    borderRadius: 4,
-  },
-  createBtnText: {
-    fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
-    color: Colors.textLight,
+    color: '#475569',
+    lineHeight: 22,
   },
-  footer: {
-    borderTopWidth: 1,
-    borderTopColor: Colors.hairline,
-    paddingTop: Spacing.lg,
+
+  // Role Selection Header
+  roleSelectionHeader: {
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.sm,
+    paddingHorizontal: 2,
+  },
+  roleSelectionTitle: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 17,
+    color: '#0F172A',
+  },
+  roleSelectionSubtitle: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.xs,
+    color: '#64748B',
+    marginTop: 1,
+  },
+
+  // Gateway Cards
+  gatewaysContainer: {
+    gap: Spacing.md,
+    marginVertical: Spacing.sm,
+  },
+  gatewayCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: Spacing.lg,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  gatewayCardActiveClient: {
+    borderColor: '#10B981',
+    shadowColor: '#10B981',
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+  },
+  gatewayCardActiveAdmin: {
+    borderColor: '#2563EB',
+    shadowColor: '#2563EB',
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+  },
+  gatewayTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.md,
+  },
+  gatewayIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  gatewayBadgeClient: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+  },
+  gatewayBadgeTextClient: {
+    fontFamily: Typography.fontFamily.monoBold,
+    fontSize: 10,
+    color: '#059669',
+    letterSpacing: 0.5,
+  },
+  gatewayBadgeAdmin: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+  },
+  gatewayBadgeTextAdmin: {
+    fontFamily: Typography.fontFamily.monoBold,
+    fontSize: 10,
+    color: '#2563EB',
+    letterSpacing: 0.5,
+  },
+  gatewayHeading: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 19,
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  gatewayDescription: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.xs + 1,
+    color: '#475569',
+    lineHeight: 19,
+    marginBottom: Spacing.md,
+  },
+  pillFeatureRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: Spacing.md,
+  },
+  featurePill: {
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
   },
-  footerMeta: {
-    fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: 10,
-    color: Colors.textTertiary,
+  featurePillText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 11,
+    color: '#334155',
+  },
+
+  // Gateway Action Rows
+  gatewayActionRow: {
+    marginTop: Spacing.xs,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  clientActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#059669',
+    paddingVertical: 14,
+    borderRadius: 14,
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  clientActionBtnText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: Typography.size.base,
+    color: '#FFFFFF',
+  },
+  adminActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#2563EB',
+    paddingVertical: 14,
+    borderRadius: 14,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  adminActionBtnText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: Typography.size.base,
+    color: '#FFFFFF',
+  },
+  signupTextBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    marginTop: 4,
+  },
+  signupTextBtnContent: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.xs + 1,
+    color: '#64748B',
+  },
+  signupUnderline: {
+    fontFamily: Typography.fontFamily.bold,
+    color: '#059669',
+  },
+
+  // Quick Highlights Block
+  quickHighlightsBlock: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.base,
+    ...Shadows.sm,
+  },
+  highlightsHeader: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 11,
+    color: '#94A3B8',
     letterSpacing: 1,
+    marginBottom: Spacing.md,
   },
-  footerCopy: {
+  highlightItemsStack: {
+    gap: Spacing.md,
+  },
+  highlightRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  iconBullet: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  highlightRowText: {
+    flex: 1,
+  },
+  highlightRowTitle: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 13,
+    color: '#0F172A',
+    marginBottom: 2,
+  },
+  highlightRowDesc: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: 11,
+    color: '#64748B',
+    lineHeight: 16,
+  },
+
+  // Footer
+  footerContainer: {
+    alignItems: 'center',
+    paddingVertical: Spacing.lg,
+    gap: 6,
+  },
+  securitySeal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  securitySealText: {
+    fontFamily: Typography.fontFamily.monoBold,
+    fontSize: 9,
+    color: '#059669',
+    letterSpacing: 0.5,
+  },
+  footerNote: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  topSignInBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primaryLight,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: BorderRadius.full,
+    gap: 4,
+    ...Shadows.sm,
+  },
+  topSignInBtnText: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: 12,
+    color: '#FFFFFF',
+  },
+  heroCtaCard: {
+    backgroundColor: Colors.backgroundCard,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1.5,
+    borderColor: '#BFDBFE',
+    padding: Spacing.lg,
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: Spacing.md,
+    ...Shadows.md,
+  },
+  heroCtaLeft: {
+    gap: 4,
+  },
+  heroCtaTitle: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 18,
+    color: Colors.textPrimary,
+  },
+  heroCtaSubtitle: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.sm,
     color: Colors.textSecondary,
+    lineHeight: 20,
+  },
+  heroCtaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primaryLight,
+    borderRadius: BorderRadius.md,
+    height: 48,
+    gap: Spacing.sm,
+    ...Shadows.sm,
+  },
+  heroCtaBtnText: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.base,
+    color: '#FFFFFF',
   },
 });

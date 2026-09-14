@@ -120,7 +120,7 @@ export default function AdminFirmInfoScreen() {
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
                     label="Official CA Firm Name *"
-                    placeholder="Sharma & Co. Chartered Accountants"
+                    placeholder="CA Connect & Co. Chartered Accountants"
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}

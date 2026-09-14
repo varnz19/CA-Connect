@@ -7,17 +7,16 @@ import {
   Platform,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
-import { Colors, Typography, Spacing } from '../../constants/theme';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { useAuthStore } from '../../store/authStore';
 import { profileService } from '../../services/profileService';
 
@@ -33,6 +32,8 @@ export default function AdminEditProfileScreen() {
   const router = useRouter();
   const { user, updateUser } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     control,
@@ -60,17 +61,20 @@ export default function AdminEditProfileScreen() {
 
   const onSubmit = async (data: ProfileForm) => {
     setIsLoading(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
     try {
       const response = await profileService.updateProfile(data);
       if (response.data) {
         updateUser(response.data);
-        Alert.alert('Success', 'Profile credentials updated.', [
-          { text: 'OK', onPress: () => router.replace('/(admin)/settings') }
-        ]);
+        setSuccessMessage('Administrator profile credentials updated successfully.');
+        setTimeout(() => {
+          router.replace('/(admin)/settings');
+        }, 1200);
       }
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Failed to update profile.';
-      Alert.alert('Error', msg);
+      const msg = err.response?.data?.message || err.message || 'Failed to update profile. Please try again.';
+      setErrorMessage(msg);
     } finally {
       setIsLoading(false);
     }
@@ -83,10 +87,17 @@ export default function AdminEditProfileScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.replace('/(admin)/settings')} style={styles.backBtn}>
-            <MaterialIcons name="arrow-back" size={18} color={Colors.primary} />
-            <Text style={styles.backText}>Settings</Text>
+          <TouchableOpacity
+            onPress={() => router.replace('/(admin)/settings')}
+            style={styles.backBtn}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons name="arrow-back" size={18} color={Colors.primaryLight} />
+            <Text style={styles.backText}>Back to Settings</Text>
           </TouchableOpacity>
+          <View style={styles.portalTag}>
+            <Text style={styles.portalTagText}>ADMIN CREDENTIALS</Text>
+          </View>
         </View>
 
         <ScrollView
@@ -95,18 +106,34 @@ export default function AdminEditProfileScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.container}>
-            {/* Header */}
+            {/* Header Block */}
             <View style={styles.headerBlock}>
-              <Text style={styles.refCode}>IDENTITY RECORD</Text>
+              <Text style={styles.refCode}>REF: ADM-EDIT-01</Text>
               <Text style={styles.pageTitle}>Edit Administrator Profile</Text>
               <Text style={styles.pageSubtitle}>
-                Update your official identity name and direct contact numbers.
+                Update your official identity name and direct contact numbers for practice notices.
               </Text>
             </View>
 
+            {/* Success Alert */}
+            {successMessage && (
+              <View style={styles.successAlert}>
+                <Ionicons name="checkmark-circle" size={18} color={Colors.successDark} />
+                <Text style={styles.successAlertText}>{successMessage}</Text>
+              </View>
+            )}
+
+            {/* Error Alert */}
+            {errorMessage && (
+              <View style={styles.errorAlert}>
+                <MaterialIcons name="error-outline" size={18} color={Colors.danger} />
+                <Text style={styles.errorAlertText}>{errorMessage}</Text>
+              </View>
+            )}
+
             <View style={styles.hairlineRule} />
 
-            {/* Flat Form */}
+            {/* Form */}
             <View style={styles.form}>
               <View style={styles.row}>
                 <View style={styles.half}>
@@ -118,7 +145,10 @@ export default function AdminEditProfileScreen() {
                         label="First Name *"
                         placeholder="First name"
                         value={value}
-                        onChangeText={onChange}
+                        onChangeText={(text) => {
+                          onChange(text);
+                          if (errorMessage) setErrorMessage(null);
+                        }}
                         onBlur={onBlur}
                         error={errors.firstName?.message as any}
                       />
@@ -134,7 +164,10 @@ export default function AdminEditProfileScreen() {
                         label="Last Name *"
                         placeholder="Last name"
                         value={value}
-                        onChangeText={onChange}
+                        onChangeText={(text) => {
+                          onChange(text);
+                          if (errorMessage) setErrorMessage(null);
+                        }}
                         onBlur={onBlur}
                         error={errors.lastName?.message as any}
                       />
@@ -144,10 +177,10 @@ export default function AdminEditProfileScreen() {
               </View>
 
               <AppInput
-                label="Registered Official Email"
+                label="Registered Practice Email"
                 value={user?.email || ''}
                 editable={false}
-                hint="Contact system administrator to alter registered email."
+                hint="Master firm administrator account email (immutable)."
               />
 
               <Controller
@@ -155,23 +188,36 @@ export default function AdminEditProfileScreen() {
                 name="phone"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
-                    label="Direct Contact Number"
+                    label="Direct Contact Phone"
                     placeholder="+91-9876543210"
                     keyboardType="phone-pad"
                     value={value}
-                    onChangeText={onChange}
+                    onChangeText={(text) => {
+                      onChange(text);
+                      if (errorMessage) setErrorMessage(null);
+                    }}
                     onBlur={onBlur}
                   />
                 )}
               />
 
-              <AppButton
-                title={isLoading ? 'Updating...' : 'Save Profile Changes'}
-                onPress={handleSubmit(onSubmit)}
-                loading={isLoading}
-                size="md"
-                style={styles.submitBtn}
-              />
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  onPress={() => router.replace('/(admin)/settings')}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <AppButton
+                  title={isLoading ? 'Updating...' : 'Save Changes'}
+                  onPress={handleSubmit(onSubmit)}
+                  loading={isLoading}
+                  size="md"
+                  style={styles.submitBtn}
+                />
+              </View>
             </View>
           </View>
         </ScrollView>
@@ -181,13 +227,20 @@ export default function AdminEditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
+  safe: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
   flex: { flex: 1 },
   topBar: {
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.hairline,
+    borderBottomColor: Colors.border,
+    backgroundColor: Colors.backgroundCard,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   backBtn: {
     flexDirection: 'row',
@@ -195,33 +248,53 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   backText: {
-    fontFamily: Typography.fontFamily.medium,
+    fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.sm,
-    color: Colors.textSecondary,
+    color: Colors.primaryLight,
+  },
+  portalTag: {
+    backgroundColor: Colors.primarySoft,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  portalTagText: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: 10,
+    color: Colors.primaryLight,
+    letterSpacing: 0.5,
   },
   scroll: {
     paddingVertical: Spacing.xl,
-    paddingHorizontal: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
     alignItems: 'center',
   },
   container: {
     width: '100%',
-    maxWidth: 500,
+    maxWidth: 580,
+    backgroundColor: Colors.backgroundCard,
+    padding: Spacing.xl,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...Shadows.sm,
   },
   headerBlock: {
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
   },
   refCode: {
-    fontFamily: Typography.fontFamily.monoRegular,
+    fontFamily: Typography.fontFamily.monoMedium,
     fontSize: 10,
-    color: Colors.textTertiary,
+    color: Colors.primaryLight,
     letterSpacing: 1,
     marginBottom: 4,
   },
   pageTitle: {
     fontFamily: Typography.fontFamily.displayBold,
-    fontSize: Typography.size.xl,
-    color: Colors.primary,
+    fontSize: 22,
+    color: Colors.textPrimary,
   },
   pageSubtitle: {
     fontFamily: Typography.fontFamily.regular,
@@ -230,13 +303,47 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: 2,
   },
+  successAlert: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.successLight,
+    borderWidth: 1,
+    borderColor: Colors.successBorder,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  successAlertText: {
+    flex: 1,
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 12,
+    color: Colors.successDark,
+  },
+  errorAlert: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.dangerLight,
+    borderWidth: 1,
+    borderColor: Colors.dangerBorder,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  errorAlertText: {
+    flex: 1,
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 12,
+    color: Colors.dangerDark,
+  },
   hairlineRule: {
     height: 1,
-    backgroundColor: Colors.hairline,
-    marginVertical: Spacing.lg,
+    backgroundColor: Colors.border,
+    marginVertical: Spacing.md,
   },
   form: {
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
   row: {
     flexDirection: 'row',
@@ -245,8 +352,29 @@ const styles = StyleSheet.create({
   half: {
     flex: 1,
   },
-  submitBtn: {
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
     marginTop: Spacing.lg,
-    marginBottom: Spacing.xl,
+  },
+  cancelBtn: {
+    flex: 1,
+    height: 46,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.backgroundCard,
+  },
+  cancelBtnText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.sm,
+    color: Colors.textSecondary,
+  },
+  submitBtn: {
+    flex: 2,
+    marginVertical: 0,
   },
 });

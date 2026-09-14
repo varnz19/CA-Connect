@@ -8,15 +8,15 @@ import { emailService } from '../services/email.service';
 
 
 const invoiceSchema = z.object({
-  clientProfileId: z.string(),
-  dueDate: z.string(),
-  taxRate: z.number().default(18),
+  clientProfileId: z.string().min(1, 'Client ID is required'),
+  dueDate: z.string().min(1, 'Due date is required'),
+  taxRate: z.coerce.number().default(18),
   notes: z.string().optional(),
   items: z.array(z.object({
-    description: z.string(),
-    quantity: z.number().int().min(1),
-    unitPrice: z.number().min(0),
-  })),
+    description: z.string().min(1, 'Description is required'),
+    quantity: z.coerce.number().int().min(1),
+    unitPrice: z.coerce.number().min(0),
+  })).min(1, 'At least one item is required'),
 });
 
 const generateInvoiceNumber = async (): Promise<string> => {
@@ -82,15 +82,48 @@ export class InvoiceController {
     try {
       const data = invoiceSchema.parse(req.body);
 
+      // Resolve clientProfileId robustly (could be clientProfile.id OR user.id)
+      let targetProfile = await prisma.clientProfile.findUnique({
+        where: { id: data.clientProfileId },
+        include: { user: true },
+      });
+
+      if (!targetProfile) {
+        targetProfile = await prisma.clientProfile.findUnique({
+          where: { userId: data.clientProfileId },
+          include: { user: true },
+        });
+      }
+
+      if (!targetProfile) {
+        const user = await prisma.user.findUnique({ where: { id: data.clientProfileId } });
+        if (user) {
+          const profileCount = await prisma.clientProfile.count();
+          targetProfile = await prisma.clientProfile.create({
+            data: {
+              userId: user.id,
+              clientCode: `CAC-${String(profileCount + 1).padStart(3, '0')}`,
+              firmName: `${user.firstName} ${user.lastName}`,
+              adminId: req.user!.id,
+            },
+            include: { user: true },
+          });
+        }
+      }
+
+      if (!targetProfile) {
+        throw new AppError('Client profile not found. Please select a registered client.', 404);
+      }
+
       const subtotal = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-      const cgst = subtotal * (data.taxRate / 2) / 100;
+      const cgst = (subtotal * (data.taxRate / 2)) / 100;
       const sgst = cgst;
       const total = subtotal + cgst + sgst;
       const invoiceNumber = await generateInvoiceNumber();
 
       const invoice = await prisma.invoice.create({
         data: {
-          clientProfileId: data.clientProfileId,
+          clientProfileId: targetProfile.id,
           invoiceNumber,
           dueDate: new Date(data.dueDate),
           taxRate: data.taxRate,
@@ -109,7 +142,12 @@ export class InvoiceController {
             })),
           },
         },
-        include: { items: true },
+        include: {
+          items: true,
+          clientProfile: {
+            include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
+          },
+        },
       });
 
       await prisma.auditLog.create({
@@ -121,6 +159,37 @@ export class InvoiceController {
           details: { invoiceNumber, total },
         },
       });
+
+      // Notify the client in-app
+      if (targetProfile.user?.id) {
+        try {
+          await prisma.notification.create({
+            data: {
+              userId: targetProfile.user.id,
+              type: 'INVOICE_GENERATED',
+              title: `New Tax Invoice: ${invoiceNumber}`,
+              body: `An official GST tax invoice for ₹${total.toLocaleString('en-IN')} has been issued for your practice account.`,
+              data: { invoiceId: invoice.id, invoiceNumber, total, dueDate: invoice.dueDate },
+            },
+          });
+        } catch (notifErr) {
+          console.error('Failed to create in-app notification for invoice:', notifErr);
+        }
+
+        // Send email notification in background
+        if (targetProfile.user.email) {
+          const downloadUrl = `http://localhost:4000/api/invoices/${invoice.id}/pdf`;
+          emailService
+            .sendInvoiceNotification(
+              targetProfile.user.email,
+              `${targetProfile.user.firstName} ${targetProfile.user.lastName}`,
+              invoiceNumber,
+              total,
+              downloadUrl
+            )
+            .catch((err) => console.error('Failed to send invoice email:', err));
+        }
+      }
 
       res.status(201).json({ success: true, data: invoice });
     } catch (error) {

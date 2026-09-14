@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { Colors, Typography, Spacing } from '../../constants/theme';
+import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
 
 type BadgeVariant =
   | 'primary'
@@ -59,14 +59,14 @@ interface AppBadgeProps {
   style?: ViewStyle;
 }
 
-// Text-only / minimal pill status tag — no colored backgrounds, 
-// just a thin border and mono-type text
+// Colorful, modern status pill badge
 export const AppBadge: React.FC<AppBadgeProps> = ({ status, label, variant, style }) => {
   const resolvedVariant = variant || (status ? STATUS_VARIANT_MAP[status] : 'neutral') || 'neutral';
   const resolvedLabel = label || (status ? STATUS_LABEL_MAP[status] : '') || status || '';
 
   return (
-    <View style={[styles.badge, styles[resolvedVariant], style]}>
+    <View style={[styles.badge, styles[resolvedVariant] as ViewStyle, style]}>
+      <View style={[styles.dot, styles[`dot_${resolvedVariant}` as keyof typeof styles] as ViewStyle]} />
       <Text style={[styles.text, styles[`text_${resolvedVariant}` as keyof typeof styles]]}>
         {resolvedLabel}
       </Text>
@@ -74,52 +74,69 @@ export const AppBadge: React.FC<AppBadgeProps> = ({ status, label, variant, styl
   );
 };
 
+
 const styles = StyleSheet.create({
   badge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: 4,             // Consistent 4px, not pill
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
     alignSelf: 'flex-start',
+    gap: 5,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   text: {
-    fontFamily: Typography.fontFamily.monoMedium,
-    fontSize: 10,
-    letterSpacing: Typography.letterSpacing.wide,
-    textTransform: 'uppercase',
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: 11,
+    letterSpacing: 0.3,
   },
 
-  // Variants — thin border, transparent or very subtle background
+  // Variants — Colorful background and subtle border
   primary: {
-    borderColor: Colors.primary,
-    backgroundColor: 'transparent',
+    borderColor: '#BFDBFE',
+    backgroundColor: Colors.primarySoft,
   },
   success: {
-    borderColor: Colors.success,
-    backgroundColor: 'transparent',
+    borderColor: Colors.successBorder,
+    backgroundColor: Colors.successLight,
   },
   warning: {
-    borderColor: Colors.secondary,    // Brass for active/pending
-    backgroundColor: 'transparent',
+    borderColor: Colors.warningBorder,
+    backgroundColor: Colors.warningLight,
   },
   danger: {
-    borderColor: Colors.danger,
-    backgroundColor: 'transparent',
+    borderColor: Colors.dangerBorder,
+    backgroundColor: Colors.dangerLight,
   },
   info: {
-    borderColor: Colors.primaryLight,
-    backgroundColor: 'transparent',
+    borderColor: Colors.infoBorder,
+    backgroundColor: Colors.infoLight,
   },
   neutral: {
     borderColor: Colors.border,
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.backgroundSubtle,
   },
 
-  // Text colors — muted, not loud
-  text_primary: { color: Colors.primary },
-  text_success: { color: Colors.success },
-  text_warning: { color: Colors.secondary },    // Brass text
-  text_danger: { color: Colors.danger },
-  text_info: { color: Colors.primaryLight },
+  // Dot colors
+  dot_primary: { backgroundColor: Colors.primaryLight },
+  dot_success: { backgroundColor: Colors.success },
+  dot_warning: { backgroundColor: Colors.warning },
+  dot_danger: { backgroundColor: Colors.danger },
+  dot_info: { backgroundColor: Colors.info },
+  dot_neutral: { backgroundColor: Colors.textTertiary },
+
+  // Text colors — Vibrant & crisp
+  text_primary: { color: Colors.primaryLight },
+  text_success: { color: Colors.successDark },
+  text_warning: { color: Colors.warningDark },
+  text_danger: { color: Colors.dangerDark },
+  text_info: { color: Colors.infoDark },
   text_neutral: { color: Colors.textSecondary },
 });
+

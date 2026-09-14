@@ -1,101 +1,113 @@
-// CA Connect Design System — Ledger-Adjacent Visual Language
+// CA Connect Design System — Modern, Vibrant & High-Contrast Visual Language
 //
-// TYPOGRAPHY RULE: IBM Plex Mono is STRICTLY for numbers — amounts,
-// invoice numbers, dates, GSTIN/PAN, timestamps. Montserrat for all
-// UI labels, body text, headings, and navigation.
+// TYPOGRAPHY RULE: IBM Plex Mono for numbers, amounts, dates, GSTIN/PAN.
+// Montserrat for UI labels, body text, headings, and navigation.
 
 export const Colors = {
-  // Ledger & Seal Core Colors
-  primary: '#14261E',       // --ink-900
-  primaryLight: '#1F3D2E',  // --ink-700
-  primaryDark: '#0A130F',
+  // Brand Core Colors — Modern Sapphire & Indigo
+  primary: '#1E40AF',       // Deep Royal Sapphire
+  primaryLight: '#2563EB',  // Vibrant Royal Blue
+  primarySoft: '#EFF6FF',   // Soft Ice Blue Tint
+  primaryDark: '#1E3A8A',   // Navy Indigo
 
-  secondary: '#B8863A',     // --brass
-  secondaryLight: '#EFE3C8',// --brass-soft
-  secondaryDark: '#8A652B',
+  // Vibrant Secondary / Gold Accent
+  secondary: '#F59E0B',     // Vibrant Warm Amber / Gold
+  secondaryLight: '#FEF3C7',// Soft Amber Tint
+  secondaryDark: '#D97706', // Deep Amber
 
-  // Backgrounds
-  background: '#F5F6F1',    // --paper
-  backgroundCard: '#FBFBF8',// --paper-card
-  backgroundInput: '#FBFBF8',
+  // Clean, Crisp Modern Backgrounds & Good White
+  background: '#F8FAFC',    // Slate-50: Luminous, fresh modern canvas
+  backgroundCard: '#FFFFFF',// Pristine Crisp White
+  backgroundInput: '#FFFFFF',
+  backgroundSubtle: '#F1F5F9', // Slate-100
 
-  // Text
-  textPrimary: '#14261E',   // --ink-900
-  textSecondary: '#5B6560', // --text-secondary
-  textTertiary: '#8A9590',
-  textLight: '#F5F6F1',     // --paper
-  textMuted: '#DAD9CE',     // --rule
+  // High-Contrast Modern Typography
+  textPrimary: '#0F172A',   // Slate-900: Rich, high-contrast dark slate
+  textSecondary: '#475569', // Slate-600: Balanced subtitle & metadata
+  textTertiary: '#94A3B8',  // Slate-400: Placeholders & muted hints
+  textLight: '#FFFFFF',     // Pure White
+  textMuted: '#CBD5E1',     // Slate-300
 
-  // Hairline rules — low-opacity ink for structural separation
-  hairline: 'rgba(20, 38, 30, 0.12)',
+  // Hairlines & Separators
+  hairline: '#E2E8F0',
 
-  // Status & Actions
-  success: '#1F3D2E',       // Using ink-700 for success (official)
-  successLight: '#EFE3C8',
-  successDark: '#14261E',
+  // Status & Semantic Palette — Colorful, Vivid & Expressive
+  success: '#10B981',       // Vibrant Emerald Green
+  successLight: '#ECFDF5',  // Mint 50
+  successBorder: '#A7F3D0', // Mint 200
+  successDark: '#047857',
 
-  warning: '#B8863A',       // brass
-  warningLight: '#EFE3C8',
-  warningDark: '#8A652B',
+  warning: '#F59E0B',       // Vibrant Amber
+  warningLight: '#FFFBEB',  // Amber 50
+  warningBorder: '#FDE68A', // Amber 200
+  warningDark: '#B45309',
 
-  danger: '#A34B34',        // --rust (desaturated, not alarm-red)
-  dangerLight: '#FDECE8',
-  dangerDark: '#7A3827',
+  danger: '#EF4444',        // Vibrant Coral Red
+  dangerLight: '#FEF2F2',   // Red 50
+  dangerBorder: '#FECACA',  // Red 200
+  dangerDark: '#DC2626',
 
-  info: '#1F3D2E',          // ink-700
-  infoLight: '#EFE3C8',
-  infoDark: '#14261E',
+  info: '#0EA5E9',          // Vibrant Sky Cyan
+  infoLight: '#F0F9FF',     // Sky 50
+  infoBorder: '#BAE6FD',    // Sky 200
+  infoDark: '#0284C7',
 
-  // Borders & Rules
-  border: '#DAD9CE',        // --rule
-  borderLight: '#EBEBE4',
-  borderFocus: '#B8863A',   // Brass for focus states (underline inputs)
+  purple: '#8B5CF6',        // Vibrant Violet
+  purpleLight: '#F5F3FF',   // Purple 50
+  purpleBorder: '#DDD6FE',  // Purple 200
+  purpleDark: '#6D28D9',
 
-  divider: '#DAD9CE',       // --rule
+  // Borders & Dividers
+  border: '#E2E8F0',        // Slate-200
+  borderLight: '#F1F5F9',   // Slate-100
+  borderFocus: '#2563EB',   // Focus ring blue
 
-  // Overlay
-  overlay: 'rgba(20, 38, 30, 0.5)',
-  overlayLight: 'rgba(20, 38, 30, 0.2)',
+  divider: '#E2E8F0',
 
-  // Status-specific backgrounds (Subtle paper/brass/rust tints)
-  statusPending: '#EFE3C8',
-  statusPendingText: '#B8863A',
-  statusPaid: '#EBEBE4',
-  statusPaidText: '#1F3D2E',
-  statusOverdue: '#FDECE8',
-  statusOverdueText: '#A34B34',
-  statusActive: '#EFE3C8',
-  statusActiveText: '#14261E',
-  statusCompleted: '#EBEBE4',
-  statusCompletedText: '#1F3D2E',
-  statusCancelled: '#F5F6F1',
-  statusCancelledText: '#5B6560',
+  // Overlays
+  overlay: 'rgba(15, 23, 42, 0.5)',
+  overlayLight: 'rgba(15, 23, 42, 0.2)',
+
+  // Status-specific colorful badge backgrounds & text
+  statusPending: '#FFFBEB',
+  statusPendingText: '#D97706',
+  statusPaid: '#ECFDF5',
+  statusPaidText: '#059669',
+  statusOverdue: '#FEF2F2',
+  statusOverdueText: '#DC2626',
+  statusActive: '#EFF6FF',
+  statusActiveText: '#2563EB',
+  statusCompleted: '#ECFDF5',
+  statusCompletedText: '#059669',
+  statusCancelled: '#F1F5F9',
+  statusCancelledText: '#64748B',
 
   // Tab Bar
-  tabBarBackground: '#FBFBF8', // paper-card (not ink — calmer)
-  tabBarActive: '#B8863A',     // --brass accent
-  tabBarInactive: '#8A9590',   // --text-tertiary
+  tabBarBackground: '#FFFFFF', // Crisp pure white
+  tabBarActive: '#2563EB',     // Vibrant royal blue
+  tabBarInactive: '#94A3B8',   // Slate-400
 } as const;
 
 export const Typography = {
-  // Font families
+  // Uniform Typography System — Inter across ALL headings, body, labels, amounts, cards & navigation
   fontFamily: {
-    // Montserrat for ALL UI text
-    regular: 'Montserrat_400Regular',
-    medium: 'Montserrat_500Medium',
-    semiBold: 'Montserrat_600SemiBold',
-    bold: 'Montserrat_700Bold',
-    // Montserrat for display/headings
-    displayRegular: 'Montserrat_400Regular',
-    displayMedium: 'Montserrat_500Medium',
-    displaySemiBold: 'Montserrat_600SemiBold',
-    displayBold: 'Montserrat_700Bold',
-    // IBM Plex Mono — ONLY for numbers: amounts, invoice numbers,
-    // dates, GSTIN/PAN, timestamps, reference codes
-    monoRegular: 'IBMPlexMono_400Regular',
-    monoMedium: 'IBMPlexMono_500Medium',
-    monoSemiBold: 'IBMPlexMono_600SemiBold',
-    monoBold: 'IBMPlexMono_700Bold',
+    // Inter UI Text
+    regular: 'Inter_400Regular',
+    medium: 'Inter_500Medium',
+    semiBold: 'Inter_600SemiBold',
+    bold: 'Inter_700Bold',
+
+    // Display & Headings
+    displayRegular: 'Inter_400Regular',
+    displayMedium: 'Inter_500Medium',
+    displaySemiBold: 'Inter_600SemiBold',
+    displayBold: 'Inter_700Bold',
+
+    // Numbers, Amounts, Dates & Codes (Uniform Inter tabular styling)
+    monoRegular: 'Inter_400Regular',
+    monoMedium: 'Inter_500Medium',
+    monoSemiBold: 'Inter_600SemiBold',
+    monoBold: 'Inter_700Bold',
   },
 
   // Font sizes
@@ -145,37 +157,39 @@ export const Spacing = {
   '5xl': 64,
 } as const;
 
-// Consistent 4px radius everywhere — no mixed radii
+// Modern, friendly border radii
 export const BorderRadius = {
-  sm: 4,
-  md: 4,
-  lg: 4,
-  xl: 4,
-  '2xl': 4,
-  full: 9999, // only for notification dots / avatars
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  '2xl': 24,
+  full: 9999,
 } as const;
 
-// No shadows — separation via hairline rules and borders only
+// Soft, modern, refined card shadows
 export const Shadows = {
   sm: {
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   md: {
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    elevation: 4,
   },
   lg: {
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 8,
   },
 } as const;
+

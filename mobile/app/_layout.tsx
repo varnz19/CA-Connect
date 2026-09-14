@@ -51,9 +51,11 @@ function RootLayoutNav() {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    const inAuthGroup = segments[0] === '(auth)';
-    const inAdminGroup = segments[0] === '(admin)';
-    const inClientGroup = segments[0] === '(client)';
+    const segmentList = segments as string[];
+    const authRoutes = ['landing', 'portal-select', 'admin-login', 'client-login', 'signup', 'forgot-password', 'complete-google-profile'];
+    const inAuthGroup = segmentList[0] === '(auth)' || segmentList.some((s) => s === '(auth)' || authRoutes.includes(s));
+    const inAdminGroup = segmentList[0] === '(admin)' || segmentList.includes('(admin)');
+    const inClientGroup = segmentList[0] === '(client)' || segmentList.includes('(client)');
 
     if (!isAuthenticated && !inAuthGroup) {
       router.replace('/(auth)/landing');
@@ -110,21 +112,33 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, width: '100%', height: '100%' }}>
       {isWeb && (
         <style type="text/css">{`
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
           html, body, #root {
             height: 100% !important;
             width: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
-            background-color: #F5F6F1 !important;
+            background-color: #F8FAFC !important;
             overflow-x: hidden;
             display: flex;
             flex-direction: column;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
           }
           #root > div {
             height: 100% !important;
             width: 100% !important;
             display: flex;
             flex-direction: column;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+          }
+          * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+          }
+          input, textarea, select, button {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
           }
         `}</style>
       )}
@@ -154,7 +168,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
-    backgroundColor: '#F5F6F1',
+    backgroundColor: '#F8FAFC',
     alignItems: 'stretch',
     justifyContent: 'flex-start',
   },
@@ -162,6 +176,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
-    backgroundColor: '#F5F6F1',
+    backgroundColor: '#F8FAFC',
   },
 });
+

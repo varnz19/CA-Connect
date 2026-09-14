@@ -13,24 +13,25 @@ const getStatusColors = (status: string) => {
   const normalized = status.toUpperCase();
   switch (normalized) {
     case 'PENDING':
-      return { border: Colors.secondary, text: Colors.secondary };
+      return { border: Colors.warningBorder, bg: Colors.warningLight, text: Colors.warningDark };
     case 'PAID':
     case 'COMPLETED':
     case 'ACTIVE':
     case 'CONFIRMED':
     case 'APPROVED':
-      return { border: Colors.success, text: Colors.success };
+      return { border: Colors.successBorder, bg: Colors.successLight, text: Colors.successDark };
     case 'OVERDUE':
     case 'CANCELLED':
     case 'REJECTED':
-      return { border: Colors.danger, text: Colors.danger };
+      return { border: Colors.dangerBorder, bg: Colors.dangerLight, text: Colors.dangerDark };
     case 'UPLOADED':
     case 'UNDER_REVIEW':
+      return { border: Colors.infoBorder, bg: Colors.infoLight, text: Colors.infoDark };
     case 'REQUESTED':
     case 'RESCHEDULED':
-      return { border: Colors.textSecondary, text: Colors.textSecondary };
+      return { border: Colors.border, bg: Colors.backgroundSubtle, text: Colors.textSecondary };
     default:
-      return { border: Colors.textSecondary, text: Colors.textSecondary };
+      return { border: Colors.border, bg: Colors.backgroundSubtle, text: Colors.textSecondary };
   }
 };
 
@@ -51,13 +52,13 @@ const STATUS_LABELS: Record<string, string> = {
   RESCHEDULED: 'Rescheduled',
 };
 
-// Plain text tag — no double-ring stamp, no rotation, no decoration
+// Colorful, rounded status tag
 export const StatusStamp = ({ status, style }: StatusStampProps) => {
   const colors = getStatusColors(status);
   const label = STATUS_LABELS[status.toUpperCase()] || status;
 
   return (
-    <View style={[styles.tag, { borderColor: colors.border }, style]}>
+    <View style={[styles.tag, { borderColor: colors.border, backgroundColor: colors.bg }, style]}>
       <Text style={[styles.text, { color: colors.text }]}>
         {label}
       </Text>
@@ -68,15 +69,15 @@ export const StatusStamp = ({ status, style }: StatusStampProps) => {
 const styles = StyleSheet.create({
   tag: {
     borderWidth: 1,
-    borderRadius: 4,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
+    borderRadius: 9999,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: 3,
     alignSelf: 'flex-start',
   },
   text: {
-    fontFamily: Typography.fontFamily.monoMedium,
-    fontSize: 10,
-    letterSpacing: Typography.letterSpacing.wide,
-    textTransform: 'uppercase',
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: 11,
+    letterSpacing: 0.3,
   },
 });
+

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle, StyleProp } from 'react-native';
-import { Colors, Spacing } from '../../constants/theme';
+import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 
 interface AppCardProps {
   children: React.ReactNode;
@@ -31,9 +31,10 @@ export const AppCard: React.FC<AppCardProps> = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.backgroundCard,
-    borderRadius: 4,       // Consistent 4px
+    borderRadius: BorderRadius.md,
     borderWidth: 1,
     borderColor: Colors.border,
-    // No shadow — separation via border only
+    ...Shadows.sm,
   },
 });
+

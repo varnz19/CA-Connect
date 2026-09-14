@@ -12,7 +12,7 @@ router.get('/:id/pdf', controller.downloadPdf);
 router.post('/', auth_middleware_1.requireAdmin, controller.createInvoice);
 router.post('/:id/send', auth_middleware_1.requireAdmin, controller.sendInvoice);
 router.put('/:id', auth_middleware_1.requireAdmin, controller.updateInvoice);
-router.put('/:id/mark-paid', auth_middleware_1.requireAdmin, controller.markPaid);
+router.put('/:id/mark-paid', controller.markPaid);
 router.delete('/:id', auth_middleware_1.requireAdmin, controller.deleteInvoice);
 exports.default = router;
 //# sourceMappingURL=invoice.routes.js.map

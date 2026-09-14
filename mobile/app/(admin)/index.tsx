@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppAvatar } from '../../components/common/AppAvatar';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Typography, Spacing } from '../../constants/theme';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import {
   useClients,
   useDocuments,
@@ -147,86 +147,97 @@ export default function AdminDashboard() {
 
         <View style={styles.hairlineRule} />
 
-        {/* Compact Key Metrics Strip */}
-        <View style={styles.statBlocksContainer}>
+        {/* Modern Colorful Key Metrics Strip */}
+        <View style={styles.statCardsGrid}>
           <TouchableOpacity
-            style={styles.statBlock}
-            activeOpacity={0.7}
+            style={[styles.metricCard, { backgroundColor: Colors.primarySoft, borderColor: '#BFDBFE' }]}
+            activeOpacity={0.8}
             onPress={() => router.push('/(admin)/clients')}
           >
-            <Text style={styles.statNumber}>{totalClients}</Text>
-            <Text style={styles.statLabel}>Clients</Text>
+            <View style={styles.metricTopRow}>
+              <Text style={[styles.metricNumber, { color: Colors.primaryLight }]}>{totalClients}</Text>
+              <View style={[styles.metricIconBox, { backgroundColor: '#DBEAFE' }]}>
+                <MaterialIcons name="people" size={16} color={Colors.primaryLight} />
+              </View>
+            </View>
+            <Text style={styles.metricLabel}>Total Clients</Text>
           </TouchableOpacity>
 
-          <View style={styles.statDivider} />
-
           <TouchableOpacity
-            style={styles.statBlock}
-            activeOpacity={0.7}
+            style={[styles.metricCard, { backgroundColor: Colors.warningLight, borderColor: Colors.warningBorder }]}
+            activeOpacity={0.8}
             onPress={() => router.push('/(admin)/documents' as any)}
           >
-            <Text style={styles.statNumber}>{pendingDocuments}</Text>
-            <Text style={styles.statLabel}>Docs Due</Text>
+            <View style={styles.metricTopRow}>
+              <Text style={[styles.metricNumber, { color: Colors.warningDark }]}>{pendingDocuments}</Text>
+              <View style={[styles.metricIconBox, { backgroundColor: '#FEF3C7' }]}>
+                <MaterialIcons name="upload-file" size={16} color={Colors.warningDark} />
+              </View>
+            </View>
+            <Text style={styles.metricLabel}>Docs Due</Text>
           </TouchableOpacity>
 
-          <View style={styles.statDivider} />
-
           <TouchableOpacity
-            style={styles.statBlock}
-            activeOpacity={0.7}
+            style={[styles.metricCard, { backgroundColor: Colors.dangerLight, borderColor: Colors.dangerBorder }]}
+            activeOpacity={0.8}
             onPress={() => router.push('/(admin)/invoices')}
           >
-            <Text style={styles.statNumber}>{pendingInvoices}</Text>
-            <Text style={styles.statLabel}>Unpaid</Text>
+            <View style={styles.metricTopRow}>
+              <Text style={[styles.metricNumber, { color: Colors.dangerDark }]}>{pendingInvoices}</Text>
+              <View style={[styles.metricIconBox, { backgroundColor: '#FEE2E2' }]}>
+                <MaterialIcons name="receipt-long" size={16} color={Colors.dangerDark} />
+              </View>
+            </View>
+            <Text style={styles.metricLabel}>Unpaid Invoices</Text>
           </TouchableOpacity>
 
-          <View style={styles.statDivider} />
-
           <TouchableOpacity
-            style={styles.statBlock}
-            activeOpacity={0.7}
+            style={[styles.metricCard, { backgroundColor: Colors.successLight, borderColor: Colors.successBorder }]}
+            activeOpacity={0.8}
             onPress={() => router.push('/(admin)/appointments' as any)}
           >
-            <Text style={styles.statNumber}>{todayAppointments}</Text>
-            <Text style={styles.statLabel}>Today</Text>
+            <View style={styles.metricTopRow}>
+              <Text style={[styles.metricNumber, { color: Colors.successDark }]}>{todayAppointments}</Text>
+              <View style={[styles.metricIconBox, { backgroundColor: '#D1FAE5' }]}>
+                <MaterialIcons name="event" size={16} color={Colors.successDark} />
+              </View>
+            </View>
+            <Text style={styles.metricLabel}>Today's Meetings</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.hairlineRule} />
-
-        {/* Quick Tools Row (Compact pills) */}
+        {/* Quick Tools Row (Vibrant interactive pills) */}
         <View style={styles.toolsRow}>
           {[
-            { label: '+ Client', route: '/(admin)/add-client' },
-            { label: '+ Invoice', route: '/(admin)/create-invoice' },
-            { label: '+ Request Doc', route: '/(admin)/request-document' },
-            { label: '+ Meeting', route: '/(admin)/add-appointment' },
-            { label: 'Calendar', route: '/(admin)/calendar' },
+            { label: '+ Client', icon: 'person-add', route: '/(admin)/add-client', color: Colors.primaryLight },
+            { label: '+ Invoice', icon: 'receipt', route: '/(admin)/create-invoice', color: Colors.purple },
+            { label: '+ Request Doc', icon: 'note-add', route: '/(admin)/request-document', color: Colors.warningDark },
+            { label: '+ Meeting', icon: 'event-available', route: '/(admin)/add-appointment', color: Colors.successDark },
+            { label: 'Calendar', icon: 'calendar-month', route: '/(admin)/calendar', color: Colors.infoDark },
           ].map((tool) => (
             <TouchableOpacity
               key={tool.label}
               style={styles.toolChip}
               onPress={() => router.push(tool.route as any)}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
             >
+              <MaterialIcons name={tool.icon as any} size={15} color={tool.color} />
               <Text style={styles.toolChipText}>{tool.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <View style={styles.hairlineRule} />
-
         {/* Compact Needs Attention List */}
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionHeading}>Needs Attention</Text>
-          <Text style={styles.refMeta}>TODAY</Text>
+          <Text style={styles.refMeta}>ACTIVE ALERTS</Text>
         </View>
 
         <View style={styles.attentionList}>
-          {attentionItems.map((item) => (
+          {attentionItems.map((item, idx) => (
             <TouchableOpacity
               key={item.id}
-              style={styles.attentionRow}
+              style={[styles.attentionRow, idx === attentionItems.length - 1 && { borderBottomWidth: 0 }]}
               activeOpacity={0.7}
               onPress={() => router.push(item.route as any)}
             >
@@ -235,14 +246,20 @@ export default function AdminDashboard() {
                 <Text style={styles.attentionMeta}>{item.meta}</Text>
               </View>
               <View style={styles.attentionRight}>
-                <Text style={[styles.attentionCount, item.alert && styles.attentionCountAlert]}>
-                  {item.count}
-                </Text>
-                <MaterialIcons name="chevron-right" size={16} color={Colors.textTertiary} />
+                <View style={[
+                  styles.attentionCountBadge,
+                  item.alert ? { backgroundColor: Colors.dangerLight, borderColor: Colors.dangerBorder } : { backgroundColor: Colors.backgroundSubtle, borderColor: Colors.border }
+                ]}>
+                  <Text style={[styles.attentionCount, item.alert && styles.attentionCountAlert]}>
+                    {item.count}
+                  </Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={18} color={Colors.textTertiary} />
               </View>
             </TouchableOpacity>
           ))}
         </View>
+
 
         {/* Today's Schedule - Clean, compact section */}
         <View style={[styles.sectionHeaderRow, { marginTop: Spacing.md }]}>
@@ -332,53 +349,68 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: Colors.hairline,
   },
-  // Compact stat strip
-  statBlocksContainer: {
+  // Modern Colorful Metric Cards Grid
+  statCardsGrid: {
     flexDirection: 'row',
-    backgroundColor: Colors.backgroundCard,
-    paddingVertical: Spacing.sm,
+    flexWrap: 'wrap',
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    gap: Spacing.sm,
   },
-  statBlock: {
+  metricCard: {
     flex: 1,
+    minWidth: '45%',
+    borderWidth: 1.5,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    ...Shadows.sm,
+  },
+  metricTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 2,
+    marginBottom: 6,
   },
-  statNumber: {
+  metricNumber: {
     fontFamily: Typography.fontFamily.monoBold,
-    fontSize: Typography.size.lg,
-    color: Colors.primary,
+    fontSize: Typography.size.xl,
   },
-  statLabel: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: 10,
+  metricIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  metricLabel: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
-    marginTop: 1,
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: Colors.hairline,
   },
   // Compact Tools Row
   toolsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.xs,
+    gap: Spacing.xs + 2,
     paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.sm,
-    backgroundColor: Colors.background,
+    paddingBottom: Spacing.md,
   },
   toolChip: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 7,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.backgroundCard,
+    ...Shadows.sm,
   },
   toolChipText: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: 11,
-    color: Colors.primary,
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: 12,
+    color: Colors.textPrimary,
   },
   // Attention section
   sectionHeaderRow: {
@@ -403,54 +435,66 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   seeAllLink: {
-    fontFamily: Typography.fontFamily.medium,
+    fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.xs,
-    color: Colors.secondaryDark,
+    color: Colors.primaryLight,
   },
   attentionList: {
     backgroundColor: Colors.backgroundCard,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: Colors.hairline,
+    marginHorizontal: Spacing.xl,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    overflow: 'hidden',
+    ...Shadows.sm,
   },
   attentionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: Spacing.xl,
+    paddingVertical: 12,
+    paddingHorizontal: Spacing.base,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.hairline,
+    borderBottomColor: Colors.borderLight,
   },
   attentionInfo: {
     flex: 1,
     marginRight: Spacing.sm,
   },
   attentionLabel: {
-    fontFamily: Typography.fontFamily.medium,
+    fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.sm,
-    color: Colors.primary,
+    color: Colors.textPrimary,
   },
   attentionMeta: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: 11,
     color: Colors.textTertiary,
-    marginTop: 1,
+    marginTop: 2,
   },
   attentionRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
   },
+  attentionCountBadge: {
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.full,
+    minWidth: 26,
+    alignItems: 'center',
+  },
   attentionCount: {
-    fontFamily: Typography.fontFamily.monoMedium,
-    fontSize: Typography.size.sm,
+    fontFamily: Typography.fontFamily.monoBold,
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
   },
   attentionCountAlert: {
-    color: Colors.secondaryDark,
+    color: Colors.dangerDark,
     fontFamily: Typography.fontFamily.monoBold,
   },
+
   // Schedule section
   scheduleBlock: {
     backgroundColor: Colors.backgroundCard,

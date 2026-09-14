@@ -9,7 +9,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing } from '../../constants/theme';
+import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
 
 interface AppInputProps extends TextInputProps {
   label?: string;
@@ -57,16 +57,23 @@ export const AppInput: React.FC<AppInputProps> = ({
         )}
 
         <TextInput
+          {...props}
           style={[
             styles.input,
             leftIcon && styles.inputWithLeftIcon,
             (rightIcon || isPassword) && styles.inputWithRightIcon,
+            props.style,
           ]}
-          placeholderTextColor={Colors.textTertiary}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          secureTextEntry={isPassword && !showPassword}
-          {...props}
+          placeholderTextColor={props.placeholderTextColor || Colors.textTertiary}
+          onFocus={(e) => {
+            setIsFocused(true);
+            props.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setIsFocused(false);
+            props.onBlur?.(e);
+          }}
+          secureTextEntry={isPassword ? !showPassword : props.secureTextEntry}
         />
 
         {isPassword && (
@@ -108,28 +115,35 @@ const styles = StyleSheet.create({
     maxWidth: 480,
   },
   label: {
-    fontFamily: Typography.fontFamily.medium,
+    fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.sm,
     color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs + 2,
     letterSpacing: Typography.letterSpacing.normal,
   },
-  // Underline-style input — bottom border only, no box
+  // Modern rounded input box
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    backgroundColor: 'transparent',
-    height: 44,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: Colors.backgroundInput,
+    borderRadius: BorderRadius.md,
+    height: 48,
+    paddingHorizontal: Spacing.md,
   },
   inputWrapperFocused: {
-    borderBottomWidth: 2,
-    borderBottomColor: Colors.borderFocus, // Brass underline on focus
+    borderColor: Colors.borderFocus,
+    backgroundColor: '#FFFFFF',
+    shadowColor: Colors.primaryLight,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
   inputWrapperError: {
-    borderBottomWidth: 2,
-    borderBottomColor: Colors.danger, // desaturated rust, not alarm-red
+    borderColor: Colors.danger,
+    backgroundColor: Colors.dangerLight,
   },
   input: {
     flex: 1,
@@ -151,9 +165,8 @@ const styles = StyleSheet.create({
   rightIconWrapper: {
     paddingLeft: Spacing.xs,
   },
-  // Error in sentence-case, Ink color (not bright red), beneath field
   errorText: {
-    fontFamily: Typography.fontFamily.regular,
+    fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.xs,
     color: Colors.danger,
     marginTop: Spacing.xs,
@@ -165,3 +178,4 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
   },
 });
+

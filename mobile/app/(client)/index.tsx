@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppAvatar } from '../../components/common/AppAvatar';
 import { useAuthStore } from '../../store/authStore';
-import { Colors, Typography, Spacing } from '../../constants/theme';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import {
   useServices,
   useInvoices,
@@ -135,73 +135,84 @@ export default function ClientDashboard() {
 
         <View style={styles.hairlineRule} />
 
-        {/* Compact Key Metrics Strip */}
-        <View style={styles.statBlocksContainer}>
+        {/* Modern Colorful Key Metrics Strip */}
+        <View style={styles.statCardsGrid}>
           <TouchableOpacity
-            style={styles.statBlock}
-            activeOpacity={0.7}
+            style={[styles.metricCard, { backgroundColor: Colors.warningLight, borderColor: Colors.warningBorder }]}
+            activeOpacity={0.8}
             onPress={() => router.push('/(client)/documents')}
           >
-            <Text style={styles.statNumber}>{clientDocs.length}</Text>
-            <Text style={styles.statLabel}>Docs Due</Text>
+            <View style={styles.metricTopRow}>
+              <Text style={[styles.metricNumber, { color: Colors.warningDark }]}>{clientDocs.length}</Text>
+              <View style={[styles.metricIconBox, { backgroundColor: '#FEF3C7' }]}>
+                <MaterialIcons name="upload-file" size={16} color={Colors.warningDark} />
+              </View>
+            </View>
+            <Text style={styles.metricLabel}>Docs Due</Text>
           </TouchableOpacity>
 
-          <View style={styles.statDivider} />
-
           <TouchableOpacity
-            style={styles.statBlock}
-            activeOpacity={0.7}
+            style={[styles.metricCard, { backgroundColor: Colors.dangerLight, borderColor: Colors.dangerBorder }]}
+            activeOpacity={0.8}
             onPress={() => router.push('/(client)/invoices')}
           >
-            <Text style={styles.statNumber}>{clientInvoices.length}</Text>
-            <Text style={styles.statLabel}>Unpaid</Text>
+            <View style={styles.metricTopRow}>
+              <Text style={[styles.metricNumber, { color: Colors.dangerDark }]}>{clientInvoices.length}</Text>
+              <View style={[styles.metricIconBox, { backgroundColor: '#FEE2E2' }]}>
+                <MaterialIcons name="receipt-long" size={16} color={Colors.dangerDark} />
+              </View>
+            </View>
+            <Text style={styles.metricLabel}>Unpaid Invoices</Text>
           </TouchableOpacity>
 
-          <View style={styles.statDivider} />
-
           <TouchableOpacity
-            style={styles.statBlock}
-            activeOpacity={0.7}
+            style={[styles.metricCard, { backgroundColor: Colors.primarySoft, borderColor: '#BFDBFE' }]}
+            activeOpacity={0.8}
             onPress={() => router.push('/(client)/services')}
           >
-            <Text style={styles.statNumber}>{clientServices.length}</Text>
-            <Text style={styles.statLabel}>Engagements</Text>
+            <View style={styles.metricTopRow}>
+              <Text style={[styles.metricNumber, { color: Colors.primaryLight }]}>{clientServices.length}</Text>
+              <View style={[styles.metricIconBox, { backgroundColor: '#DBEAFE' }]}>
+                <MaterialIcons name="assignment" size={16} color={Colors.primaryLight} />
+              </View>
+            </View>
+            <Text style={styles.metricLabel}>Engagements</Text>
           </TouchableOpacity>
-
-          <View style={styles.statDivider} />
 
           <TouchableOpacity
-            style={styles.statBlock}
-            activeOpacity={0.7}
+            style={[styles.metricCard, { backgroundColor: Colors.successLight, borderColor: Colors.successBorder }]}
+            activeOpacity={0.8}
             onPress={() => router.push('/(client)/calendar')}
           >
-            <Text style={styles.statNumber}>{clientApts.length}</Text>
-            <Text style={styles.statLabel}>Meetings</Text>
+            <View style={styles.metricTopRow}>
+              <Text style={[styles.metricNumber, { color: Colors.successDark }]}>{clientApts.length}</Text>
+              <View style={[styles.metricIconBox, { backgroundColor: '#D1FAE5' }]}>
+                <MaterialIcons name="event" size={16} color={Colors.successDark} />
+              </View>
+            </View>
+            <Text style={styles.metricLabel}>Meetings</Text>
           </TouchableOpacity>
         </View>
-
-        <View style={styles.hairlineRule} />
 
         {/* Quick Actions Strip */}
         <View style={styles.toolsRow}>
           {[
-            { label: '+ Book Consultation', route: '/(client)/book-appointment' },
-            { label: 'Upload Documents', route: '/(client)/documents' },
-            { label: 'Message CA', route: '/(client)/messages' },
-            { label: 'Tax Calendar', route: '/(client)/calendar' },
+            { label: '+ Book Consultation', icon: 'event-available', route: '/(client)/book-appointment', color: Colors.primaryLight },
+            { label: 'Upload Documents', icon: 'cloud-upload', route: '/(client)/documents', color: Colors.warningDark },
+            { label: 'Message CA', icon: 'chat', route: '/(client)/messages', color: Colors.purple },
+            { label: 'Tax Calendar', icon: 'calendar-month', route: '/(client)/calendar', color: Colors.infoDark },
           ].map((tool) => (
             <TouchableOpacity
               key={tool.label}
               style={styles.toolChip}
               onPress={() => router.push(tool.route as any)}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
             >
+              <MaterialIcons name={tool.icon as any} size={15} color={tool.color} />
               <Text style={styles.toolChipText}>{tool.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
-
-        <View style={styles.hairlineRule} />
 
         {/* Compact Needs Attention List */}
         <View style={styles.sectionHeaderRow}>
@@ -210,10 +221,10 @@ export default function ClientDashboard() {
         </View>
 
         <View style={styles.attentionList}>
-          {attentionItems.map((item) => (
+          {attentionItems.map((item, idx) => (
             <TouchableOpacity
               key={item.id}
-              style={styles.attentionRow}
+              style={[styles.attentionRow, idx === attentionItems.length - 1 && { borderBottomWidth: 0 }]}
               activeOpacity={0.7}
               onPress={() => router.push(item.route as any)}
             >
@@ -222,10 +233,15 @@ export default function ClientDashboard() {
                 <Text style={styles.attentionMeta}>{item.meta}</Text>
               </View>
               <View style={styles.attentionRight}>
-                <Text style={[styles.attentionCount, item.hasAlert && styles.attentionCountAlert]}>
-                  {item.count}
-                </Text>
-                <MaterialIcons name="chevron-right" size={16} color={Colors.textTertiary} />
+                <View style={[
+                  styles.attentionCountBadge,
+                  item.hasAlert ? { backgroundColor: Colors.dangerLight, borderColor: Colors.dangerBorder } : { backgroundColor: Colors.backgroundSubtle, borderColor: Colors.border }
+                ]}>
+                  <Text style={[styles.attentionCount, item.hasAlert && styles.attentionCountAlert]}>
+                    {item.count}
+                  </Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={18} color={Colors.textTertiary} />
               </View>
             </TouchableOpacity>
           ))}
@@ -234,17 +250,19 @@ export default function ClientDashboard() {
         {/* Quick Contact Practice Banner */}
         <View style={styles.contactPracticeBox}>
           <View style={styles.contactPracticeInfo}>
-            <Text style={styles.contactPracticeTitle}>Need Guidance?</Text>
-            <Text style={styles.contactPracticeSub}>Send direct queries to your dedicated Chartered Accountant.</Text>
+            <Text style={styles.contactPracticeTitle}>Need Financial Guidance?</Text>
+            <Text style={styles.contactPracticeSub}>Reach out directly to your assigned CA for quick answers and filing advice.</Text>
           </View>
           <TouchableOpacity
             style={styles.messageCaBtn}
             onPress={() => router.push('/(client)/messages' as any)}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
           >
+            <MaterialIcons name="chat" size={16} color="#FFFFFF" style={{ marginRight: 4 }} />
             <Text style={styles.messageCaBtnText}>Open Chat</Text>
           </TouchableOpacity>
         </View>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -296,51 +314,67 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: Colors.hairline,
   },
-  statBlocksContainer: {
+  // Modern Colorful Metric Cards Grid
+  statCardsGrid: {
     flexDirection: 'row',
-    backgroundColor: Colors.backgroundCard,
-    paddingVertical: Spacing.sm,
+    flexWrap: 'wrap',
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    gap: Spacing.sm,
   },
-  statBlock: {
+  metricCard: {
     flex: 1,
+    minWidth: '45%',
+    borderWidth: 1.5,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    ...Shadows.sm,
+  },
+  metricTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 2,
+    marginBottom: 6,
   },
-  statNumber: {
+  metricNumber: {
     fontFamily: Typography.fontFamily.monoBold,
-    fontSize: Typography.size.lg,
-    color: Colors.primary,
+    fontSize: Typography.size.xl,
   },
-  statLabel: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: 10,
+  metricIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  metricLabel: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
-    marginTop: 1,
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: Colors.hairline,
   },
   toolsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.xs,
+    gap: Spacing.xs + 2,
     paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.sm,
-    backgroundColor: Colors.background,
+    paddingBottom: Spacing.md,
   },
   toolChip: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 7,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.backgroundCard,
+    ...Shadows.sm,
   },
   toolChipText: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: 11,
-    color: Colors.primary,
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: 12,
+    color: Colors.textPrimary,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -365,86 +399,105 @@ const styles = StyleSheet.create({
   },
   attentionList: {
     backgroundColor: Colors.backgroundCard,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: Colors.hairline,
+    marginHorizontal: Spacing.xl,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    overflow: 'hidden',
+    ...Shadows.sm,
   },
   attentionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: Spacing.xl,
+    paddingVertical: 12,
+    paddingHorizontal: Spacing.base,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.hairline,
+    borderBottomColor: Colors.borderLight,
   },
   attentionInfo: {
     flex: 1,
     marginRight: Spacing.sm,
   },
   attentionLabel: {
-    fontFamily: Typography.fontFamily.medium,
+    fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.sm,
-    color: Colors.primary,
+    color: Colors.textPrimary,
   },
   attentionMeta: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: 11,
     color: Colors.textTertiary,
-    marginTop: 1,
+    marginTop: 2,
   },
   attentionRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
   },
+  attentionCountBadge: {
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.full,
+    minWidth: 26,
+    alignItems: 'center',
+  },
   attentionCount: {
-    fontFamily: Typography.fontFamily.monoMedium,
-    fontSize: Typography.size.sm,
+    fontFamily: Typography.fontFamily.monoBold,
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
   },
   attentionCountAlert: {
-    color: Colors.secondaryDark,
+    color: Colors.dangerDark,
     fontFamily: Typography.fontFamily.monoBold,
   },
   contactPracticeBox: {
     marginHorizontal: Spacing.xl,
     marginTop: Spacing.lg,
-    padding: Spacing.md,
-    backgroundColor: Colors.backgroundCard,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
-    borderRadius: 4,
-    borderLeftWidth: 3,
-    borderLeftColor: Colors.secondary,
+    padding: Spacing.lg,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1.5,
+    borderColor: '#BFDBFE',
+    borderRadius: BorderRadius.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    ...Shadows.sm,
   },
   contactPracticeInfo: {
     flex: 1,
-    marginRight: Spacing.sm,
+    marginRight: Spacing.md,
   },
   contactPracticeTitle: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.sm,
-    color: Colors.primary,
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: Typography.size.base,
+    color: Colors.primaryDark,
   },
   contactPracticeSub: {
     fontFamily: Typography.fontFamily.regular,
-    fontSize: 11,
+    fontSize: Typography.size.xs,
     color: Colors.textSecondary,
     marginTop: 2,
+    lineHeight: 18,
   },
   messageCaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primaryLight,
     paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
-    borderRadius: 4,
-    backgroundColor: Colors.primary,
+    paddingVertical: 9,
+    borderRadius: BorderRadius.md,
+    shadowColor: Colors.primaryLight,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
   },
   messageCaBtnText: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: 11,
-    color: Colors.textLight,
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.xs,
+    color: '#FFFFFF',
   },
 });
+

@@ -2,8 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useSegments } from 'expo-router';
-import { Colors, Typography, Spacing } from '../../constants/theme';
+import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
 import { useAuthStore } from '../../store/authStore';
+import { SignOutModal } from '../common/SignOutModal';
+import { performAppSignOut } from '../../utils/authUtils';
 
 export interface SidebarItem {
   name: string;
@@ -21,8 +23,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ items, baseRoute }) => {
   const router = useRouter();
   const segments = useSegments();
   const { user } = useAuthStore();
+  const [showSignOutModal, setShowSignOutModal] = React.useState(false);
+  const [isSigningOut, setIsSigningOut] = React.useState(false);
 
   const currentSegment = segments[1] || 'index';
+
+  const handleConfirmSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      await performAppSignOut();
+    } finally {
+      setIsSigningOut(false);
+      setShowSignOutModal(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -50,8 +64,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ items, baseRoute }) => {
             >
               <MaterialIcons 
                 name={item.icon} 
-                size={18} 
-                color={isActive ? Colors.secondary : Colors.textTertiary} 
+                size={20} 
+                color={isActive ? Colors.primaryLight : Colors.textTertiary} 
               />
               <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
                 {item.label}
@@ -62,79 +76,96 @@ export const Sidebar: React.FC<SidebarProps> = ({ items, baseRoute }) => {
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>LEDGER SYSTEM · v1.0</Text>
+        <TouchableOpacity
+          style={styles.signOutBtn}
+          onPress={() => setShowSignOutModal(true)}
+          activeOpacity={0.7}
+        >
+          <MaterialIcons name="logout" size={18} color={Colors.danger} />
+          <Text style={styles.signOutText}>Sign Out</Text>
+        </TouchableOpacity>
+        <Text style={styles.footerText}>CA CONNECT PLATFORM · v1.0</Text>
       </View>
+
+      <SignOutModal
+        visible={showSignOutModal}
+        onCancel={() => setShowSignOutModal(false)}
+        onConfirm={handleConfirmSignOut}
+        loading={isSigningOut}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    width: 240,
+    width: 250,
     backgroundColor: Colors.backgroundCard,
     height: '100%',
     borderRightWidth: 1,
-    borderRightColor: Colors.hairline,
+    borderRightColor: Colors.border,
     paddingVertical: Spacing.lg,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
-    gap: Spacing.sm,
+    gap: Spacing.md,
   },
   brandBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: Colors.primary,
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: Colors.primaryLight,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
   },
   brandInitials: {
-    fontFamily: Typography.fontFamily.monoBold,
-    fontSize: 13,
-    color: Colors.primary,
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 14,
+    color: '#FFFFFF',
   },
   headerTextContainer: {
     justifyContent: 'center',
   },
   brandText: {
     fontFamily: Typography.fontFamily.displayBold,
-    fontSize: 15,
-    color: Colors.primary,
+    fontSize: 16,
+    color: Colors.textPrimary,
     letterSpacing: 0.5,
   },
   roleText: {
     fontFamily: Typography.fontFamily.monoMedium,
-    fontSize: 9,
-    color: Colors.textTertiary,
+    fontSize: 10,
+    color: Colors.primaryLight,
     letterSpacing: 1,
     marginTop: 2,
   },
   hairlineRule: {
     height: 1,
-    backgroundColor: Colors.hairline,
+    backgroundColor: Colors.border,
     marginVertical: Spacing.lg,
   },
   navContainer: {
     flex: 1,
-    gap: 2,
+    paddingHorizontal: Spacing.sm,
+    gap: 4,
   },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: 11,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 12,
     gap: Spacing.md,
-    borderLeftWidth: 3,
-    borderLeftColor: 'transparent',
+    borderRadius: BorderRadius.md,
   },
-  // Left-border accent in Brass on the active nav item
   navItemActive: {
-    borderLeftColor: Colors.secondary,
-    backgroundColor: 'rgba(184, 134, 58, 0.08)',
+    backgroundColor: Colors.primarySoft,
   },
   navLabel: {
     fontFamily: Typography.fontFamily.medium,
@@ -142,19 +173,32 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   navLabelActive: {
-    color: Colors.primary,
+    color: Colors.primaryLight,
     fontFamily: Typography.fontFamily.semiBold,
   },
   footer: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: Colors.hairline,
+    borderTopColor: Colors.border,
+    gap: Spacing.sm,
+  },
+  signOutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  signOutText: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.sm,
+    color: Colors.danger,
   },
   footerText: {
     fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: 9,
+    fontSize: 10,
     color: Colors.textTertiary,
     letterSpacing: 1,
   },
 });
+

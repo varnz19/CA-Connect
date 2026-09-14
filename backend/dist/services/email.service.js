@@ -155,6 +155,44 @@ class EmailService {
             }
         }
     }
+    async sendAppointmentNotification(email, clientName, title, scheduledDate, meetingLink, notes) {
+        const transporter = await this.getTransporter();
+        const mailOptions = {
+            from: process.env.SMTP_FROM || '"CA Connect Advisory" <noreply@caconnect.in>',
+            to: email,
+            subject: `Advisory Session Confirmed: ${title}`,
+            text: `Dear ${clientName},\n\nYour consultation session has been confirmed.\n\nTopic: ${title}\nDate & Time: ${scheduledDate}\nVideo Meeting Link: ${meetingLink}\n\nNotes: ${notes || 'Please join on time.'}\n\nCA Connect Advisory`,
+            html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2 style="color: #1e3a8a; text-align: center; margin-bottom: 4px;">CA Connect & Associates</h2>
+          <p style="color: #64748b; text-align: center; font-size: 13px; margin-top: 0;">Chartered Accountants & Advisory Practice</p>
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p>Dear <strong>${clientName}</strong>,</p>
+          <p>Your advisory consultation session has been scheduled and confirmed with your CA practice partner.</p>
+          <div style="background-color: #f8fafc; padding: 18px; border-radius: 8px; border-left: 4px solid #2563eb; margin: 20px 0;">
+            <p style="margin: 6px 0;"><strong>Consultation Topic:</strong> ${title}</p>
+            <p style="margin: 6px 0;"><strong>Scheduled Time:</strong> ${scheduledDate}</p>
+            <p style="margin: 6px 0;"><strong>Video Meeting Link:</strong> <a href="${meetingLink}" target="_blank" style="color: #2563eb; font-weight: bold;">${meetingLink}</a></p>
+            ${notes ? `<p style="margin: 6px 0; color: #475569;"><strong>Notes / Agenda:</strong> ${notes}</p>` : ''}
+          </div>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${meetingLink}" target="_blank" style="background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Join Video Meeting</a>
+          </div>
+          <p style="font-size: 12px; color: #64748b;">Please ensure you join with your client documents ready. If you need to reschedule, please notify your CA team via the practice portal.</p>
+        </div>
+      `,
+        };
+        const info = await transporter.sendMail(mailOptions);
+        if ('messageId' in info && info.messageId) {
+            const nodemailerUrl = nodemailer_1.default.getTestMessageUrl(info);
+            if (nodemailerUrl) {
+                console.log(`✉️ Appointment email preview link: ${nodemailerUrl}`);
+            }
+            else {
+                console.log(`✉️ Appointment notification email sent to ${email}`);
+            }
+        }
+    }
 }
 exports.emailService = new EmailService();
 //# sourceMappingURL=email.service.js.map

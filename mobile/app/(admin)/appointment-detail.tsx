@@ -8,6 +8,8 @@ import {
   Alert,
   TextInput,
   Linking,
+  Share,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -79,7 +81,10 @@ export default function AdminAppointmentDetailScreen() {
         notes,
       });
       if (res.data) {
-        Alert.alert('Success', 'Appointment confirmed.');
+        Alert.alert(
+          'Success',
+          'Advisory consultation confirmed! The client has been notified via in-app alert and email with the Google Meet link.'
+        );
         setIsConfirmMode(false);
         fetchDetail();
       }
@@ -87,6 +92,32 @@ export default function AdminAppointmentDetailScreen() {
       Alert.alert('Error', err.response?.data?.message || 'Failed to confirm appointment.');
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleNotifyClient = async () => {
+    if (!appointment) return;
+    const clientName = appointment.clientProfile?.user
+      ? `${appointment.clientProfile.user.firstName} ${appointment.clientProfile.user.lastName}`
+      : 'Client';
+    const dateFormatted = appointment.confirmedDate
+      ? format(parseISO(appointment.confirmedDate), 'dd MMM yyyy, hh:mm a')
+      : format(parseISO(appointment.requestedDate), 'dd MMM yyyy');
+    const link = appointment.meetingLink || 'Link to follow';
+
+    const msg = `Dear ${clientName},\n\nYour advisory consultation has been scheduled:\nTopic: ${appointment.title}\nTime: ${dateFormatted}\nVideo Meeting: ${link}\n\nNotes: ${appointment.notes || 'Please join on time with financial documents.'}\n\nCA Connect & Associates`;
+
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && (navigator as any).clipboard) {
+      await (navigator as any).clipboard.writeText(msg);
+      Alert.alert(
+        'Meeting Copied',
+        `Meeting invitation copied to clipboard! You can paste and send via WhatsApp, email, or message:\n\n${msg}`
+      );
+    } else {
+      await Share.share({
+        title: `Meeting: ${appointment.title}`,
+        message: msg,
+      });
     }
   };
 
@@ -216,12 +247,20 @@ export default function AdminAppointmentDetailScreen() {
                   onPress={handleComplete}
                 />
                 {appointment.meetingLink && (
-                  <AppButton
-                    title="Open Video Link"
-                    variant="outline"
-                    size="sm"
-                    onPress={() => Linking.openURL(appointment.meetingLink!)}
-                  />
+                  <>
+                    <AppButton
+                      title="Open Video"
+                      variant="outline"
+                      size="sm"
+                      onPress={() => Linking.openURL(appointment.meetingLink!)}
+                    />
+                    <AppButton
+                      title="Notify Client"
+                      size="sm"
+                      onPress={handleNotifyClient}
+                      style={{ backgroundColor: Colors.primaryLight }}
+                    />
+                  </>
                 )}
               </>
             )}

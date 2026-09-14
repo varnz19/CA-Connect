@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppBadge } from './AppBadge';
-import { Colors, Typography, Spacing } from '../../constants/theme';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { Invoice } from '../../types';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 
@@ -157,15 +157,19 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  // Dense flat row — separated by hairline rule (applied by parent list)
+  // Clean modern card item
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.base,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.hairline,
+    backgroundColor: Colors.backgroundCard,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: Spacing.sm,
+    ...Shadows.sm,
   },
   rowLeft: {
     flex: 1,
@@ -180,12 +184,12 @@ const styles = StyleSheet.create({
   refNumber: {
     fontFamily: Typography.fontFamily.monoBold,
     fontSize: Typography.size.base,
-    color: Colors.primary,
+    color: Colors.primaryLight,
   },
   primaryText: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.base,
-    color: Colors.primary,
+    color: Colors.textPrimary,
   },
   secondaryText: {
     fontFamily: Typography.fontFamily.regular,
@@ -202,8 +206,9 @@ const styles = StyleSheet.create({
   amount: {
     fontFamily: Typography.fontFamily.monoBold,
     fontSize: Typography.size.md,
-    color: Colors.primary,
+    color: Colors.textPrimary,
   },
 });
+
 
 export { formatCurrency, formatDate };
