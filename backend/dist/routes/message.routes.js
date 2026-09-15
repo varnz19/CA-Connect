@@ -7,6 +7,8 @@ const router = (0, express_1.Router)();
 const controller = new remaining_controllers_1.MessageController();
 router.use(auth_middleware_1.authenticate);
 router.get('/conversations', controller.getConversations);
+router.get('/conversations/client/:clientId?', controller.getOrCreateConversation);
+router.post('/conversations/init', controller.getOrCreateConversation);
 router.get('/conversations/:conversationId', controller.getMessages);
 router.post('/send', controller.sendMessage);
 router.put('/:messageId/read', controller.markAsRead);

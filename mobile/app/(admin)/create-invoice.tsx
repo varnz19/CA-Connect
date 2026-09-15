@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQueryClient } from '@tanstack/react-query';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
@@ -30,6 +31,8 @@ interface FormItem {
 
 export default function AdminCreateInvoiceScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const scrollRef = useRef<ScrollView>(null);
   const { clientId } = useLocalSearchParams<{ clientId: string }>();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -187,7 +190,10 @@ export default function AdminCreateInvoiceScreen() {
       const res = await invoiceService.createInvoice(payload);
       if (res.data) {
         setCreatedInvoice(res.data);
-        setSuccessMessage(`Official GST Invoice ${res.data.invoiceNumber} generated! Client has been notified.`);
+        queryClient.invalidateQueries({ queryKey: ['invoices'] });
+        setSuccessMessage(`Official GST Invoice ${res.data.invoiceNumber} generated!`);
+        setShowInvoiceModal(true);
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
       }
     } catch (err: any) {
       const msg =
@@ -198,6 +204,23 @@ export default function AdminCreateInvoiceScreen() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleResetForm = () => {
+    setCreatedInvoice(null);
+    setSuccessMessage(null);
+    setErrorMessage(null);
+    setItems([
+      {
+        id: `item-${Date.now()}`,
+        description: 'Statutory Audit & Tax Compliance Services',
+        quantityStr: '1',
+        unitPriceStr: '5000',
+      },
+    ]);
+    const future = new Date();
+    future.setDate(future.getDate() + 15);
+    setDueDate(future.toISOString().split('T')[0]);
   };
 
   return (
@@ -222,6 +245,7 @@ export default function AdminCreateInvoiceScreen() {
         </View>
 
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -504,24 +528,52 @@ export default function AdminCreateInvoiceScreen() {
               numberOfLines={2}
             />
 
-            {/* Submit Action */}
-            <View style={styles.actionRow}>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => router.replace('/(admin)/invoices')}
-                disabled={isLoading}
-              >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
-              </TouchableOpacity>
+            {/* Submit / Created Actions */}
+            {createdInvoice ? (
+              <View style={styles.createdBottomBar}>
+                <AppButton
+                  title={`View / Print ${createdInvoice.invoiceNumber}`}
+                  onPress={() => setShowInvoiceModal(true)}
+                  size="md"
+                  style={{ width: '100%' }}
+                />
+                <View style={styles.createdSubActions}>
+                  <TouchableOpacity
+                    style={styles.anotherBtn}
+                    onPress={handleResetForm}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="add-circle-outline" size={16} color={Colors.primary} />
+                    <Text style={styles.anotherBtnText}>Create Another</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.cancelBtn}
+                    onPress={() => router.replace('/(admin)/invoices')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.cancelBtnText}>Back to Invoices</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  onPress={() => router.replace('/(admin)/invoices')}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
 
-              <AppButton
-                title={isLoading ? 'Generating Invoice...' : 'Generate Official GST Invoice'}
-                onPress={handleSubmit}
-                loading={isLoading}
-                size="md"
-                style={styles.submitBtn}
-              />
-            </View>
+                <AppButton
+                  title={isLoading ? 'Generating Invoice...' : 'Generate Official GST Invoice'}
+                  onPress={handleSubmit}
+                  loading={isLoading}
+                  size="md"
+                  style={styles.submitBtn}
+                />
+              </View>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -1103,6 +1155,31 @@ const styles = StyleSheet.create({
   submitBtn: {
     flex: 2,
     marginVertical: 0,
+  },
+  createdBottomBar: {
+    marginTop: Spacing.md,
+    gap: Spacing.sm,
+  },
+  createdSubActions: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  anotherBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.backgroundCard,
+  },
+  anotherBtnText: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.sm,
+    color: Colors.primary,
   },
 
   // Client Selection Modal

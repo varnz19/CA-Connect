@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.md,
   },
   deadlineTitle: {
-    fontFamily: Typography.fontFamily.medium, // Montserrat
+    fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
     color: Colors.primary,
   },

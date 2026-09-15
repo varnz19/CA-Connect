@@ -226,7 +226,7 @@ export default function ClientEditProfileScreen() {
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
                     label="Business / Trade Name"
-                    placeholder="e.g. Rajesh Kumar & Co."
+                    placeholder="e.g. Acme Enterprises"
                     value={value}
                     onChangeText={(text) => {
                       onChange(text);
@@ -245,7 +245,7 @@ export default function ClientEditProfileScreen() {
                     render={({ field: { onChange, onBlur, value } }) => (
                       <AppInput
                         label="PAN Card Number"
-                        placeholder="ABCDE1234F"
+                        placeholder="AAAAA0000A"
                         autoCapitalize="characters"
                         value={value}
                         onChangeText={(text) => {
@@ -264,7 +264,7 @@ export default function ClientEditProfileScreen() {
                     render={({ field: { onChange, onBlur, value } }) => (
                       <AppInput
                         label="GST Jurisdiction State"
-                        placeholder="Maharashtra"
+                        placeholder="e.g. Maharashtra"
                         value={value}
                         onChangeText={(text) => {
                           onChange(text);
@@ -283,7 +283,7 @@ export default function ClientEditProfileScreen() {
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
                     label="GSTIN Identification Number"
-                    placeholder="27ABCDE1234F1Z5"
+                    placeholder="27AAAAA0000A1Z5"
                     autoCapitalize="characters"
                     value={value}
                     onChangeText={(text) => {

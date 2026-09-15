@@ -34,6 +34,8 @@ export default function ChatScreen() {
   const listRef = useRef<FlatList>(null);
 
   const { data: convsRes } = useConversations();
+  const [createdConvId, setCreatedConvId] = useState<string>('');
+
   const matchedConv = convsRes?.data?.find(
     (c: any) =>
       c.clientProfile?.userId === clientId ||
@@ -42,7 +44,17 @@ export default function ChatScreen() {
       c.clientProfileId === clientId
   );
 
-  const activeConvId = paramConvId || matchedConv?.id || '';
+  useEffect(() => {
+    if (!paramConvId && !matchedConv?.id && clientId) {
+      messageService.getOrCreateClientConversation(clientId).then((res) => {
+        if (res?.data?.id) {
+          setCreatedConvId(res.data.id);
+        }
+      }).catch(() => {});
+    }
+  }, [paramConvId, matchedConv?.id, clientId]);
+
+  const activeConvId = paramConvId || matchedConv?.id || createdConvId || '';
 
   const { data: clientRes } = useClient(clientId || matchedConv?.clientProfile?.user?.id || '');
   const clientUser = clientRes?.data || matchedConv?.clientProfile?.user || matchedConv?.client;

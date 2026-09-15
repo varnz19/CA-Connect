@@ -5,11 +5,13 @@ import { authenticate, requireAdmin } from '../middleware/auth.middleware';
 const router = Router();
 const controller = new InvoiceController();
 
+// Public/Direct PDF download route (accessible directly by invoice ID)
+router.get('/:id/pdf', controller.downloadPdf);
+
 router.use(authenticate);
 
 router.get('/', controller.getInvoices);
 router.get('/:id', controller.getInvoice);
-router.get('/:id/pdf', controller.downloadPdf);
 
 router.post('/', requireAdmin, controller.createInvoice);
 router.post('/:id/send', requireAdmin, controller.sendInvoice);

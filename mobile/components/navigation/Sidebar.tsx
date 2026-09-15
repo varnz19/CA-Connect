@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useSegments } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
@@ -41,9 +41,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ items, baseRoute }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.brandBadge}>
-          <Text style={styles.brandInitials}>CA</Text>
-        </View>
+        <Image
+          source={require('../../assets/ca-logo.png')}
+          style={styles.brandLogo}
+          resizeMode="contain"
+        />
         <View style={styles.headerTextContainer}>
           <Text style={styles.brandText}>CA CONNECT</Text>
           <Text style={styles.roleText}>{user?.role === 'ADMIN' ? 'FIRM WORKSPACE' : 'CLIENT PORTAL'}</Text>
@@ -112,23 +114,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     gap: Spacing.md,
   },
-  brandBadge: {
-    width: 36,
-    height: 36,
+  brandLogo: {
+    width: 38,
+    height: 38,
     borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: Colors.primaryLight,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  brandInitials: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: 14,
-    color: '#FFFFFF',
   },
   headerTextContainer: {
     justifyContent: 'center',

@@ -4,6 +4,7 @@ import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { AppError } from '../middleware/errorHandler';
 import { uploadFile } from '../utils/s3';
 import { emailService } from '../services/email.service';
+import { broadcastNewMessage } from '../services/socket.service';
 
 export class DocumentController {
   getDocumentRequests = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -31,7 +32,82 @@ export class DocumentController {
 
   createDocumentRequest = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const doc = await prisma.documentRequest.create({ data: req.body, include: { documents: true } });
+      const { clientProfileId, clientId, name, title, description, dueDate } = req.body;
+      const docName = name || title; // Support both 'name' and 'title' for compatibility
+      const rawId = clientProfileId || clientId;
+
+      if (!rawId || !docName) {
+        res.status(400).json({ success: false, message: 'clientProfileId and name are required.' });
+        return;
+      }
+
+      // Resolve whether rawId is a ClientProfile.id or User.id
+      let resolvedClientProfileId = rawId;
+      let clientUserId: string | null = null;
+
+      const directProfile = await prisma.clientProfile.findUnique({
+        where: { id: rawId },
+        select: { id: true, userId: true },
+      });
+
+      if (directProfile) {
+        resolvedClientProfileId = directProfile.id;
+        clientUserId = directProfile.userId;
+      } else {
+        const userProfile = await prisma.clientProfile.findUnique({
+          where: { userId: rawId },
+          select: { id: true, userId: true },
+        });
+        if (userProfile) {
+          resolvedClientProfileId = userProfile.id;
+          clientUserId = userProfile.userId;
+        } else {
+          res.status(404).json({ success: false, message: 'Client profile not found for the provided ID.' });
+          return;
+        }
+      }
+
+      // Prevent duplicate submissions within 15 seconds for identical document name and client
+      const recentDuplicate = await prisma.documentRequest.findFirst({
+        where: {
+          clientProfileId: resolvedClientProfileId,
+          name: docName,
+          createdAt: { gte: new Date(Date.now() - 15000) },
+        },
+        include: { documents: true },
+      });
+      if (recentDuplicate) {
+        res.status(200).json({ success: true, data: recentDuplicate });
+        return;
+      }
+
+      const doc = await prisma.documentRequest.create({
+        data: {
+          clientProfileId: resolvedClientProfileId,
+          name: docName,
+          description: description || null,
+          dueDate: dueDate ? new Date(dueDate) : null,
+        },
+        include: { documents: true },
+      });
+
+      // Notify the client
+      try {
+        if (clientUserId) {
+          await prisma.notification.create({
+            data: {
+              userId: clientUserId,
+              type: 'DOCUMENT_REQUESTED',
+              title: `Document Requested: ${docName}`,
+              body: description || `Your CA has requested you to upload: ${docName}`,
+              data: { documentRequestId: doc.id },
+            },
+          });
+        }
+      } catch (notifErr) {
+        console.error('Failed to create doc request notification:', notifErr);
+      }
+
       res.status(201).json({ success: true, data: doc });
     } catch (error) { next(error); }
   };
@@ -184,18 +260,20 @@ export class AppointmentController {
         },
       });
 
-      // NOTIFY THEM:
-      if (req.user?.role === 'CLIENT') {
+      // NOTIFY CA ADMIN:
+      if (apt.status === 'REQUESTED' || req.user?.role === 'CLIENT') {
         // Client booked -> notify admins
         const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
         const clientName = apt.clientProfile?.user
           ? `${apt.clientProfile.user.firstName} ${apt.clientProfile.user.lastName}`
-          : 'A client';
+          : apt.clientProfile?.firmName || 'Client';
         const dateStr = requestedDate.toLocaleDateString('en-IN', {
           weekday: 'short',
           year: 'numeric',
           month: 'short',
           day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
         });
         for (const admin of admins) {
           try {
@@ -204,8 +282,8 @@ export class AppointmentController {
                 userId: admin.id,
                 type: 'APPOINTMENT_BOOKED',
                 title: `New Consultation Request: ${apt.title}`,
-                body: `${clientName} requested an advisory meeting for ${dateStr}.`,
-                data: { appointmentId: apt.id, requestedDate: apt.requestedDate },
+                body: `${clientName} requested an advisory consultation for ${dateStr}.`,
+                data: { appointmentId: apt.id, requestedDate: apt.requestedDate, clientName },
               },
             });
           } catch (e) {
@@ -432,74 +510,267 @@ export class AppointmentController {
 export class MessageController {
   getConversations = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
+      const adminUser = await prisma.user.findFirst({
+        where: { role: 'ADMIN' },
+        select: { id: true, firstName: true, lastName: true, email: true, avatar: true }
+      });
+      const defaultAdminId = adminUser ? adminUser.id : '';
+
       if (req.user?.role === 'CLIENT') {
-        const clientProfile = await prisma.clientProfile.findUnique({
+        let clientProfile = await prisma.clientProfile.findUnique({
           where: { userId: req.user.id }
         });
-        if (clientProfile) {
-          const exists = await prisma.conversation.findUnique({
-            where: { clientProfileId: clientProfile.id }
+        if (!clientProfile) {
+          const profileCount = await prisma.clientProfile.count();
+          const currentUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+          const firmName = currentUser ? `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'Client Firm' : 'Client Firm';
+          clientProfile = await prisma.clientProfile.create({
+            data: {
+              userId: req.user.id,
+              clientCode: `CAC${(profileCount + 1).toString().padStart(4, '0')}`,
+              firmName,
+              adminId: defaultAdminId,
+            }
           });
-          if (!exists) {
-            await prisma.conversation.create({
-              data: { clientProfileId: clientProfile.id }
-            });
-          }
         }
+        await prisma.conversation.upsert({
+          where: { clientProfileId: clientProfile.id },
+          update: {},
+          create: { clientProfileId: clientProfile.id }
+        });
       } else if (req.user?.role === 'ADMIN') {
-        const clientProfiles = await prisma.clientProfile.findMany();
-        for (const cp of clientProfiles) {
-          const exists = await prisma.conversation.findUnique({
-            where: { clientProfileId: cp.id }
-          });
-          if (!exists) {
-            await prisma.conversation.create({
-              data: { clientProfileId: cp.id }
+        const clientUsers = await prisma.user.findMany({
+          where: { role: 'CLIENT' },
+          include: { clientProfile: true }
+        });
+        for (const cu of clientUsers) {
+          let cp = cu.clientProfile;
+          if (!cp) {
+            const count = await prisma.clientProfile.count();
+            cp = await prisma.clientProfile.create({
+              data: {
+                userId: cu.id,
+                clientCode: `CAC${(count + 1).toString().padStart(4, '0')}`,
+                firmName: `${cu.firstName || ''} ${cu.lastName || ''}`.trim() || 'Client Firm',
+                adminId: defaultAdminId,
+              }
             });
           }
+          await prisma.conversation.upsert({
+            where: { clientProfileId: cp.id },
+            update: {},
+            create: { clientProfileId: cp.id }
+          });
         }
       }
 
       const where = req.user?.role === 'CLIENT' ? { clientProfile: { userId: req.user.id } } : {};
-      const conversations = await prisma.conversation.findMany({
+      const rawConversations = await prisma.conversation.findMany({
         where,
         include: {
-          clientProfile: { include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } } },
+          clientProfile: {
+            include: {
+              user: { select: { id: true, firstName: true, lastName: true, email: true, avatar: true } }
+            }
+          },
           messages: { orderBy: { createdAt: 'desc' }, take: 1 },
         },
         orderBy: { lastMessageAt: 'desc' },
       });
+
+      const conversations = await Promise.all(
+        rawConversations.map(async (conv) => {
+          const unreadCount = await prisma.message.count({
+            where: {
+              conversationId: conv.id,
+              receiverId: req.user!.id,
+              readAt: null,
+            }
+          });
+          return {
+            ...conv,
+            unreadCount,
+            admin: adminUser,
+            client: conv.clientProfile?.user,
+          };
+        })
+      );
+
       res.json({ success: true, data: conversations });
+    } catch (error) { next(error); }
+  };
+
+  getOrCreateConversation = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const targetClientId = req.user?.role === 'CLIENT'
+        ? req.user.id
+        : (req.params.clientId || req.body.clientId || req.user!.id);
+
+      const adminUser = await prisma.user.findFirst({
+        where: { role: 'ADMIN' },
+        select: { id: true, firstName: true, lastName: true, email: true, avatar: true }
+      });
+      const defaultAdminId = adminUser ? adminUser.id : '';
+
+      let clientProfile = await prisma.clientProfile.findUnique({
+        where: { userId: targetClientId }
+      });
+
+      if (!clientProfile) {
+        const count = await prisma.clientProfile.count();
+        const clientUser = await prisma.user.findUnique({ where: { id: targetClientId } });
+        const firmName = clientUser ? `${clientUser.firstName || ''} ${clientUser.lastName || ''}`.trim() || 'Client Firm' : 'Client Firm';
+        clientProfile = await prisma.clientProfile.create({
+          data: {
+            userId: targetClientId,
+            clientCode: `CAC${(count + 1).toString().padStart(4, '0')}`,
+            firmName,
+            adminId: defaultAdminId,
+          }
+        });
+      }
+
+      const conversation = await prisma.conversation.upsert({
+        where: { clientProfileId: clientProfile.id },
+        update: {},
+        create: { clientProfileId: clientProfile.id },
+        include: {
+          clientProfile: {
+            include: {
+              user: { select: { id: true, firstName: true, lastName: true, email: true, avatar: true } }
+            }
+          },
+          messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+        },
+      });
+
+      res.json({
+        success: true,
+        data: {
+          ...conversation,
+          admin: adminUser,
+          client: conversation.clientProfile?.user,
+        }
+      });
     } catch (error) { next(error); }
   };
 
   getMessages = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
+      const { conversationId } = req.params;
+      const conversation = await prisma.conversation.findUnique({
+        where: { id: conversationId },
+        include: { clientProfile: true }
+      });
+
+      if (!conversation) {
+        throw new AppError('Conversation not found', 404);
+      }
+
+      // ISOLATION: A client can ONLY access their own conversation!
+      if (req.user?.role === 'CLIENT' && conversation.clientProfile.userId !== req.user.id) {
+        throw new AppError('Access denied: You can only view your own conversation', 403);
+      }
+
+      // Auto-mark messages as read for this receiver
+      await prisma.message.updateMany({
+        where: {
+          conversationId,
+          receiverId: req.user!.id,
+          readAt: null,
+        },
+        data: { readAt: new Date() },
+      });
+
       const messages = await prisma.message.findMany({
-        where: { conversationId: req.params.conversationId },
-        include: { sender: { select: { id: true, firstName: true, lastName: true } } },
+        where: { conversationId },
+        include: {
+          sender: { select: { id: true, firstName: true, lastName: true, avatar: true } }
+        },
         orderBy: { createdAt: 'asc' },
       });
+
       res.json({ success: true, data: messages });
     } catch (error) { next(error); }
   };
 
   sendMessage = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { conversationId, receiverId, content, fileUrl, fileName, fileType } = req.body;
-      const message = await prisma.message.create({
-        data: { conversationId, senderId: req.user!.id, receiverId, content, fileUrl, fileName, fileType },
-        include: { sender: { select: { id: true, firstName: true, lastName: true } } },
+      const { conversationId, content, fileUrl, fileName, fileType } = req.body;
+      let { receiverId } = req.body;
+
+      if (!conversationId) {
+        throw new AppError('conversationId is required', 400);
+      }
+
+      const conversation = await prisma.conversation.findUnique({
+        where: { id: conversationId },
+        include: { clientProfile: true }
       });
-      await prisma.conversation.update({ where: { id: conversationId }, data: { lastMessageAt: new Date() } });
-      await prisma.auditLog.create({ data: { userId: req.user!.id, action: 'MESSAGE_SENT', entity: 'Message', entityId: message.id } });
+
+      if (!conversation) {
+        throw new AppError('Conversation not found', 404);
+      }
+
+      // STRICT USER & THREAD ISOLATION
+      if (req.user?.role === 'CLIENT') {
+        // Client can only post in their own conversation
+        if (conversation.clientProfile.userId !== req.user.id) {
+          throw new AppError('Access denied: Cannot post in another user\'s conversation', 403);
+        }
+        // Receiver for client message is always the CA Admin
+        const adminUser = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
+        if (!adminUser) {
+          throw new AppError('No CA Admin found to receive message', 404);
+        }
+        receiverId = adminUser.id;
+      } else {
+        // Admin posting message: receiver is always the client of this conversation
+        receiverId = conversation.clientProfile.userId;
+      }
+
+      const message = await prisma.message.create({
+        data: {
+          conversationId,
+          senderId: req.user!.id,
+          receiverId: receiverId!,
+          content: content?.trim(),
+          fileUrl,
+          fileName,
+          fileType,
+        },
+        include: {
+          sender: { select: { id: true, firstName: true, lastName: true, avatar: true } }
+        },
+      });
+
+      await prisma.conversation.update({
+        where: { id: conversationId },
+        data: { lastMessageAt: new Date() }
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          userId: req.user!.id,
+          action: 'MESSAGE_SENT',
+          entity: 'Message',
+          entityId: message.id
+        }
+      });
+
+      // Broadcast real-time message to conversation room and receiver user room
+      broadcastNewMessage(conversationId, receiverId!, message);
+
       res.status(201).json({ success: true, data: message });
     } catch (error) { next(error); }
   };
 
   markAsRead = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const msg = await prisma.message.update({ where: { id: req.params.messageId }, data: { readAt: new Date() } });
+      const msg = await prisma.message.update({
+        where: { id: req.params.messageId },
+        data: { readAt: new Date() }
+      });
       res.json({ success: true, data: msg });
     } catch (error) { next(error); }
   };

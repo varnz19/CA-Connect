@@ -1,9 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendNotificationToUser = exports.isUserOnline = exports.getSocketId = exports.setupSocketIO = void 0;
+exports.broadcastNewMessage = exports.sendNotificationToUser = exports.isUserOnline = exports.getSocketId = exports.setupSocketIO = void 0;
 const jwt_1 = require("../utils/jwt");
+let ioInstance = null;
 const onlineUsers = new Map(); // userId -> socketId
 const setupSocketIO = (io) => {
+    ioInstance = io;
     io.use((socket, next) => {
         const token = socket.handshake.auth.token;
         if (!token) {
@@ -33,12 +35,14 @@ const setupSocketIO = (io) => {
         });
         // Handle message sending
         socket.on('message:send', (data) => {
-            // Broadcast to receiver
-            socket.to(`user:${data.receiverId}`).emit('message:receive', {
+            const payload = {
                 ...data,
                 senderId: userId,
                 createdAt: new Date().toISOString(),
-            });
+            };
+            // Broadcast to receiver personal room and conversation room
+            socket.to(`conversation:${data.conversationId}`).emit('message:receive', payload);
+            socket.to(`user:${data.receiverId}`).emit('message:receive', payload);
             // Confirm delivery to sender
             socket.emit('message:delivered', { conversationId: data.conversationId });
         });
@@ -81,4 +85,11 @@ const sendNotificationToUser = (io, userId, notification) => {
     io.to(`user:${userId}`).emit('notification:receive', notification);
 };
 exports.sendNotificationToUser = sendNotificationToUser;
+const broadcastNewMessage = (conversationId, receiverId, message) => {
+    if (ioInstance) {
+        ioInstance.to(`conversation:${conversationId}`).emit('message:receive', message);
+        ioInstance.to(`user:${receiverId}`).emit('message:receive', message);
+    }
+};
+exports.broadcastNewMessage = broadcastNewMessage;
 //# sourceMappingURL=socket.service.js.map

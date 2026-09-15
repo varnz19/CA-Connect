@@ -20,10 +20,26 @@ const invoiceSchema = z.object({
 });
 
 const generateInvoiceNumber = async (): Promise<string> => {
-  const count = await prisma.invoice.count();
   const year = new Date().getFullYear();
   const nextYear = year + 1;
-  return `CAC/${year}-${String(nextYear).slice(2)}/${String(count + 1).padStart(3, '0')}`;
+  const prefix = `CAC/${year}-${String(nextYear).slice(2)}/`;
+
+  const existing = await prisma.invoice.findMany({
+    where: { invoiceNumber: { startsWith: prefix } },
+    select: { invoiceNumber: true },
+  });
+
+  let maxNum = 0;
+  for (const inv of existing) {
+    const parts = inv.invoiceNumber.split('/');
+    const seq = parseInt(parts[parts.length - 1], 10);
+    if (!isNaN(seq) && seq > maxNum) {
+      maxNum = seq;
+    }
+  }
+
+  const nextSeq = maxNum + 1;
+  return `${prefix}${String(nextSeq).padStart(3, '0')}`;
 };
 
 export class InvoiceController {

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   useWindowDimensions,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -75,7 +76,17 @@ export default function AdminDashboard() {
   const { width } = useWindowDimensions();
   const isDesktop = width > 768;
 
+  const pendingAppointments = (appointmentsRes?.data || []).filter((a) => a.status === 'REQUESTED').length;
+
   const attentionItems = [
+    {
+      id: 'pending-apts',
+      label: 'Consultation Requests',
+      count: pendingAppointments,
+      meta: 'Client advisory sessions awaiting confirmation',
+      route: '/(admin)/appointments',
+      alert: pendingAppointments > 0,
+    },
     {
       id: 'pending-docs',
       label: 'Pending Document Requests',
@@ -121,10 +132,21 @@ export default function AdminDashboard() {
         {/* Top Header: Dynamic Greeting + Date + Profile */}
         <View style={styles.topHeader}>
           <View style={styles.topHeaderLeft}>
-            <Text style={styles.greetingText}>
-              {getGreeting()}, {user?.firstName || 'Admin'}
-            </Text>
-            <Text style={styles.dateLabel}>{format(new Date(), 'EEEE, dd MMMM yyyy')}</Text>
+            <View style={styles.headerTitleRow}>
+              {!isDesktop && (
+                <Image
+                  source={require('../../assets/ca-logo.png')}
+                  style={styles.headerLogo}
+                  resizeMode="contain"
+                />
+              )}
+              <View>
+                <Text style={styles.greetingText}>
+                  {getGreeting()}, {user?.firstName || 'Admin'}
+                </Text>
+                <Text style={styles.dateLabel}>{format(new Date(), 'EEEE, dd MMMM yyyy')}</Text>
+              </View>
+            </View>
           </View>
 
           <View style={styles.topHeaderRight}>
@@ -316,6 +338,16 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.sm,
   },
   topHeaderLeft: { flex: 1 },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  headerLogo: {
+    width: 34,
+    height: 34,
+    borderRadius: 6,
+  },
   greetingText: {
     fontFamily: Typography.fontFamily.displayBold,
     fontSize: Typography.size.lg,

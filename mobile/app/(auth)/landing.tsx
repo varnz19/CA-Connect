@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -25,9 +26,11 @@ export default function LandingScreen() {
           {/* Top Brand Bar */}
           <View style={styles.brandRow}>
             <View style={styles.logoCluster}>
-              <View style={styles.logoOrb}>
-                <Ionicons name="sparkles" size={16} color="#FFFFFF" />
-              </View>
+              <Image
+                source={require('../../assets/ca-logo.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
               <Text style={styles.brandName}>CA CONNECT</Text>
             </View>
 
@@ -161,18 +164,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  logoOrb: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: '#2563EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    elevation: 4,
+  logoImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
   },
   brandName: {
     fontFamily: Typography.fontFamily.displayBold,

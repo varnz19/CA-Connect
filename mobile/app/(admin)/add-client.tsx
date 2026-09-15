@@ -118,7 +118,7 @@ export default function AddClientScreen() {
                     render={({ field: { onChange, onBlur, value } }) => (
                       <AppInput
                         label="First Name *"
-                        placeholder="Rajesh"
+                        placeholder="e.g. Rahul"
                         value={value}
                         onChangeText={onChange}
                         onBlur={onBlur}
@@ -134,7 +134,7 @@ export default function AddClientScreen() {
                     render={({ field: { onChange, onBlur, value } }) => (
                       <AppInput
                         label="Last Name *"
-                        placeholder="Kumar"
+                        placeholder="e.g. Sharma"
                         value={value}
                         onChangeText={onChange}
                         onBlur={onBlur}
@@ -151,7 +151,7 @@ export default function AddClientScreen() {
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
                     label="Official Email Address *"
-                    placeholder="rajesh.kumar@example.com"
+                    placeholder="e.g. client@firm.com"
                     keyboardType="email-address"
                     autoCapitalize="none"
                     value={value}
@@ -186,8 +186,8 @@ export default function AddClientScreen() {
                 name="firmName"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
-                    label="Registered Business / Firm Name *"
-                    placeholder="Kumar Trading Co."
+                    label="Firm / Trade Name *"
+                    placeholder="e.g. Enterprise Pvt Ltd"
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
@@ -204,7 +204,7 @@ export default function AddClientScreen() {
                     render={({ field: { onChange, onBlur, value } }) => (
                       <AppInput
                         label="PAN Card Number *"
-                        placeholder="ABCDE1234F"
+                        placeholder="AAAAA0000A"
                         autoCapitalize="characters"
                         value={value}
                         onChangeText={onChange}
@@ -221,7 +221,7 @@ export default function AddClientScreen() {
                     render={({ field: { onChange, onBlur, value } }) => (
                       <AppInput
                         label="GST State Jurisdiction *"
-                        placeholder="Maharashtra"
+                        placeholder="e.g. Maharashtra"
                         value={value}
                         onChangeText={onChange}
                         onBlur={onBlur}
@@ -238,7 +238,7 @@ export default function AddClientScreen() {
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
                     label="GSTIN Identification Number *"
-                    placeholder="27ABCDE1234F1Z5"
+                    placeholder="27AAAAA0000A1Z5"
                     autoCapitalize="characters"
                     value={value}
                     onChangeText={onChange}

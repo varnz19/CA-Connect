@@ -1,7 +1,7 @@
 // CA Connect Design System — Modern, Vibrant & High-Contrast Visual Language
 //
-// TYPOGRAPHY RULE: IBM Plex Mono for numbers, amounts, dates, GSTIN/PAN.
-// Montserrat for UI labels, body text, headings, and navigation.
+// TYPOGRAPHY RULE: Inter is the uniform font for ALL text — headings, body,
+// labels, amounts, numbers, dates, codes, and navigation.
 
 export const Colors = {
   // Brand Core Colors — Modern Sapphire & Indigo

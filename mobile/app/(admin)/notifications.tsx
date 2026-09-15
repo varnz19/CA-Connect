@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Colors, Typography, Spacing } from '../../constants/theme';
 import { useNotifications } from '../../hooks/useQueries';
 import { useMutation } from '@tanstack/react-query';
@@ -9,6 +10,7 @@ import { Notification } from '../../types';
 import { format, parseISO } from 'date-fns';
 
 export default function AdminNotificationsScreen() {
+  const router = useRouter();
   const { data: notificationsRes, refetch } = useNotifications();
   const [refreshing, setRefreshing] = React.useState(false);
   const notificationsList = notificationsRes?.data || [];
@@ -29,6 +31,19 @@ export default function AdminNotificationsScreen() {
     mutationFn: notificationService.markAsRead,
     onSuccess: () => refetch(),
   });
+
+  const handleNotificationPress = (item: Notification) => {
+    if (!item.readAt) {
+      markReadMutation.mutate(item.id);
+    }
+    if (item.type.startsWith('APPOINTMENT_')) {
+      router.push('/(admin)/appointments' as any);
+    } else if (item.type.startsWith('INVOICE_')) {
+      router.push('/(admin)/invoices' as any);
+    } else if (item.type.startsWith('DOCUMENT_')) {
+      router.push('/(admin)/documents' as any);
+    }
+  };
 
   const renderNotification = ({ item, index }: { item: Notification; index: number }) => {
     const isUnread = !item.readAt;
@@ -51,7 +66,7 @@ export default function AdminNotificationsScreen() {
         <TouchableOpacity
           activeOpacity={0.7}
           style={[styles.notifRow, isUnread && styles.notifRowUnread]}
-          onPress={() => !item.readAt && markReadMutation.mutate(item.id)}
+          onPress={() => handleNotificationPress(item)}
         >
           {/* Unread marked with a small Brass dot */}
           <View style={styles.dotCol}>

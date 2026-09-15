@@ -8,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -48,12 +49,6 @@ export default function AdminLoginScreen() {
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
   });
-
-  const fillTestAdmin = () => {
-    setValue('email', 'admin@caconnect.in', { shouldValidate: true });
-    setValue('password', 'Admin@123', { shouldValidate: true });
-    setErrorMessage(null);
-  };
 
   const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '1234567890-android.apps.googleusercontent.com';
   const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '1234567890-ios.apps.googleusercontent.com';
@@ -154,28 +149,17 @@ export default function AdminLoginScreen() {
           <View style={styles.container}>
             {/* Header Block */}
             <View style={styles.headerBlock}>
+              <Image
+                source={require('../../assets/ca-logo.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
               <Text style={styles.refCode}>REF: SEC-ADM-01</Text>
               <Text style={styles.pageTitle}>Admin Sign In</Text>
               <Text style={styles.pageSubtitle}>
                 Authenticate to access practice journals, audit logs, and client accounts.
               </Text>
             </View>
-
-            {/* Test Credentials Quick Fill Helper */}
-            <TouchableOpacity
-              style={styles.testAccountPill}
-              onPress={fillTestAdmin}
-              activeOpacity={0.8}
-            >
-              <View style={styles.testBadgeIcon}>
-                <MaterialIcons name="vpn-key" size={14} color={Colors.primaryLight} />
-              </View>
-              <View style={styles.testBadgeContent}>
-                <Text style={styles.testBadgeTitle}>Quick Fill Practice Admin</Text>
-                <Text style={styles.testBadgeSub}>admin@caconnect.in · Admin@123</Text>
-              </View>
-              <MaterialIcons name="touch-app" size={16} color={Colors.primaryLight} />
-            </TouchableOpacity>
 
             {/* Visible Error Banner */}
             {errorMessage && (
@@ -195,7 +179,7 @@ export default function AdminLoginScreen() {
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
                     label="Firm Email Address"
-                    placeholder="admin@caconnect.in"
+                    placeholder="e.g. admin@firm.com"
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoComplete="email"
@@ -328,6 +312,11 @@ const styles = StyleSheet.create({
   },
   headerBlock: {
     marginBottom: Spacing.base,
+  },
+  logoImage: {
+    width: 48,
+    height: 48,
+    marginBottom: Spacing.sm,
   },
   refCode: {
     fontFamily: Typography.fontFamily.monoMedium,

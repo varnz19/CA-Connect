@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   useWindowDimensions,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -45,6 +46,8 @@ export default function ClientDashboard() {
     (i) => i.status === 'PENDING'
   );
   const unreadNotifs = (notificationsRes?.data || []).filter((n) => !n.readAt).length;
+  const { width } = useWindowDimensions();
+  const isDesktop = width > 768;
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -111,12 +114,23 @@ export default function ClientDashboard() {
         {/* Top Header: Dynamic Greeting + Date + Avatar */}
         <View style={styles.topHeader}>
           <View style={styles.topHeaderLeft}>
-            <Text style={styles.greetingText}>
-              {getGreeting()}, {user?.firstName || 'Client'}
-            </Text>
-            <Text style={styles.dateLabel}>
-              {user?.clientProfile?.firmName || 'Client Portal'} · {format(new Date(), 'dd MMMM yyyy')}
-            </Text>
+            <View style={styles.headerTitleRow}>
+              {!isDesktop && (
+                <Image
+                  source={require('../../assets/ca-logo.png')}
+                  style={styles.headerLogo}
+                  resizeMode="contain"
+                />
+              )}
+              <View>
+                <Text style={styles.greetingText}>
+                  {getGreeting()}, {user?.firstName || 'Client'}
+                </Text>
+                <Text style={styles.dateLabel}>
+                  {user?.clientProfile?.firmName || 'Client Portal'} · {format(new Date(), 'dd MMMM yyyy')}
+                </Text>
+              </View>
+            </View>
           </View>
 
           <View style={styles.topHeaderRight}>
@@ -281,6 +295,16 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.sm,
   },
   topHeaderLeft: { flex: 1 },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  headerLogo: {
+    width: 34,
+    height: 34,
+    borderRadius: 6,
+  },
   greetingText: {
     fontFamily: Typography.fontFamily.displayBold,
     fontSize: Typography.size.lg,

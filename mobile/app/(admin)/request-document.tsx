@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQueryClient } from '@tanstack/react-query';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
@@ -21,6 +22,9 @@ import { User } from '../../types';
 
 export default function AdminRequestDocumentScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const isSubmitting = useRef(false);
+
   const [isLoading, setIsLoading] = useState(false);
   const [clients, setClients] = useState<User[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>('');
@@ -51,6 +55,8 @@ export default function AdminRequestDocumentScreen() {
   }, []);
 
   const handleSubmit = async () => {
+    if (isSubmitting.current || isLoading) return;
+
     if (!selectedClientId) {
       Alert.alert('Validation Error', 'Please select a client to request document from.');
       return;
@@ -60,17 +66,19 @@ export default function AdminRequestDocumentScreen() {
       return;
     }
 
+    isSubmitting.current = true;
     setIsLoading(true);
     try {
       const payload = {
         clientProfileId: selectedClientId,
-        name: docName,
-        description: description || null,
+        name: docName.trim(),
+        description: description.trim() || null,
         dueDate: dueDate ? new Date(dueDate).toISOString() : null,
       };
 
       const res = await documentService.createDocumentRequest(payload);
       if (res.data) {
+        queryClient.invalidateQueries({ queryKey: ['documents'] });
         Alert.alert('Success', 'Compliance document request dispatched to client.', [
           { text: 'OK', onPress: () => router.back() }
         ]);
@@ -80,6 +88,7 @@ export default function AdminRequestDocumentScreen() {
       Alert.alert('Error', msg);
     } finally {
       setIsLoading(false);
+      isSubmitting.current = false;
     }
   };
 
@@ -182,6 +191,7 @@ export default function AdminRequestDocumentScreen() {
                 title={isLoading ? 'Issuing Request...' : 'Dispatch Document Request'}
                 onPress={handleSubmit}
                 loading={isLoading}
+                disabled={isLoading}
                 size="md"
                 style={styles.submitBtn}
               />

@@ -7,6 +7,12 @@ export const messageService = {
     return response.data;
   },
 
+  getOrCreateClientConversation: async (clientId?: string): Promise<{ data: Conversation }> => {
+    const url = clientId ? `/messages/conversations/client/${clientId}` : '/messages/conversations/client';
+    const response = await api.get(url);
+    return response.data;
+  },
+
   getMessages: async (conversationId: string): Promise<{ data: Message[] }> => {
     const response = await api.get(`/messages/conversations/${conversationId}`);
     return response.data;

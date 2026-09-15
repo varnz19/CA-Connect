@@ -1,9 +1,11 @@
 import { Server, Socket } from 'socket.io';
 import { verifyAccessToken } from '../utils/jwt';
 
+let ioInstance: Server | null = null;
 const onlineUsers = new Map<string, string>(); // userId -> socketId
 
 export const setupSocketIO = (io: Server) => {
+  ioInstance = io;
   io.use((socket, next) => {
     const token = socket.handshake.auth.token;
     if (!token) {
@@ -39,12 +41,14 @@ export const setupSocketIO = (io: Server) => {
     socket.on(
       'message:send',
       (data: { conversationId: string; receiverId: string; content?: string; fileUrl?: string; fileName?: string }) => {
-        // Broadcast to receiver
-        socket.to(`user:${data.receiverId}`).emit('message:receive', {
+        const payload = {
           ...data,
           senderId: userId,
           createdAt: new Date().toISOString(),
-        });
+        };
+        // Broadcast to receiver personal room and conversation room
+        socket.to(`conversation:${data.conversationId}`).emit('message:receive', payload);
+        socket.to(`user:${data.receiverId}`).emit('message:receive', payload);
 
         // Confirm delivery to sender
         socket.emit('message:delivered', { conversationId: data.conversationId });
@@ -93,4 +97,11 @@ export const isUserOnline = (userId: string): boolean => {
 
 export const sendNotificationToUser = (io: Server, userId: string, notification: object) => {
   io.to(`user:${userId}`).emit('notification:receive', notification);
+};
+
+export const broadcastNewMessage = (conversationId: string, receiverId: string, message: any) => {
+  if (ioInstance) {
+    ioInstance.to(`conversation:${conversationId}`).emit('message:receive', message);
+    ioInstance.to(`user:${receiverId}`).emit('message:receive', message);
+  }
 };

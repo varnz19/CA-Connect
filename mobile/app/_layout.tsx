@@ -6,14 +6,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { Fraunces_400Regular, Fraunces_500Medium, Fraunces_600SemiBold, Fraunces_700Bold } from '@expo-google-fonts/fraunces';
-import { IBMPlexMono_400Regular, IBMPlexMono_500Medium, IBMPlexMono_600SemiBold, IBMPlexMono_700Bold } from '@expo-google-fonts/ibm-plex-mono';
-import {
-  Montserrat_400Regular,
-  Montserrat_500Medium,
-  Montserrat_600SemiBold,
-  Montserrat_700Bold,
-} from '@expo-google-fonts/montserrat';
 import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuthStore } from '../store/authStore';
@@ -84,18 +76,6 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
-    Fraunces_400Regular,
-    Fraunces_500Medium,
-    Fraunces_600SemiBold,
-    Fraunces_700Bold,
-    IBMPlexMono_400Regular,
-    IBMPlexMono_500Medium,
-    IBMPlexMono_600SemiBold,
-    IBMPlexMono_700Bold,
-    Montserrat_400Regular,
-    Montserrat_500Medium,
-    Montserrat_600SemiBold,
-    Montserrat_700Bold,
   });
 
   useEffect(() => {

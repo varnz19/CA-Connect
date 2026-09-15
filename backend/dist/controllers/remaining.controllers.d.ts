@@ -21,6 +21,7 @@ export declare class AppointmentController {
 }
 export declare class MessageController {
     getConversations: (req: AuthenticatedRequest, res: Response, next: NextFunction) => Promise<void>;
+    getOrCreateConversation: (req: AuthenticatedRequest, res: Response, next: NextFunction) => Promise<void>;
     getMessages: (req: AuthenticatedRequest, res: Response, next: NextFunction) => Promise<void>;
     sendMessage: (req: AuthenticatedRequest, res: Response, next: NextFunction) => Promise<void>;
     markAsRead: (req: AuthenticatedRequest, res: Response, next: NextFunction) => Promise<void>;

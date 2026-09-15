@@ -94,18 +94,30 @@ app.get('/health', (req, res) => {
   });
 });
 
-// ─── API Routes ───────────────────────────────────────────────────────────────
+// ─── API Routes (Supporting both /api and /api/v1) ────────────────────────────
+const routeMap: [string, any][] = [
+  ['/auth', authRoutes],
+  ['/clients', clientRoutes],
+  ['/services', serviceRoutes],
+  ['/invoices', invoiceRoutes],
+  ['/documents', documentRoutes],
+  ['/appointments', appointmentRoutes],
+  ['/messages', messageRoutes],
+  ['/notifications', notificationRoutes],
+  ['/profile', profileRoutes],
+  ['/calendar', calendarRoutes],
+];
 
+// Mount with rate-limited auth
 app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/clients', clientRoutes);
-app.use('/api/services', serviceRoutes);
-app.use('/api/invoices', invoiceRoutes);
-app.use('/api/documents', documentRoutes);
-app.use('/api/appointments', appointmentRoutes);
-app.use('/api/messages', messageRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/profile', profileRoutes);
-app.use('/api/calendar', calendarRoutes);
+app.use('/api/v1/auth', authLimiter, authRoutes);
+
+for (const [subPath, router] of routeMap) {
+  if (subPath !== '/auth') {
+    app.use(`/api${subPath}`, router);
+    app.use(`/api/v1${subPath}`, router);
+  }
+}
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 

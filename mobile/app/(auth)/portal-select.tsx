@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
@@ -39,6 +40,11 @@ export default function PortalSelectScreen() {
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.headerBlock}>
+            <Image
+              source={require('../../assets/ca-logo.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
             <View style={styles.pillBadge}>
               <View style={styles.greenLiveDot} />
               <Text style={styles.pillBadgeText}>AUTHENTICATED GATEWAY</Text>
@@ -226,6 +232,11 @@ const styles = StyleSheet.create({
   headerBlock: {
     alignItems: 'center',
     gap: Spacing.xs,
+    marginBottom: Spacing.xs,
+  },
+  logoImage: {
+    width: 60,
+    height: 60,
     marginBottom: Spacing.xs,
   },
   pillBadge: {

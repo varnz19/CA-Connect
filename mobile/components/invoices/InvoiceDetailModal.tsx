@@ -15,11 +15,12 @@ import {
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
+import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
 import { Invoice } from '../../types';
 import { AppBadge } from '../common/AppBadge';
 import { AppButton } from '../common/AppButton';
-import { formatCurrency, formatDate } from '../../utils/formatters';
+import { formatCurrency, formatDate, numberToIndianWords } from '../../utils/formatters';
+import { invoiceService } from '../../services/invoiceService';
 
 interface InvoiceDetailModalProps {
   invoice: Invoice | null;
@@ -30,232 +31,514 @@ interface InvoiceDetailModalProps {
   isProcessing?: boolean;
 }
 
-const buildInvoiceHtml = (invoice: Invoice) => {
+// Generate an SVG QR matrix for offline visual rendering
+const generateQrSvg = (size = 80) => `
+<svg width="${size}" height="${size}" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" fill="white"/>
+  <!-- Position Detection Patterns Top-Left -->
+  <rect x="10" y="10" width="28" height="28" fill="black"/>
+  <rect x="14" y="14" width="20" height="20" fill="white"/>
+  <rect x="18" y="18" width="12" height="12" fill="black"/>
+  <!-- Position Detection Patterns Top-Right -->
+  <rect x="62" y="10" width="28" height="28" fill="black"/>
+  <rect x="66" y="14" width="20" height="20" fill="white"/>
+  <rect x="70" y="18" width="12" height="12" fill="black"/>
+  <!-- Position Detection Patterns Bottom-Left -->
+  <rect x="10" y="62" width="28" height="28" fill="black"/>
+  <rect x="14" y="66" width="20" height="20" fill="white"/>
+  <rect x="18" y="70" width="12" height="12" fill="black"/>
+  <!-- Data modules -->
+  <rect x="42" y="12" width="5" height="5" fill="black"/>
+  <rect x="52" y="12" width="5" height="5" fill="black"/>
+  <rect x="46" y="20" width="6" height="6" fill="black"/>
+  <rect x="42" y="28" width="5" height="5" fill="black"/>
+  <rect x="52" y="28" width="5" height="5" fill="black"/>
+  <rect x="12" y="44" width="5" height="5" fill="black"/>
+  <rect x="22" y="44" width="5" height="5" fill="black"/>
+  <rect x="32" y="44" width="6" height="6" fill="black"/>
+  <rect x="42" y="42" width="8" height="8" fill="black"/>
+  <rect x="54" y="44" width="6" height="6" fill="black"/>
+  <rect x="64" y="44" width="5" height="5" fill="black"/>
+  <rect x="74" y="44" width="5" height="5" fill="black"/>
+  <rect x="84" y="44" width="5" height="5" fill="black"/>
+  <rect x="14" y="52" width="6" height="6" fill="black"/>
+  <rect x="26" y="52" width="6" height="6" fill="black"/>
+  <rect x="44" y="54" width="6" height="6" fill="black"/>
+  <rect x="62" y="52" width="8" height="6" fill="black"/>
+  <rect x="76" y="52" width="6" height="6" fill="black"/>
+  <rect x="42" y="66" width="6" height="6" fill="black"/>
+  <rect x="52" y="66" width="6" height="6" fill="black"/>
+  <rect x="64" y="64" width="6" height="6" fill="black"/>
+  <rect x="76" y="64" width="8" height="8" fill="black"/>
+  <rect x="44" y="78" width="6" height="6" fill="black"/>
+  <rect x="54" y="78" width="6" height="6" fill="black"/>
+  <rect x="66" y="78" width="6" height="6" fill="black"/>
+  <rect x="76" y="82" width="6" height="6" fill="black"/>
+  <rect x="86" y="74" width="6" height="6" fill="black"/>
+  <rect x="86" y="86" width="6" height="6" fill="black"/>
+</svg>
+`;
+
+export const buildInvoiceHtml = (invoice: Invoice) => {
   const client = invoice.client || invoice.clientProfile?.user;
   const profile = invoice.clientProfile;
-  const items = invoice.items || [];
+  const items = invoice.items && invoice.items.length > 0 ? invoice.items : [
+    {
+      description: 'Statutory Audit & Professional Tax Compliance',
+      quantity: 1,
+      unitPrice: invoice.subtotal || 5000,
+      amount: invoice.subtotal || 5000,
+    }
+  ];
+
   const subtotal = invoice.subtotal || items.reduce((s, i) => s + (i.quantity * i.unitPrice), 0);
-  const cgst = invoice.cgst || (subtotal * (invoice.taxRate / 2) / 100);
-  const sgst = invoice.sgst || (subtotal * (invoice.taxRate / 2) / 100);
-  const total = invoice.total || (subtotal + cgst + sgst);
+  const taxRate = invoice.taxRate || 18;
+  const halfTaxRate = taxRate / 2;
+  const cgst = invoice.cgst || (subtotal * halfTaxRate) / 100;
+  const sgst = invoice.sgst || (subtotal * halfTaxRate) / 100;
+  const totalTax = cgst + sgst;
+  const total = invoice.total || (subtotal + totalTax);
+
+  const clientName = profile?.firmName || (client ? `${client.firstName || ''} ${client.lastName || ''}`.trim() : 'Client Account');
+  const clientGstin = profile?.gstin || '-';
+  const clientPan = profile?.panNumber || '-';
+  const clientPhone = client?.phone || '-';
+  const clientEmail = client?.email || '-';
+  const clientAddress = profile?.address || 'Address not specified';
+  const clientState = profile?.gstState || '-';
+
+  const issueDateFormatted = formatDate(invoice.issueDate || new Date().toISOString());
+  const dueDateFormatted = formatDate(invoice.dueDate || new Date().toISOString());
+  const wordsAmount = numberToIndianWords(total);
+  const isPaid = invoice.status === 'PAID';
+
+  const qrSvg = generateQrSvg(75);
 
   return `
   <!DOCTYPE html>
   <html>
   <head>
     <meta charset="utf-8" />
-    <title>Invoice ${invoice.invoiceNumber}</title>
+    <title>Tax Invoice ${invoice.invoiceNumber}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
       body {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        color: #0F172A;
-        margin: 0;
-        padding: 36px;
+        color: #000000;
         background: #FFFFFF;
-      }
-      .header-table {
-        width: 100%;
-        border-bottom: 2px solid #2563EB;
-        padding-bottom: 18px;
-        margin-bottom: 20px;
-      }
-      .firm-title {
-        font-size: 20px;
-        font-weight: 800;
-        color: #1E3A8A;
-        letter-spacing: -0.5px;
-      }
-      .firm-sub {
+        padding: 24px;
         font-size: 11px;
-        color: #64748B;
-        margin-top: 3px;
       }
-      .doc-type {
-        text-align: right;
+      .page-container {
+        width: 100%;
+        max-width: 820px;
+        margin: 0 auto;
+        border: 1.5px solid #000000;
       }
-      .doc-badge {
-        display: inline-block;
-        background: #EFF6FF;
-        color: #2563EB;
-        font-size: 10px;
-        font-weight: 700;
+      .header-strip {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         padding: 4px 8px;
-        border-radius: 4px;
-        letter-spacing: 1px;
+        border-bottom: 1.5px solid #000000;
+        font-size: 11px;
+        font-weight: bold;
       }
-      .inv-num {
-        font-size: 16px;
-        font-weight: 800;
-        color: #0F172A;
-        margin-top: 4px;
-      }
-      .info-grid {
-        width: 100%;
-        margin-bottom: 24px;
-      }
-      .info-grid td {
-        vertical-align: top;
-        font-size: 12px;
-        line-height: 1.5;
-      }
-      .info-label {
-        font-size: 9px;
-        font-weight: 700;
-        color: #94A3B8;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        margin-bottom: 4px;
-      }
-      .info-name {
+      .header-strip .title {
         font-size: 14px;
-        font-weight: 700;
-        color: #0F172A;
-      }
-      .items-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 20px;
-      }
-      .items-table th {
-        background: #F8FAFC;
-        border-top: 1px solid #E2E8F0;
-        border-bottom: 1px solid #E2E8F0;
-        padding: 9px 10px;
-        font-size: 10px;
-        font-weight: 700;
-        color: #475569;
-        text-align: left;
+        font-weight: 800;
         letter-spacing: 0.5px;
       }
-      .items-table td {
-        border-bottom: 1px solid #F1F5F9;
-        padding: 10px;
-        font-size: 12px;
+      .firm-block {
+        display: flex;
+        border-bottom: 1.5px solid #000000;
       }
-      .text-right {
+      .logo-cell {
+        width: 90px;
+        min-width: 90px;
+        border-right: 1.5px solid #000000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+        text-align: center;
+      }
+      .logo-box {
+        width: 65px;
+        height: 65px;
+        border: 1.5px solid #666666;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: bold;
+        color: #333333;
+        text-align: center;
+        line-height: 1.2;
+      }
+      .firm-details {
+        flex: 1;
+        text-align: center;
+        padding: 8px 12px;
+      }
+      .firm-name {
+        font-size: 17px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        margin-bottom: 2px;
+      }
+      .firm-address {
+        font-size: 11px;
+        margin-bottom: 2px;
+      }
+      .firm-contact {
+        font-size: 11px;
+        margin-bottom: 2px;
+      }
+      .firm-tax {
+        font-size: 11px;
+        font-weight: bold;
+      }
+      .two-col-table {
+        display: flex;
+        border-bottom: 1.5px solid #000000;
+      }
+      .half-col {
+        width: 50%;
+        padding: 6px 10px;
+        font-size: 11px;
+        line-height: 1.45;
+      }
+      .half-col.bordered-right {
+        border-right: 1.5px solid #000000;
+      }
+      .info-row {
+        display: flex;
+        margin-bottom: 2px;
+      }
+      .info-row .lbl {
+        width: 140px;
+        color: #111111;
+      }
+      .info-row .val {
+        flex: 1;
+        font-weight: 600;
+      }
+      .sec-title {
+        font-weight: bold;
+        font-size: 11px;
+        margin-bottom: 3px;
+        text-decoration: underline;
+      }
+      .ref-bar {
+        padding: 4px 10px;
+        border-bottom: 1.5px solid #000000;
+        font-size: 10.5px;
+        background: #FFFFFF;
+      }
+      table.item-grid {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      table.item-grid th {
+        border-bottom: 1.5px solid #000000;
+        border-right: 1px solid #000000;
+        padding: 5px 6px;
+        font-size: 10.5px;
+        font-weight: bold;
+        text-align: left;
+        background: #FFFFFF;
+      }
+      table.item-grid th:last-child {
+        border-right: none;
+      }
+      table.item-grid td {
+        border-right: 1px solid #000000;
+        padding: 5px 6px;
+        font-size: 10.5px;
+        vertical-align: top;
+      }
+      table.item-grid td:last-child {
+        border-right: none;
+      }
+      .col-sr { width: 35px; text-align: center; }
+      .col-desc { text-align: left; }
+      .col-sac { width: 65px; text-align: center; }
+      .col-qty { width: 45px; text-align: right; }
+      .col-unit { width: 45px; text-align: center; }
+      .col-rate { width: 75px; text-align: right; }
+      .col-disc { width: 55px; text-align: right; }
+      .col-tax { width: 55px; text-align: right; }
+      .col-amt { width: 85px; text-align: right; }
+
+      .table-summary-row {
+        border-top: 1.5px solid #000000;
+        border-bottom: 1.5px solid #000000;
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 10px;
+        font-size: 11px;
+      }
+      .table-total-row {
+        border-bottom: 1.5px solid #000000;
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 10px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+      .words-line {
+        padding: 5px 10px;
+        border-bottom: 1.5px solid #000000;
+        font-size: 11px;
+        font-weight: bold;
+      }
+      .settle-tax-line {
+        padding: 4px 10px;
+        border-bottom: 1.5px solid #000000;
+        font-size: 10px;
+        line-height: 1.4;
+      }
+      .bottom-quad-grid {
+        display: flex;
+        min-height: 155px;
+      }
+      .bottom-quad-col {
+        padding: 6px 8px;
+        border-right: 1.5px solid #000000;
+        font-size: 9.5px;
+        line-height: 1.35;
+      }
+      .bottom-quad-col:last-child {
+        border-right: none;
+      }
+      .col-terms {
+        width: 28%;
+      }
+      .col-bank {
+        width: 27%;
+      }
+      .col-einvoice {
+        width: 20%;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+      }
+      .col-sign {
+        width: 25%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
         text-align: right;
       }
-      .summary-table {
-        width: 280px;
-        margin-left: auto;
-        margin-bottom: 24px;
+      .sign-top {
+        font-weight: bold;
       }
-      .summary-table td {
-        padding: 5px 8px;
-        font-size: 12px;
-      }
-      .summary-table tr.total-row td {
-        border-top: 2px solid #0F172A;
-        font-size: 14px;
-        font-weight: 800;
-        color: #1E3A8A;
-        padding-top: 8px;
-      }
-      .footer-note {
-        font-size: 10px;
-        color: #64748B;
-        border-top: 1px dashed #CBD5E1;
-        padding-top: 12px;
-        margin-top: 28px;
-      }
-      .status-stamp {
+      .sign-bottom {
+        font-weight: bold;
+        padding-top: 45px;
+        border-top: 1px dotted #888888;
         display: inline-block;
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-weight: 700;
-        font-size: 10px;
-        text-transform: uppercase;
+        text-align: center;
+        margin-top: 40px;
       }
-      .status-PAID { background: #DCFCE7; color: #15803D; }
-      .status-PENDING { background: #FEF3C7; color: #B45309; }
-      .status-OVERDUE { background: #FEE2E2; color: #B91C1C; }
+      .footer-brand {
+        text-align: center;
+        padding: 6px;
+        font-size: 10px;
+        color: #2563EB;
+      }
     </style>
   </head>
   <body>
-    <table class="header-table">
-      <tr>
-        <td>
-          <div class="firm-title">CA CONNECT & ASSOCIATES</div>
-          <div class="firm-sub">Chartered Accountants · Practice Network</div>
-          <div class="firm-sub">ICAI Firm Reg. No: 123456E · GSTIN: 27AAAAA1111A1Z1</div>
-        </td>
-        <td class="doc-type">
-          <div class="doc-badge">TAX INVOICE</div>
-          <div class="inv-num">${invoice.invoiceNumber}</div>
-          <div style="margin-top: 4px;">
-            <span class="status-stamp status-${invoice.status}">${invoice.status}</span>
+    <div class="page-container">
+      <!-- 1. Top Header Strip -->
+      <div class="header-strip">
+        <div>Page No. 1 of 1</div>
+        <div class="title">TAX INVOICE</div>
+        <div>Original Copy</div>
+      </div>
+
+      <!-- 2. Company Info Block -->
+      <div class="firm-block">
+        <div class="logo-cell">
+          <div class="logo-box">
+            Add<br/>Logo
           </div>
-        </td>
-      </tr>
-    </table>
+        </div>
+        <div class="firm-details">
+          <div class="firm-name">CA CONNECT & ASSOCIATES</div>
+          <div class="firm-address">Suite 402, Financial District, Nariman Point, Mumbai - 400021</div>
+          <div class="firm-contact">Mobile: +91 9876543210, Email: billing@caconnect.in</div>
+          <div class="firm-tax">GSTIN: 27AAAAA1111A1Z1 | PAN: AAAAA1111A</div>
+        </div>
+      </div>
 
-    <table class="info-grid">
-      <tr>
-        <td style="width: 55%;">
-          <div class="info-label">BILLED TO</div>
-          <div class="info-name">${client ? `${client.firstName} ${client.lastName}` : 'Client Account'}</div>
-          ${profile?.firmName ? `<div>${profile.firmName}</div>` : ''}
-          ${profile?.gstin ? `<div>GSTIN: ${profile.gstin}</div>` : ''}
-          ${profile?.panNumber ? `<div>PAN: ${profile.panNumber}</div>` : ''}
-          ${profile?.address ? `<div>${profile.address}</div>` : ''}
-        </td>
-        <td style="width: 45%;">
-          <div class="info-label">INVOICE DETAILS</div>
-          <div><strong>Date:</strong> ${new Date(invoice.issueDate || Date.now()).toLocaleDateString('en-IN')}</div>
-          <div><strong>Due Date:</strong> ${new Date(invoice.dueDate || Date.now()).toLocaleDateString('en-IN')}</div>
-          ${invoice.paidAt ? `<div><strong>Settled On:</strong> ${new Date(invoice.paidAt).toLocaleDateString('en-IN')}</div>` : ''}
-        </td>
-      </tr>
-    </table>
+      <!-- 3. Two-Column Metadata (Invoice vs Transporter) -->
+      <div class="two-col-table">
+        <div class="half-col bordered-right">
+          <div class="info-row"><span class="lbl">Invoice Number:</span><span class="val">${invoice.invoiceNumber}</span></div>
+          <div class="info-row"><span class="lbl">Invoice Date:</span><span class="val">${issueDateFormatted}</span></div>
+          <div class="info-row"><span class="lbl">Due date:</span><span class="val">${dueDateFormatted}</span></div>
+          <div class="info-row"><span class="lbl">Place of Supply:</span><span class="val">${clientState}</span></div>
+          <div class="info-row"><span class="lbl">Reverse Charge:</span><span class="val">No</span></div>
+          <div class="info-row"><span class="lbl">Optional Field 1:</span><span class="val">-</span></div>
+          <div class="info-row"><span class="lbl">Optional Field 2:</span><span class="val">-</span></div>
+          <div class="info-row"><span class="lbl">Optional Field 3:</span><span class="val">-</span></div>
+        </div>
+        <div class="half-col">
+          <div class="sec-title" style="text-decoration:none; font-weight:bold; margin-bottom:2px;">Transporter Details:</div>
+          <div class="info-row"><span class="lbl">Transporter:</span><span class="val">Direct Transportation / Portal</span></div>
+          <div class="info-row"><span class="lbl">Vehicle No:</span><span class="val">MH01CA1234</span></div>
+          <div class="info-row"><span class="lbl">Transporter Doc No:</span><span class="val">DOC/CAC/${invoice.invoiceNumber.replace(/[^0-9]/g, '') || '1234'}</span></div>
+          <div class="info-row"><span class="lbl">Transporter Doc Date:</span><span class="val">${issueDateFormatted}</span></div>
+          <div class="info-row"><span class="lbl">E-Way Bill No:</span><span class="val">271234567890</span></div>
+          <div class="info-row"><span class="lbl">E-Way Bill Date:</span><span class="val">${issueDateFormatted}</span></div>
+        </div>
+      </div>
 
-    <table class="items-table">
-      <thead>
-        <tr>
-          <th style="width: 50%;">PARTICULARS</th>
-          <th class="text-right" style="width: 15%;">QTY</th>
-          <th class="text-right" style="width: 15%;">RATE (₹)</th>
-          <th class="text-right" style="width: 20%;">TOTAL (₹)</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${(items.length > 0 ? items : [{ description: 'Professional Advisory Services', quantity: 1, unitPrice: subtotal, amount: subtotal }])
-          .map(
-            (item: any) => `
+      <!-- 4. Billing & Shipping Details -->
+      <div class="two-col-table">
+        <div class="half-col bordered-right">
+          <div class="sec-title">Billing Details</div>
+          <div class="info-row"><span class="lbl">Name:</span><span class="val">${clientName}</span></div>
+          <div class="info-row"><span class="lbl">GSTIN:</span><span class="val">${clientGstin} | Mobile: ${clientPhone}</span></div>
+          <div class="info-row"><span class="lbl">Email:</span><span class="val">${clientEmail}</span></div>
+          <div class="info-row"><span class="lbl">Add Address:</span><span class="val">${clientAddress}</span></div>
+        </div>
+        <div class="half-col">
+          <div class="sec-title">Shipping Details</div>
+          <div class="info-row"><span class="lbl">Name:</span><span class="val">${clientName}</span></div>
+          <div class="info-row"><span class="lbl">GSTIN:</span><span class="val">${clientGstin} | Mobile: ${clientPhone}</span></div>
+          <div class="info-row"><span class="lbl">Email:</span><span class="val">${clientEmail}</span></div>
+          <div class="info-row"><span class="lbl">Add Address:</span><span class="val">${clientAddress}</span></div>
+        </div>
+      </div>
+
+      <!-- 5. PO & Job Reference Line -->
+      <div class="ref-bar">
+        <span><strong>PO/Ref No:</strong> PO-CAC-${invoice.invoiceNumber.replace(/[^0-9]/g, '') || '2026'}</span>
+        <span>|</span>
+        <span><strong>Job No:</strong> CAC/JOB-4820</span>
+        <span>|</span>
+        <span><strong>Job Date:</strong> ${issueDateFormatted}</span>
+      </div>
+
+      <!-- 6. Formal Items Table -->
+      <table class="item-grid">
+        <thead>
           <tr>
-            <td>${item.description}</td>
-            <td class="text-right">${item.quantity}</td>
-            <td class="text-right">${Number(item.unitPrice).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-            <td class="text-right">${Number(item.amount || item.quantity * item.unitPrice).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-          </tr>`
-          )
-          .join('')}
-      </tbody>
-    </table>
+            <th class="col-sr">Sr.</th>
+            <th class="col-desc">Item Description</th>
+            <th class="col-sac">HSN/SAC</th>
+            <th class="col-qty">Qty</th>
+            <th class="col-unit">Unit</th>
+            <th class="col-rate">List Price</th>
+            <th class="col-disc">Disc.</th>
+            <th class="col-tax">Tax %</th>
+            <th class="col-amt">Amount (₹)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items
+            .map(
+              (item: any, idx: number) => `
+            <tr>
+              <td class="col-sr">${idx + 1}</td>
+              <td class="col-desc">${item.description}</td>
+              <td class="col-sac">998221</td>
+              <td class="col-qty">${Number(item.quantity).toFixed(1)}</td>
+              <td class="col-unit">Nos</td>
+              <td class="col-rate">${Number(item.unitPrice).toFixed(2)}</td>
+              <td class="col-disc">0.00</td>
+              <td class="col-tax">${Number(taxRate).toFixed(2)}</td>
+              <td class="col-amt">${Number(item.amount || item.quantity * item.unitPrice).toFixed(2)}</td>
+            </tr>`
+            )
+            .join('')}
+        </tbody>
+      </table>
 
-    <table class="summary-table">
-      <tr>
-        <td>Subtotal</td>
-        <td class="text-right">₹${Number(subtotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-      </tr>
-      <tr>
-        <td>CGST (${invoice.taxRate / 2}%)</td>
-        <td class="text-right">₹${Number(cgst).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-      </tr>
-      <tr>
-        <td>SGST (${invoice.taxRate / 2}%)</td>
-        <td class="text-right">₹${Number(sgst).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-      </tr>
-      <tr class="total-row">
-        <td>TOTAL PAYABLE</td>
-        <td class="text-right">₹${Number(total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-      </tr>
-    </table>
+      <!-- 7. Table Summary & Total -->
+      <div class="table-summary-row">
+        <span>Discount:</span>
+        <span>0.00</span>
+      </div>
+      <div class="table-total-row">
+        <span>Total</span>
+        <span>₹ ${Number(total).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+      </div>
 
-    <div class="footer-note">
-      <strong>Payment Terms:</strong><br/>
-      ${invoice.notes || 'Payment due within indicated due date via NEFT/RTGS.'}<br/>
-      <em>Official statutory tax invoice generated via CA Connect.</em>
+      <!-- 8. Amount in Words -->
+      <div class="words-line">
+        ${wordsAmount}
+      </div>
+
+      <!-- 9. Settlement & Tax Breakdown Strip -->
+      <div class="settle-tax-line">
+        <div>
+          <strong>Settled by - Bank:</strong> ₹ ${isPaid ? Number(total).toFixed(2) : '0.00'} | <strong>Invoice Balance:</strong> ₹ ${isPaid ? '0.00' : Number(total).toFixed(2)}
+        </div>
+        <div style="margin-top:2px;">
+          Tax @${taxRate}% : ₹ ${Number(subtotal).toFixed(2)} | CGST (${halfTaxRate}%): ₹ ${Number(cgst).toFixed(2)} | SGST (${halfTaxRate}%): ₹ ${Number(sgst).toFixed(2)} | Total Tax: ₹ ${Number(totalTax).toFixed(2)} | Add. Cess : 0.00
+        </div>
+      </div>
+
+      <!-- 10. Bottom 4-Column Box -->
+      <div class="bottom-quad-grid">
+        <!-- Terms and Conditions -->
+        <div class="bottom-quad-col col-terms">
+          <div style="font-weight:bold; margin-bottom:3px;">Terms and Conditions:</div>
+          <div>1. E.& O.E.</div>
+          <div>2. Goods once sold / services rendered will not be taken back.</div>
+          <div>3. Interest @ 18% p.a. will be charged if payment is not made within the stipulated time.</div>
+          <div>4. Subject to 'Mumbai' jurisdiction only.</div>
+        </div>
+
+        <!-- Bank Details with UPI QR -->
+        <div class="bottom-quad-col col-bank">
+          <div style="display:flex; gap:6px; align-items:flex-start; margin-bottom:4px;">
+            <div style="width:55px; height:55px;">${qrSvg}</div>
+            <div style="font-size:9px; line-height:1.25;">
+              <div><strong>Account Number:</strong><br/>123456789012</div>
+              <div><strong>Bank:</strong> HDFC Bank</div>
+              <div><strong>IFSC:</strong> HDFC0000123</div>
+            </div>
+          </div>
+          <div style="font-size:9px;">
+            <div><strong>Branch:</strong> Nariman Point, Mumbai</div>
+            <div><strong>Name:</strong> CA Connect & Associates</div>
+          </div>
+        </div>
+
+        <!-- E-Invoice QR -->
+        <div class="bottom-quad-col col-einvoice">
+          <div style="font-weight:bold; margin-bottom:4px;">E-Invoice QR</div>
+          <div style="width:65px; height:65px;">${qrSvg}</div>
+        </div>
+
+        <!-- Authorized Signature -->
+        <div class="bottom-quad-col col-sign">
+          <div class="sign-top">For CA Connect & Associates</div>
+          <div style="text-align:center;">
+            <div style="height:35px;"></div>
+            <div style="border-top:1px solid #000000; padding-top:2px; font-size:10px;">Authorized Signatory</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 11. Footer Credit -->
+    <div class="footer-brand">
+      Invoice Created by <a href="https://www.caconnect.in" style="color:#2563EB; text-decoration:none;">www.caconnect.in</a>
     </div>
   </body>
   </html>
@@ -277,12 +560,35 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
 
   const client = invoice.client || invoice.clientProfile?.user;
   const profile = invoice.clientProfile;
-  const items = invoice.items || [];
+  const items = invoice.items && invoice.items.length > 0 ? invoice.items : [
+    {
+      id: 'default-1',
+      description: 'Statutory Audit & Professional Tax Compliance',
+      quantity: 1,
+      unitPrice: invoice.subtotal || 5000,
+      amount: invoice.subtotal || 5000,
+    }
+  ];
 
   const subtotal = invoice.subtotal || items.reduce((s, i) => s + (i.quantity * i.unitPrice), 0);
-  const cgst = invoice.cgst || (subtotal * (invoice.taxRate / 2) / 100);
-  const sgst = invoice.sgst || (subtotal * (invoice.taxRate / 2) / 100);
-  const total = invoice.total || (subtotal + cgst + sgst);
+  const taxRate = invoice.taxRate || 18;
+  const halfTaxRate = taxRate / 2;
+  const cgst = invoice.cgst || (subtotal * halfTaxRate) / 100;
+  const sgst = invoice.sgst || (subtotal * halfTaxRate) / 100;
+  const totalTax = cgst + sgst;
+  const total = invoice.total || (subtotal + totalTax);
+
+  const clientName = profile?.firmName || (client ? `${client.firstName || ''} ${client.lastName || ''}`.trim() : 'Client Account');
+  const clientGstin = profile?.gstin || '-';
+  const clientPhone = client?.phone || '-';
+  const clientEmail = client?.email || '-';
+  const clientAddress = profile?.address || 'Address not specified';
+  const clientState = profile?.gstState || '-';
+
+  const issueDateFormatted = formatDate(invoice.issueDate || new Date().toISOString());
+  const dueDateFormatted = formatDate(invoice.dueDate || new Date().toISOString());
+  const wordsAmount = numberToIndianWords(total);
+  const isPaid = invoice.status === 'PAID';
 
   const handlePrint = async () => {
     try {
@@ -301,57 +607,92 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
     }
   };
 
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
   const handleShare = async () => {
     try {
       setIsSharing(true);
       const html = buildInvoiceHtml(invoice);
-
-      if (Platform.OS !== 'web') {
-        try {
-          const { uri } = await Print.printToFileAsync({ html });
-          if (await Sharing.isAvailableAsync()) {
-            await Sharing.shareAsync(uri, {
-              UTI: '.pdf',
-              mimeType: 'application/pdf',
-              dialogTitle: `Share Invoice ${invoice.invoiceNumber}`,
-            });
-            return;
-          }
-        } catch (sharePdfErr) {
-          console.warn('Sharing file fallback:', sharePdfErr);
+      const { uri } = await Print.printToFileAsync({ html });
+      if (Platform.OS === 'web') {
+        if (navigator.share) {
+          await navigator.share({
+            title: `Tax Invoice ${invoice.invoiceNumber}`,
+            text: `Tax Invoice ${invoice.invoiceNumber} from CA Connect & Associates for ${formatCurrency(total)}.`,
+            url: uri,
+          });
+        } else {
+          window.open(uri, '_blank');
         }
-      }
-
-      // Universal Share Fallback
-      const shareMessage = `GST Tax Invoice: ${invoice.invoiceNumber}\nAmount: ${formatCurrency(total)}\nDue Date: ${formatDate(invoice.dueDate)}\nStatus: ${invoice.status}`;
-      if (typeof navigator !== 'undefined' && navigator.share) {
-        await navigator.share({
-          title: `Invoice ${invoice.invoiceNumber}`,
-          text: shareMessage,
-          url: `http://localhost:4000/api/invoices/${invoice.id}/pdf`,
-        });
       } else {
-        await Share.share({
-          title: `Invoice ${invoice.invoiceNumber}`,
-          message: `${shareMessage}\n\nDownload PDF: http://localhost:4000/api/invoices/${invoice.id}/pdf`,
-        });
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'application/pdf',
+            dialogTitle: `Tax Invoice ${invoice.invoiceNumber}`,
+            UTI: 'com.adobe.pdf',
+          });
+        } else {
+          Alert.alert('PDF Ready', `Generated PDF at: ${uri}`);
+        }
       }
     } catch (err: any) {
       console.error('Share error:', err);
-      Alert.alert('Share Invoice', `Invoice Number: ${invoice.invoiceNumber}\nAmount: ${formatCurrency(total)}`);
+      Alert.alert('Share Failed', 'Could not share invoice file.');
     } finally {
       setIsSharing(false);
     }
   };
 
-  const handleDownloadPdf = () => {
-    const url = `http://localhost:4000/api/invoices/${invoice.id}/pdf`;
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.open(url, '_blank');
-    } else {
-      Linking.openURL(url).catch(() => {
-        Alert.alert('PDF', `Download URL: ${url}`);
-      });
+  const handleDownloadPdf = async () => {
+    try {
+      setIsDownloadingPdf(true);
+      const filename = `Tax-Invoice-${invoice.invoiceNumber.replace(/[\/\\:]/g, '_')}.pdf`;
+
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        // First try downloading backend-generated official PDF
+        try {
+          const blob = await invoiceService.downloadPdf(invoice.id);
+          const blobUrl = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(blobUrl);
+          return;
+        } catch (backendErr) {
+          console.warn('Backend download fallback to client-side PDF:', backendErr);
+        }
+
+        // Web fallback: instant client-side print-to-file PDF
+        const html = buildInvoiceHtml(invoice);
+        const { uri } = await Print.printToFileAsync({ html });
+        const a = document.createElement('a');
+        a.href = uri;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        // Native iOS/Android
+        const html = buildInvoiceHtml(invoice);
+        const { uri } = await Print.printToFileAsync({ html });
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'application/pdf',
+            dialogTitle: `Download ${filename}`,
+            UTI: 'com.adobe.pdf',
+          });
+        } else {
+          Alert.alert('PDF Saved', `Saved to device at: ${uri}`);
+        }
+      }
+    } catch (err: any) {
+      console.error('PDF error:', err);
+      Alert.alert('PDF Error', 'Could not download PDF. You can also use the Print button.');
+    } finally {
+      setIsDownloadingPdf(false);
     }
   };
 
@@ -364,172 +705,280 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
     >
       <View style={styles.backdrop}>
         <View style={styles.modalCard}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.statutoryTag}>STATUTORY TAX INVOICE</Text>
-              <Text style={styles.invoiceNumber}>{invoice.invoiceNumber}</Text>
-            </View>
-            <View style={styles.headerRight}>
+          {/* Top Control Bar */}
+          <View style={styles.controlHeader}>
+            <View style={styles.controlLeft}>
+              <Text style={styles.controlRef}>{invoice.invoiceNumber}</Text>
               <AppBadge status={invoice.status} />
+            </View>
+
+            {/* Print & Share Actions */}
+            <View style={styles.toolbar}>
+              <TouchableOpacity
+                style={styles.toolBtn}
+                onPress={handlePrint}
+                disabled={isPrinting}
+                activeOpacity={0.7}
+              >
+                {isPrinting ? (
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                ) : (
+                  <Ionicons name="print-outline" size={15} color={Colors.primary} />
+                )}
+                <Text style={styles.toolBtnText}>Print</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.toolBtn}
+                onPress={handleShare}
+                disabled={isSharing}
+                activeOpacity={0.7}
+              >
+                {isSharing ? (
+                  <ActivityIndicator size="small" color="#059669" />
+                ) : (
+                  <Ionicons name="share-social-outline" size={15} color="#059669" />
+                )}
+                <Text style={[styles.toolBtnText, { color: '#059669' }]}>Share</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.toolBtn}
+                onPress={handleDownloadPdf}
+                disabled={isDownloadingPdf}
+                activeOpacity={0.7}
+              >
+                {isDownloadingPdf ? (
+                  <ActivityIndicator size="small" color="#D97706" />
+                ) : (
+                  <Ionicons name="download-outline" size={15} color="#D97706" />
+                )}
+                <Text style={[styles.toolBtnText, { color: '#D97706' }]}>PDF</Text>
+              </TouchableOpacity>
+
               <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-                <MaterialIcons name="close" size={20} color={Colors.primary} />
+                <MaterialIcons name="close" size={20} color={Colors.textSecondary} />
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Quick Print & Share Toolbar */}
-          <View style={styles.utilityBar}>
-            <TouchableOpacity
-              style={styles.utilityBtn}
-              onPress={handlePrint}
-              disabled={isPrinting}
-              activeOpacity={0.7}
-            >
-              {isPrinting ? (
-                <ActivityIndicator size="small" color={Colors.primaryLight} />
-              ) : (
-                <Ionicons name="print-outline" size={16} color={Colors.primaryLight} />
-              )}
-              <Text style={styles.utilityBtnText}>Print</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.utilityBtn}
-              onPress={handleShare}
-              disabled={isSharing}
-              activeOpacity={0.7}
-            >
-              {isSharing ? (
-                <ActivityIndicator size="small" color="#059669" />
-              ) : (
-                <Ionicons name="share-social-outline" size={16} color="#059669" />
-              )}
-              <Text style={[styles.utilityBtnText, { color: '#059669' }]}>Share</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.utilityBtn}
-              onPress={handleDownloadPdf}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="document-text-outline" size={16} color="#D97706" />
-              <Text style={[styles.utilityBtnText, { color: '#D97706' }]}>PDF</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.hairlineRule} />
-
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-            {/* Parties & Dates Grid */}
-            <View style={styles.partiesGrid}>
-              <View style={styles.partyCol}>
-                <Text style={styles.sectionLabel}>BILLED TO</Text>
-                <Text style={styles.partyName}>
-                  {client ? `${client.firstName} ${client.lastName}` : 'Client Account'}
-                </Text>
-                {profile?.firmName && (
-                  <Text style={styles.partyFirm}>{profile.firmName}</Text>
-                )}
-                <Text style={styles.partyMetaMono}>
-                  GSTIN: {profile?.gstin || '—'}
-                </Text>
-                <Text style={styles.partyMetaMono}>
-                  PAN: {profile?.panNumber || '—'}
-                </Text>
-                {profile?.gstState && (
-                  <Text style={styles.partyMeta}>State: {profile.gstState}</Text>
-                )}
+            {/* The Strict Formal Invoice Document Card matching the user's template */}
+            <View style={styles.formalInvoiceSheet}>
+              {/* 1. Header Line */}
+              <View style={styles.docHeaderStrip}>
+                <Text style={styles.docHeaderSmall}>Page No. 1 of 1</Text>
+                <Text style={styles.docHeaderTitle}>TAX INVOICE</Text>
+                <Text style={styles.docHeaderSmall}>Original Copy</Text>
               </View>
 
-              <View style={styles.dateCol}>
-                <Text style={styles.sectionLabel}>INVOICE DATES</Text>
-                <View style={styles.dateRow}>
-                  <Text style={styles.dateLabel}>Issue Date:</Text>
-                  <Text style={styles.dateValMono}>{formatDate(invoice.issueDate)}</Text>
+              {/* 2. Firm Header Box */}
+              <View style={styles.docFirmBlock}>
+                <View style={styles.docLogoBox}>
+                  <View style={styles.docLogoSquare}>
+                    <Text style={styles.docLogoText}>Add</Text>
+                    <Text style={styles.docLogoText}>Logo</Text>
+                  </View>
                 </View>
-                <View style={styles.dateRow}>
-                  <Text style={styles.dateLabel}>Due Date:</Text>
-                  <Text style={[styles.dateValMono, invoice.status === 'OVERDUE' && styles.overdueDate]}>
-                    {formatDate(invoice.dueDate)}
+                <View style={styles.docFirmInfo}>
+                  <Text style={styles.docFirmName}>CA CONNECT & ASSOCIATES</Text>
+                  <Text style={styles.docFirmSub}>Suite 402, Financial District, Nariman Point, Mumbai - 400021</Text>
+                  <Text style={styles.docFirmSub}>Mobile: +91 9876543210, Email: billing@caconnect.in</Text>
+                  <Text style={styles.docFirmTax}>GSTIN: 27AAAAA1111A1Z1 | PAN: AAAAA1111A</Text>
+                </View>
+              </View>
+
+              {/* 3. Two-Column Metadata (Invoice vs Transporter) */}
+              <View style={styles.docTwoCol}>
+                <View style={[styles.docHalfCol, styles.docBorderRight]}>
+                  <View style={styles.docMetaRow}>
+                    <Text style={styles.docMetaLabel}>Invoice Number:</Text>
+                    <Text style={styles.docMetaVal}>{invoice.invoiceNumber}</Text>
+                  </View>
+                  <View style={styles.docMetaRow}>
+                    <Text style={styles.docMetaLabel}>Invoice Date:</Text>
+                    <Text style={styles.docMetaVal}>{issueDateFormatted}</Text>
+                  </View>
+                  <View style={styles.docMetaRow}>
+                    <Text style={styles.docMetaLabel}>Due date:</Text>
+                    <Text style={styles.docMetaVal}>{dueDateFormatted}</Text>
+                  </View>
+                  <View style={styles.docMetaRow}>
+                    <Text style={styles.docMetaLabel}>Place of Supply:</Text>
+                    <Text style={styles.docMetaVal}>{clientState}</Text>
+                  </View>
+                  <View style={styles.docMetaRow}>
+                    <Text style={styles.docMetaLabel}>Reverse Charge:</Text>
+                    <Text style={styles.docMetaVal}>No</Text>
+                  </View>
+                  <View style={styles.docMetaRow}>
+                    <Text style={styles.docMetaLabel}>Optional Field 1:</Text>
+                    <Text style={styles.docMetaVal}>-</Text>
+                  </View>
+                  <View style={styles.docMetaRow}>
+                    <Text style={styles.docMetaLabel}>Optional Field 2:</Text>
+                    <Text style={styles.docMetaVal}>-</Text>
+                  </View>
+                  <View style={styles.docMetaRow}>
+                    <Text style={styles.docMetaLabel}>Optional Field 3:</Text>
+                    <Text style={styles.docMetaVal}>-</Text>
+                  </View>
+                </View>
+
+                <View style={styles.docHalfCol}>
+                  <Text style={styles.docColTitle}>Transporter Details:</Text>
+                  <View style={styles.docMetaRow}>
+                    <Text style={styles.docMetaLabel}>Transporter:</Text>
+                    <Text style={styles.docMetaVal}>Direct Transportation</Text>
+                  </View>
+                  <View style={styles.docMetaRow}>
+                    <Text style={styles.docMetaLabel}>Vehicle No:</Text>
+                    <Text style={styles.docMetaVal}>MH01CA1234</Text>
+                  </View>
+                  <View style={styles.docMetaRow}>
+                    <Text style={styles.docMetaLabel}>Transporter Doc No:</Text>
+                    <Text style={styles.docMetaVal}>DOC/CAC/1234</Text>
+                  </View>
+                  <View style={styles.docMetaRow}>
+                    <Text style={styles.docMetaLabel}>Transporter Doc Date:</Text>
+                    <Text style={styles.docMetaVal}>{issueDateFormatted}</Text>
+                  </View>
+                  <View style={styles.docMetaRow}>
+                    <Text style={styles.docMetaLabel}>E-Way Bill No:</Text>
+                    <Text style={styles.docMetaVal}>271234567890</Text>
+                  </View>
+                  <View style={styles.docMetaRow}>
+                    <Text style={styles.docMetaLabel}>E-Way Bill Date:</Text>
+                    <Text style={styles.docMetaVal}>{issueDateFormatted}</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* 4. Billing & Shipping Details */}
+              <View style={styles.docTwoCol}>
+                <View style={[styles.docHalfCol, styles.docBorderRight]}>
+                  <Text style={styles.docColUnderline}>Billing Details</Text>
+                  <Text style={styles.docMetaBold}>Name: {clientName}</Text>
+                  <Text style={styles.docMetaSub}>GSTIN: {clientGstin} | Mobile: {clientPhone}</Text>
+                  <Text style={styles.docMetaSub}>Email: {clientEmail}</Text>
+                  <Text style={styles.docMetaSub}>Add Address: {clientAddress}</Text>
+                </View>
+
+                <View style={styles.docHalfCol}>
+                  <Text style={styles.docColUnderline}>Shipping Details</Text>
+                  <Text style={styles.docMetaBold}>Name: {clientName}</Text>
+                  <Text style={styles.docMetaSub}>GSTIN: {clientGstin} | Mobile: {clientPhone}</Text>
+                  <Text style={styles.docMetaSub}>Email: {clientEmail}</Text>
+                  <Text style={styles.docMetaSub}>Add Address: {clientAddress}</Text>
+                </View>
+              </View>
+
+              {/* 5. PO / Job Reference Line */}
+              <View style={styles.docRefBar}>
+                <Text style={styles.docRefText}>
+                  PO/Ref No: PO-CAC-2026  |  Job No: CAC/JOB-4820  |  Job Date: {issueDateFormatted}
+                </Text>
+              </View>
+
+              {/* 6. Formal Items Table Header */}
+              <View style={styles.tableHeaderRow}>
+                <Text style={[styles.thCell, styles.tSr]}>Sr.</Text>
+                <Text style={[styles.thCell, styles.tDesc]}>Item Description</Text>
+                <Text style={[styles.thCell, styles.tSac]}>HSN/SAC</Text>
+                <Text style={[styles.thCell, styles.tQty]}>Qty</Text>
+                <Text style={[styles.thCell, styles.tUnit]}>Unit</Text>
+                <Text style={[styles.thCell, styles.tRate]}>List Price</Text>
+                <Text style={[styles.thCell, styles.tDisc]}>Disc.</Text>
+                <Text style={[styles.thCell, styles.tTax]}>Tax %</Text>
+                <Text style={[styles.thCell, styles.tAmt]}>Amount (₹)</Text>
+              </View>
+
+              {/* Table Rows */}
+              {items.map((item, idx) => (
+                <View key={item.id || idx} style={styles.tableDataRow}>
+                  <Text style={[styles.tdCell, styles.tSr]}>{idx + 1}</Text>
+                  <Text style={[styles.tdCell, styles.tDesc]}>{item.description}</Text>
+                  <Text style={[styles.tdCell, styles.tSac]}>998221</Text>
+                  <Text style={[styles.tdCell, styles.tQty]}>{Number(item.quantity).toFixed(1)}</Text>
+                  <Text style={[styles.tdCell, styles.tUnit]}>Nos</Text>
+                  <Text style={[styles.tdCell, styles.tRate]}>{Number(item.unitPrice).toFixed(2)}</Text>
+                  <Text style={[styles.tdCell, styles.tDisc]}>0.00</Text>
+                  <Text style={[styles.tdCell, styles.tTax]}>{Number(taxRate).toFixed(2)}</Text>
+                  <Text style={[styles.tdCell, styles.tAmt]}>
+                    {Number(item.amount || item.quantity * item.unitPrice).toFixed(2)}
                   </Text>
                 </View>
-                {invoice.paidAt && (
-                  <View style={styles.dateRow}>
-                    <Text style={styles.dateLabel}>Settled At:</Text>
-                    <Text style={styles.dateValMono}>{formatDate(invoice.paidAt)}</Text>
-                  </View>
-                )}
+              ))}
+
+              {/* Table Summary */}
+              <View style={styles.summaryBar}>
+                <Text style={styles.summaryLabel}>Discount:</Text>
+                <Text style={styles.summaryVal}>0.00</Text>
               </View>
-            </View>
-
-            <View style={styles.hairlineRule} />
-
-            {/* Line Items Table */}
-            <Text style={styles.sectionLabel}>ITEMIZED PARTICULARS</Text>
-            <View style={styles.table}>
-              <View style={styles.tableHeader}>
-                <Text style={[styles.th, styles.colDesc]}>PARTICULARS / SERVICE</Text>
-                <Text style={[styles.th, styles.colQty]}>QTY</Text>
-                <Text style={[styles.th, styles.colRate]}>RATE (INR)</Text>
-                <Text style={[styles.th, styles.colAmt]}>TOTAL</Text>
+              <View style={styles.totalBar}>
+                <Text style={styles.totalBarLabel}>Total</Text>
+                <Text style={styles.totalBarVal}>
+                  ₹ {Number(total).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </Text>
               </View>
 
-              {items.length > 0 ? (
-                items.map((item, idx) => (
-                  <View key={item.id || idx} style={styles.tableRow}>
-                    <Text style={[styles.td, styles.colDesc]}>{item.description}</Text>
-                    <Text style={[styles.tdMono, styles.colQty]}>{item.quantity}</Text>
-                    <Text style={[styles.tdMono, styles.colRate]}>{formatCurrency(item.unitPrice)}</Text>
-                    <Text style={[styles.tdMono, styles.colAmt]}>
-                      {formatCurrency(item.amount || item.quantity * item.unitPrice)}
-                    </Text>
-                  </View>
-                ))
-              ) : (
-                <View style={styles.tableRow}>
-                  <Text style={[styles.td, styles.colDesc]}>Professional Advisory Services</Text>
-                  <Text style={[styles.tdMono, styles.colQty]}>1</Text>
-                  <Text style={[styles.tdMono, styles.colRate]}>{formatCurrency(subtotal)}</Text>
-                  <Text style={[styles.tdMono, styles.colAmt]}>{formatCurrency(subtotal)}</Text>
+              {/* 8. Amount in Words */}
+              <View style={styles.wordsRow}>
+                <Text style={styles.wordsText}>{wordsAmount}</Text>
+              </View>
+
+              {/* 9. Settlement and Tax Breakdown Strip */}
+              <View style={styles.taxStrip}>
+                <Text style={styles.taxStripText}>
+                  Settled by - Bank: ₹ {isPaid ? Number(total).toFixed(2) : '0.00'} | Invoice Balance: ₹ {isPaid ? '0.00' : Number(total).toFixed(2)}
+                </Text>
+                <Text style={styles.taxStripText}>
+                  Tax @{taxRate}% : ₹ {Number(subtotal).toFixed(2)} | CGST ({halfTaxRate}%): ₹ {Number(cgst).toFixed(2)} | SGST ({halfTaxRate}%): ₹ {Number(sgst).toFixed(2)} | Total Tax: ₹ {Number(totalTax).toFixed(2)} | Add. Cess : 0.00
+                </Text>
+              </View>
+
+              {/* 10. Bottom 4-Column Box */}
+              <View style={styles.bottomQuad}>
+                {/* Terms */}
+                <View style={[styles.quadCol, styles.quadTerms]}>
+                  <Text style={styles.quadHeading}>Terms and Conditions:</Text>
+                  <Text style={styles.quadText}>1. E.& O.E.</Text>
+                  <Text style={styles.quadText}>2. Goods once sold / services rendered will not be taken back.</Text>
+                  <Text style={styles.quadText}>3. Interest @ 18% p.a. will be charged if payment is not made within stipulated time.</Text>
+                  <Text style={styles.quadText}>4. Subject to 'Mumbai' jurisdiction only.</Text>
                 </View>
-              )}
+
+                {/* Bank */}
+                <View style={[styles.quadCol, styles.quadBank]}>
+                  <Text style={styles.quadText}>Account Number: 123456789012</Text>
+                  <Text style={styles.quadText}>Bank: HDFC Bank</Text>
+                  <Text style={styles.quadText}>IFSC: HDFC0000123</Text>
+                  <Text style={styles.quadText}>Branch: Nariman Point</Text>
+                  <Text style={styles.quadText}>Name: CA Connect & Associates</Text>
+                </View>
+
+                {/* E-Invoice QR */}
+                <View style={[styles.quadCol, styles.quadQr]}>
+                  <Text style={styles.quadHeadingCenter}>E-Invoice QR</Text>
+                  <View style={styles.qrPlaceholder}>
+                    <Ionicons name="qr-code-outline" size={44} color="#111111" />
+                  </View>
+                </View>
+
+                {/* Signatory */}
+                <View style={[styles.quadCol, styles.quadSign]}>
+                  <Text style={styles.signFirm}>For CA Connect & Associates</Text>
+                  <View style={styles.signLineBox}>
+                    <Text style={styles.signAuthor}>Authorized Signatory</Text>
+                  </View>
+                </View>
+              </View>
             </View>
 
-            <View style={styles.hairlineRule} />
+            {/* Footer Tag */}
+            <Text style={styles.bottomCredit}>Invoice Created by www.caconnect.in</Text>
 
-            {/* Financial Ledger Calculation */}
-            <View style={styles.calcContainer}>
-              <View style={styles.calcRow}>
-                <Text style={styles.calcLabel}>Taxable Subtotal</Text>
-                <Text style={styles.calcValMono}>{formatCurrency(subtotal)}</Text>
-              </View>
-              <View style={styles.calcRow}>
-                <Text style={styles.calcLabel}>CGST ({invoice.taxRate / 2}%)</Text>
-                <Text style={styles.calcValMono}>{formatCurrency(cgst)}</Text>
-              </View>
-              <View style={styles.calcRow}>
-                <Text style={styles.calcLabel}>SGST ({invoice.taxRate / 2}%)</Text>
-                <Text style={styles.calcValMono}>{formatCurrency(sgst)}</Text>
-              </View>
-
-              <View style={[styles.hairlineRule, { marginVertical: 6 }]} />
-
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>TOTAL INVOICE PAYABLE</Text>
-                <Text style={styles.totalValMono}>{formatCurrency(total)}</Text>
-              </View>
-            </View>
-
-            {/* Terms / Remarks */}
-            {invoice.notes ? (
-              <View style={styles.notesBlock}>
-                <Text style={styles.sectionLabel}>PAYMENT TERMS & REMARKS</Text>
-                <Text style={styles.notesText}>{invoice.notes}</Text>
-              </View>
-            ) : null}
-
-            {/* Actions */}
+            {/* Action Buttons */}
             <View style={styles.actionRow}>
               {invoice.status !== 'PAID' && onMarkPaid && (
                 <AppButton
@@ -564,243 +1013,393 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(20, 38, 30, 0.55)',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: Spacing.md,
+    padding: Spacing.sm,
   },
   modalCard: {
     width: '100%',
-    maxWidth: 540,
-    maxHeight: '90%',
-    backgroundColor: Colors.backgroundCard,
+    maxWidth: 780,
+    maxHeight: '94%',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 4,
+    borderColor: '#000000',
+    borderRadius: 6,
     overflow: 'hidden',
   },
-  header: {
+  controlHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
   },
-  statutoryTag: {
-    fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: 9,
-    color: Colors.textTertiary,
-    letterSpacing: 1,
-    marginBottom: 2,
-  },
-  invoiceNumber: {
-    fontFamily: Typography.fontFamily.monoBold,
-    fontSize: Typography.size.base,
-    color: Colors.primary,
-  },
-  headerRight: {
+  controlLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
+  },
+  controlRef: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: 13,
+    color: '#0F172A',
+  },
+  toolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  toolBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  toolBtnText: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: 11,
+    color: Colors.primary,
   },
   closeBtn: {
     padding: 4,
-  },
-  utilityBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xs,
-  },
-  utilityBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  utilityBtnText: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: 12,
-    color: Colors.primaryLight,
-  },
-  hairlineRule: {
-    height: 1,
-    backgroundColor: Colors.hairline,
-    marginVertical: Spacing.sm,
+    marginLeft: 4,
   },
   scroll: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.lg,
+    padding: Spacing.md,
   },
-  partiesGrid: {
+  formalInvoiceSheet: {
+    borderWidth: 1.5,
+    borderColor: '#000000',
+    backgroundColor: '#FFFFFF',
+  },
+  docHeaderStrip: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginVertical: Spacing.xs,
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#000000',
   },
-  partyCol: {
-    flex: 1,
-    marginRight: Spacing.md,
-  },
-  dateCol: {
-    width: 160,
-  },
-  sectionLabel: {
+  docHeaderSmall: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: 10,
-    color: Colors.textTertiary,
-    letterSpacing: 1,
-    marginBottom: 4,
-    textTransform: 'uppercase',
+    color: '#000000',
   },
-  partyName: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.sm,
-    color: Colors.primary,
-  },
-  partyFirm: {
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: Typography.size.xs,
-    color: Colors.textSecondary,
-    marginTop: 1,
-  },
-  partyMetaMono: {
-    fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: 11,
-    color: Colors.textTertiary,
-    marginTop: 2,
-  },
-  partyMeta: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: 11,
-    color: Colors.textTertiary,
-    marginTop: 1,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: 2,
-  },
-  dateLabel: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: 11,
-    color: Colors.textSecondary,
-  },
-  dateValMono: {
-    fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: 11,
-    color: Colors.primary,
-  },
-  overdueDate: {
-    color: Colors.danger,
-    fontFamily: Typography.fontFamily.monoBold,
-  },
-  table: {
-    marginVertical: Spacing.xs,
-    borderWidth: 1,
-    borderColor: Colors.hairline,
-    borderRadius: 4,
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    backgroundColor: Colors.background,
-    paddingVertical: 6,
-    paddingHorizontal: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.hairline,
-  },
-  th: {
-    fontFamily: Typography.fontFamily.monoMedium,
-    fontSize: 9,
-    color: Colors.textTertiary,
+  docHeaderTitle: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 13,
+    color: '#000000',
     letterSpacing: 0.5,
   },
-  tableRow: {
+  docFirmBlock: {
     flexDirection: 'row',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#000000',
+  },
+  docLogoBox: {
+    width: 80,
+    borderRightWidth: 1.5,
+    borderRightColor: '#000000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 6,
+  },
+  docLogoSquare: {
+    width: 54,
+    height: 54,
+    borderWidth: 1.5,
+    borderColor: '#475569',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  docLogoText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 10,
+    color: '#334155',
+  },
+  docFirmInfo: {
+    flex: 1,
     alignItems: 'center',
     paddingVertical: 6,
-    paddingHorizontal: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.hairline,
+    paddingHorizontal: 8,
   },
-  td: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.xs,
-    color: Colors.primary,
-  },
-  tdMono: {
-    fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: Typography.size.xs,
-    color: Colors.primary,
-  },
-  colDesc: { flex: 2 },
-  colQty: { width: 40, textAlign: 'center' },
-  colRate: { width: 85, textAlign: 'right' },
-  colAmt: { width: 85, textAlign: 'right' },
-  calcContainer: {
-    backgroundColor: Colors.background,
-    padding: Spacing.md,
-    borderRadius: 4,
-    marginVertical: Spacing.xs,
-  },
-  calcRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: 2,
-  },
-  calcLabel: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.xs,
-    color: Colors.textSecondary,
-  },
-  calcValMono: {
-    fontFamily: Typography.fontFamily.monoRegular,
-    fontSize: Typography.size.xs,
-    color: Colors.primary,
-  },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    paddingTop: 2,
-  },
-  totalLabel: {
-    fontFamily: Typography.fontFamily.monoBold,
-    fontSize: 11,
-    color: Colors.primary,
+  docFirmName: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 15,
+    color: '#000000',
     letterSpacing: 0.5,
   },
-  totalValMono: {
-    fontFamily: Typography.fontFamily.monoBold,
-    fontSize: Typography.size.lg,
-    color: Colors.primary,
-  },
-  notesBlock: {
-    marginVertical: Spacing.sm,
-    padding: Spacing.sm,
-    backgroundColor: Colors.background,
-    borderRadius: 4,
-  },
-  notesText: {
+  docFirmSub: {
     fontFamily: Typography.fontFamily.regular,
+    fontSize: 10,
+    color: '#111111',
+    marginTop: 1,
+  },
+  docFirmTax: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: 10,
+    color: '#000000',
+    marginTop: 2,
+  },
+  docTwoCol: {
+    flexDirection: 'row',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#000000',
+  },
+  docHalfCol: {
+    flex: 1,
+    padding: 6,
+  },
+  docBorderRight: {
+    borderRightWidth: 1.5,
+    borderRightColor: '#000000',
+  },
+  docMetaRow: {
+    flexDirection: 'row',
+    marginBottom: 2,
+  },
+  docMetaLabel: {
+    width: 120,
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: 10,
+    color: '#111111',
+  },
+  docMetaVal: {
+    flex: 1,
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: 10,
+    color: '#000000',
+  },
+  docColTitle: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 10,
+    color: '#000000',
+    marginBottom: 3,
+  },
+  docColUnderline: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 10,
+    color: '#000000',
+    marginBottom: 3,
+    textDecorationLine: 'underline',
+  },
+  docMetaBold: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 10,
+    color: '#000000',
+  },
+  docMetaSub: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: 9.5,
+    color: '#111111',
+    marginTop: 1,
+  },
+  docRefBar: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#000000',
+    backgroundColor: '#FFFFFF',
+  },
+  docRefText: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: 9.5,
+    color: '#000000',
+  },
+  tableHeaderRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#000000',
+    backgroundColor: '#FFFFFF',
+  },
+  thCell: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 9.5,
+    color: '#000000',
+    paddingVertical: 4,
+    paddingHorizontal: 3,
+    borderRightWidth: 1,
+    borderRightColor: '#000000',
+  },
+  tableDataRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  tdCell: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: 9.5,
+    color: '#000000',
+    paddingVertical: 4,
+    paddingHorizontal: 3,
+    borderRightWidth: 1,
+    borderRightColor: '#000000',
+  },
+  tSr: { width: 28, textAlign: 'center' },
+  tDesc: { flex: 1 },
+  tSac: { width: 55, textAlign: 'center' },
+  tQty: { width: 38, textAlign: 'right' },
+  tUnit: { width: 38, textAlign: 'center' },
+  tRate: { width: 62, textAlign: 'right' },
+  tDisc: { width: 44, textAlign: 'right' },
+  tTax: { width: 46, textAlign: 'right' },
+  tAmt: { width: 68, textAlign: 'right', borderRightWidth: 0 },
+  summaryBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderTopWidth: 1.5,
+    borderTopColor: '#000000',
+    borderBottomWidth: 1,
+    borderBottomColor: '#000000',
+  },
+  summaryLabel: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: 10,
+    color: '#000000',
+  },
+  summaryVal: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: 10,
+    color: '#000000',
+  },
+  totalBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#000000',
+  },
+  totalBarLabel: {
+    fontFamily: Typography.fontFamily.bold,
     fontSize: 11,
-    color: Colors.textSecondary,
-    lineHeight: 16,
+    color: '#000000',
+  },
+  totalBarVal: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 11,
+    color: '#000000',
+  },
+  wordsRow: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#000000',
+  },
+  wordsText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 10,
+    color: '#000000',
+  },
+  taxStrip: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#000000',
+  },
+  taxStripText: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: 9,
+    color: '#000000',
+    lineHeight: 13,
+  },
+  bottomQuad: {
+    flexDirection: 'row',
+    minHeight: 110,
+  },
+  quadCol: {
+    padding: 6,
+    borderRightWidth: 1.5,
+    borderRightColor: '#000000',
+  },
+  quadTerms: {
+    width: '30%',
+  },
+  quadBank: {
+    width: '30%',
+  },
+  quadQr: {
+    width: '18%',
+    alignItems: 'center',
+  },
+  quadSign: {
+    flex: 1,
+    borderRightWidth: 0,
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  quadHeading: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 9.5,
+    color: '#000000',
+    marginBottom: 2,
+  },
+  quadHeadingCenter: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 9,
+    color: '#000000',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  qrPlaceholder: {
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quadText: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: 8.5,
+    color: '#111111',
+    lineHeight: 11,
+    marginBottom: 2,
+  },
+  signFirm: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 9.5,
+    color: '#000000',
+    textAlign: 'right',
+  },
+  signLineBox: {
+    borderTopWidth: 1,
+    borderTopColor: '#000000',
+    paddingTop: 3,
+    width: 110,
+    alignItems: 'center',
+  },
+  signAuthor: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: 9,
+    color: '#000000',
+  },
+  bottomCredit: {
+    textAlign: 'center',
+    paddingVertical: 8,
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: 9.5,
+    color: '#2563EB',
   },
   actionRow: {
     flexDirection: 'row',
     gap: Spacing.sm,
-    marginTop: Spacing.md,
+    marginTop: 4,
   },
   primaryAction: {
-    flex: 2,
+    flex: 1,
   },
   secondaryAction: {
-    flex: 1,
+    width: 100,
   },
 });

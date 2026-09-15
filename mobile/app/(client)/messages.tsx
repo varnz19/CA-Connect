@@ -27,9 +27,27 @@ export default function ClientMessagesScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const listRef = useRef<FlatList>(null);
 
-  const { data: conversationsRes } = useConversations();
-  const conversation = conversationsRes?.data?.[0];
-  const conversationId = conversation?.id;
+  const { data: conversationsRes, refetch: refetchConversations } = useConversations();
+  const [activeConv, setActiveConv] = useState<any>(null);
+
+  const matchedConv = conversationsRes?.data?.find(
+    (c: any) => c.clientProfile?.userId === user?.id || c.client?.id === user?.id
+  ) || conversationsRes?.data?.[0];
+
+  useEffect(() => {
+    if (matchedConv) {
+      setActiveConv(matchedConv);
+    } else if (user?.id) {
+      messageService.getOrCreateClientConversation().then((res) => {
+        if (res?.data) {
+          setActiveConv(res.data);
+          refetchConversations();
+        }
+      }).catch(() => {});
+    }
+  }, [matchedConv, user?.id]);
+
+  const conversationId = activeConv?.id || matchedConv?.id;
 
   const { data: messagesRes, refetch } = useMessages(conversationId || '');
 
@@ -70,7 +88,7 @@ export default function ClientMessagesScreen() {
 
   const sendMessage = () => {
     if (!message.trim() || !conversationId) return;
-    const receiverId = conversation?.clientProfile?.adminId || 'admin-user-id';
+    const receiverId = activeConv?.admin?.id || matchedConv?.admin?.id || matchedConv?.clientProfile?.adminId || '';
 
     sendMutation.mutate({
       conversationId,

@@ -209,31 +209,33 @@ export default function ClientProfileScreen() {
               <View style={styles.taxNumberLeft}>
                 <Text style={styles.taxNumberLabel}>GSTIN IDENTIFICATION</Text>
                 <Text style={[styles.taxNumberValue, styles.monoText]}>
-                  {profile?.gstin || '27ABCDE1234F1Z5'}
+                  {profile?.gstin || 'Not provided'}
                 </Text>
               </View>
-              <TouchableOpacity
-                style={[
-                  styles.copyPill,
-                  copiedKey === 'gstin' && styles.copiedPillActive,
-                ]}
-                onPress={() => copyToClipboard(profile?.gstin || '27ABCDE1234F1Z5', 'gstin')}
-                activeOpacity={0.7}
-              >
-                <MaterialIcons
-                  name={copiedKey === 'gstin' ? 'check' : 'content-copy'}
-                  size={14}
-                  color={copiedKey === 'gstin' ? Colors.success : Colors.primaryLight}
-                />
-                <Text
+              {profile?.gstin && (
+                <TouchableOpacity
                   style={[
-                    styles.copyPillText,
-                    copiedKey === 'gstin' && styles.copiedPillTextActive,
+                    styles.copyPill,
+                    copiedKey === 'gstin' && styles.copiedPillActive,
                   ]}
+                  onPress={() => copyToClipboard(profile.gstin!, 'gstin')}
+                  activeOpacity={0.7}
                 >
-                  {copiedKey === 'gstin' ? 'Copied' : 'Copy'}
-                </Text>
-              </TouchableOpacity>
+                  <MaterialIcons
+                    name={copiedKey === 'gstin' ? 'check' : 'content-copy'}
+                    size={14}
+                    color={copiedKey === 'gstin' ? Colors.success : Colors.primaryLight}
+                  />
+                  <Text
+                    style={[
+                      styles.copyPillText,
+                      copiedKey === 'gstin' && styles.copiedPillTextActive,
+                    ]}
+                  >
+                    {copiedKey === 'gstin' ? 'Copied' : 'Copy'}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* PAN Row with Copy Button */}
@@ -241,50 +243,52 @@ export default function ClientProfileScreen() {
               <View style={styles.taxNumberLeft}>
                 <Text style={styles.taxNumberLabel}>PERMANENT ACCOUNT NUMBER (PAN)</Text>
                 <Text style={[styles.taxNumberValue, styles.monoText]}>
-                  {profile?.panNumber || 'ABCDE1234F'}
+                  {profile?.panNumber || 'Not provided'}
                 </Text>
               </View>
-              <TouchableOpacity
-                style={[
-                  styles.copyPill,
-                  copiedKey === 'pan' && styles.copiedPillActive,
-                ]}
-                onPress={() => copyToClipboard(profile?.panNumber || 'ABCDE1234F', 'pan')}
-                activeOpacity={0.7}
-              >
-                <MaterialIcons
-                  name={copiedKey === 'pan' ? 'check' : 'content-copy'}
-                  size={14}
-                  color={copiedKey === 'pan' ? Colors.success : Colors.primaryLight}
-                />
-                <Text
+              {profile?.panNumber && (
+                <TouchableOpacity
                   style={[
-                    styles.copyPillText,
-                    copiedKey === 'pan' && styles.copiedPillTextActive,
+                    styles.copyPill,
+                    copiedKey === 'pan' && styles.copiedPillActive,
                   ]}
+                  onPress={() => copyToClipboard(profile.panNumber!, 'pan')}
+                  activeOpacity={0.7}
                 >
-                  {copiedKey === 'pan' ? 'Copied' : 'Copy'}
-                </Text>
-              </TouchableOpacity>
+                  <MaterialIcons
+                    name={copiedKey === 'pan' ? 'check' : 'content-copy'}
+                    size={14}
+                    color={copiedKey === 'pan' ? Colors.success : Colors.primaryLight}
+                  />
+                  <Text
+                    style={[
+                      styles.copyPillText,
+                      copiedKey === 'pan' && styles.copiedPillTextActive,
+                    ]}
+                  >
+                    {copiedKey === 'pan' ? 'Copied' : 'Copy'}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             <InfoRow
               icon="business"
               iconColor="#2563EB"
               label="Registered Business Trade Name"
-              value={profile?.firmName || 'Rajesh Kumar & Co.'}
+              value={profile?.firmName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Not provided')}
             />
             <InfoRow
               icon="place"
               iconColor="#059669"
               label="Tax Jurisdiction State"
-              value={`${profile?.gstState || 'Maharashtra'} · State Code: 27`}
+              value={profile?.gstState || 'Not provided'}
             />
             <InfoRow
               icon="home"
               iconColor="#D97706"
               label="Registered Business Address"
-              value={profile?.address || 'Nariman Point, Marine Lines, Mumbai 400021'}
+              value={profile?.address || 'Not provided'}
             />
           </View>
 

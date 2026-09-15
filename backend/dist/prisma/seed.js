@@ -24,33 +24,6 @@ async function main() {
         },
     });
     console.log('✅ Admin user created:', admin.email);
-    // Create a demo client
-    const clientPassword = await bcryptjs_1.default.hash('Client@123', 12);
-    const demoClient = await prisma.user.upsert({
-        where: { email: 'rajesh.kumar@example.com' },
-        update: { isVerified: true },
-        create: {
-            email: 'rajesh.kumar@example.com',
-            password: clientPassword,
-            role: client_1.Role.CLIENT,
-            firstName: 'Rajesh',
-            lastName: 'Kumar',
-            phone: '+91-9876500001',
-            isVerified: true,
-            clientProfile: {
-                create: {
-                    clientCode: 'CAC001',
-                    firmName: 'Rajesh Kumar & Co.',
-                    panNumber: 'ABCDE1234F',
-                    gstin: '27ABCDE1234F1Z5',
-                    gstState: 'Maharashtra',
-                    adminId: admin.id,
-                },
-            },
-        },
-        include: { clientProfile: true },
-    });
-    console.log('✅ Demo client created:', demoClient.email);
     // Seed global calendar events (Indian tax deadlines)
     const currentYear = new Date().getFullYear();
     const taxDeadlines = [
@@ -80,10 +53,6 @@ async function main() {
     console.log('✅ Calendar events seeded');
     console.log('\n📋 Admin Credentials:');
     console.log('   Email:', process.env.ADMIN_EMAIL || 'admin@caconnect.in');
-    console.log('   Password:', process.env.ADMIN_DEFAULT_PASSWORD || 'Admin@123');
-    console.log('\n📋 Demo Client Credentials:');
-    console.log('   Email: rajesh.kumar@example.com');
-    console.log('   Password: Client@123');
 }
 main()
     .catch((e) => {

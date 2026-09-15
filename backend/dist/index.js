@@ -81,17 +81,28 @@ app.get('/health', (req, res) => {
         version: '1.0.0',
     });
 });
-// ─── API Routes ───────────────────────────────────────────────────────────────
+// ─── API Routes (Supporting both /api and /api/v1) ────────────────────────────
+const routeMap = [
+    ['/auth', auth_routes_1.default],
+    ['/clients', client_routes_1.default],
+    ['/services', service_routes_1.default],
+    ['/invoices', invoice_routes_1.default],
+    ['/documents', document_routes_1.default],
+    ['/appointments', appointment_routes_1.default],
+    ['/messages', message_routes_1.default],
+    ['/notifications', notification_routes_1.default],
+    ['/profile', profile_routes_1.default],
+    ['/calendar', calendar_routes_1.default],
+];
+// Mount with rate-limited auth
 app.use('/api/auth', authLimiter, auth_routes_1.default);
-app.use('/api/clients', client_routes_1.default);
-app.use('/api/services', service_routes_1.default);
-app.use('/api/invoices', invoice_routes_1.default);
-app.use('/api/documents', document_routes_1.default);
-app.use('/api/appointments', appointment_routes_1.default);
-app.use('/api/messages', message_routes_1.default);
-app.use('/api/notifications', notification_routes_1.default);
-app.use('/api/profile', profile_routes_1.default);
-app.use('/api/calendar', calendar_routes_1.default);
+app.use('/api/v1/auth', authLimiter, auth_routes_1.default);
+for (const [subPath, router] of routeMap) {
+    if (subPath !== '/auth') {
+        app.use(`/api${subPath}`, router);
+        app.use(`/api/v1${subPath}`, router);
+    }
+}
 // ─── Error Handling ───────────────────────────────────────────────────────────
 app.use(notFoundHandler_1.notFoundHandler);
 app.use(errorHandler_1.errorHandler);

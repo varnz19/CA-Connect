@@ -8,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -115,6 +116,11 @@ export default function ClientSignupScreen() {
           <View style={styles.container}>
             {/* Header Block */}
             <View style={styles.headerBlock}>
+              <Image
+                source={require('../../assets/ca-logo.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
               <Text style={styles.refCode}>REF: CL-REG-FORM</Text>
               <Text style={styles.pageTitle}>Client Self-Registration</Text>
               <Text style={styles.pageSubtitle}>
@@ -134,7 +140,7 @@ export default function ClientSignupScreen() {
                     render={({ field: { onChange, onBlur, value } }) => (
                       <AppInput
                         label="First Name *"
-                        placeholder="Rajesh"
+                        placeholder="e.g. John"
                         value={value}
                         onChangeText={onChange}
                         onBlur={onBlur}
@@ -150,7 +156,7 @@ export default function ClientSignupScreen() {
                     render={({ field: { onChange, onBlur, value } }) => (
                       <AppInput
                         label="Last Name *"
-                        placeholder="Kumar"
+                        placeholder="e.g. Doe"
                         value={value}
                         onChangeText={onChange}
                         onBlur={onBlur}
@@ -167,7 +173,7 @@ export default function ClientSignupScreen() {
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
                     label="Official Email *"
-                    placeholder="rajesh.kumar@example.com"
+                    placeholder="e.g. name@example.com"
                     keyboardType="email-address"
                     autoCapitalize="none"
                     value={value}
@@ -316,6 +322,11 @@ const styles = StyleSheet.create({
   },
   headerBlock: {
     marginBottom: Spacing.base,
+  },
+  logoImage: {
+    width: 48,
+    height: 48,
+    marginBottom: Spacing.sm,
   },
   refCode: {
     fontFamily: Typography.fontFamily.monoRegular,

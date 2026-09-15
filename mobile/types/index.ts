@@ -41,6 +41,7 @@ export interface ClientProfileResponse {
     firstName: string;
     lastName: string;
     email?: string;
+    phone?: string;
     avatar?: string;
   };
 }
@@ -176,6 +177,7 @@ export interface Conversation {
   clientProfileId: string;
   lastMessageAt?: string;
   client?: User;
+  admin?: User;
   clientProfile?: ClientProfileResponse & { adminId?: string };
   lastMessage?: Message;
   unreadCount?: number;

@@ -8,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -48,12 +49,6 @@ export default function ClientLoginScreen() {
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
   });
-
-  const fillTestClient = () => {
-    setValue('email', 'rajesh.kumar@example.com', { shouldValidate: true });
-    setValue('password', 'Client@123', { shouldValidate: true });
-    setErrorMessage(null);
-  };
 
   const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '1234567890-android.apps.googleusercontent.com';
   const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '1234567890-ios.apps.googleusercontent.com';
@@ -160,28 +155,17 @@ export default function ClientLoginScreen() {
           <View style={styles.container}>
             {/* Header Block */}
             <View style={styles.headerBlock}>
+              <Image
+                source={require('../../assets/ca-logo.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
               <Text style={styles.refCode}>REF: CL-AUTH-01</Text>
               <Text style={styles.pageTitle}>Client Sign In</Text>
               <Text style={styles.pageSubtitle}>
                 Access your tax returns, invoices, document requests, and advisory calendar.
               </Text>
             </View>
-
-            {/* Test Credentials Quick Fill Helper */}
-            <TouchableOpacity
-              style={styles.testAccountPill}
-              onPress={fillTestClient}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.testBadgeIcon, { backgroundColor: '#ECFDF5' }]}>
-                <MaterialIcons name="vpn-key" size={14} color="#059669" />
-              </View>
-              <View style={styles.testBadgeContent}>
-                <Text style={[styles.testBadgeTitle, { color: '#059669' }]}>Quick Fill Demo Client</Text>
-                <Text style={styles.testBadgeSub}>rajesh.kumar@example.com · Client@123</Text>
-              </View>
-              <MaterialIcons name="touch-app" size={16} color="#059669" />
-            </TouchableOpacity>
 
             {/* Visible Error Banner */}
             {errorMessage && (
@@ -201,7 +185,7 @@ export default function ClientLoginScreen() {
                 render={({ field: { onChange, onBlur, value } }) => (
                   <AppInput
                     label="Email Address"
-                    placeholder="rajesh.kumar@example.com"
+                    placeholder="e.g. yourname@example.com"
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoComplete="email"
@@ -341,6 +325,11 @@ const styles = StyleSheet.create({
   },
   headerBlock: {
     marginBottom: Spacing.base,
+  },
+  logoImage: {
+    width: 48,
+    height: 48,
+    marginBottom: Spacing.sm,
   },
   refCode: {
     fontFamily: Typography.fontFamily.monoMedium,
