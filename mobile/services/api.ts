@@ -2,8 +2,12 @@ import axios, { AxiosHeaders, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { Platform } from 'react-native';
 
-// Detect host for localhost access
+// Detect host for local and production deployment access
 const getBaseUrl = () => {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    const url = process.env.EXPO_PUBLIC_API_URL.replace(/\/$/, '');
+    return url.endsWith('/api') ? url : `${url}/api`;
+  }
   if (Platform.OS === 'android') {
     return 'http://10.0.2.2:4000/api';
   }

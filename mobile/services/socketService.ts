@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 
 const getSocketUrl = () => {
   if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
+    return process.env.EXPO_PUBLIC_API_URL.replace(/\/api\/?$/, '');
   }
   if (Platform.OS === 'android') {
     return 'http://10.0.2.2:4000';

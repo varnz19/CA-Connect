@@ -5,6 +5,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateInvoicePdf = void 0;
 const pdfkit_1 = __importDefault(require("pdfkit"));
+const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
 function numberToIndianWords(num) {
     if (isNaN(num) || num === 0)
         return 'Zero Only';
@@ -111,16 +113,27 @@ const generateInvoicePdf = (invoice) => {
             const firmBlockHeight = 68;
             // Logo box
             const logoW = 80;
-            doc
-                .rect(boxX + 15, currY + 8, 50, 50)
-                .strokeColor('#666666')
-                .lineWidth(1)
-                .stroke();
-            doc
-                .fontSize(9)
-                .font('Helvetica-Bold')
-                .fillColor('#444444')
-                .text('Add\nLogo', boxX + 15, currY + 22, { width: 50, align: 'center' });
+            const logoPath = path_1.default.join(__dirname, '../../assets/ca-logo.png');
+            if (fs_1.default.existsSync(logoPath)) {
+                try {
+                    doc.image(logoPath, boxX + 15, currY + 9, { fit: [50, 50], align: 'center', valign: 'center' });
+                }
+                catch (e) {
+                    console.error('Failed to embed logo in PDF:', e);
+                }
+            }
+            else {
+                doc
+                    .rect(boxX + 15, currY + 8, 50, 50)
+                    .strokeColor('#666666')
+                    .lineWidth(1)
+                    .stroke();
+                doc
+                    .fontSize(9)
+                    .font('Helvetica-Bold')
+                    .fillColor('#444444')
+                    .text('CA\nConnect', boxX + 15, currY + 22, { width: 50, align: 'center' });
+            }
             // Vertical line separating logo
             doc
                 .moveTo(boxX + logoW, currY)

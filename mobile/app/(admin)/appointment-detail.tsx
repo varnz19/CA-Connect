@@ -21,9 +21,11 @@ import { Colors, Typography, Spacing } from '../../constants/theme';
 import { appointmentService } from '../../services/appointmentService';
 import { Appointment } from '../../types';
 import { format, parseISO } from 'date-fns';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function AdminAppointmentDetailScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,6 +83,11 @@ export default function AdminAppointmentDetailScreen() {
         notes,
       });
       if (res.data) {
+        queryClient.invalidateQueries({ queryKey: ['appointments'] });
+        queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['client'] });
+
         Alert.alert(
           'Success',
           'Advisory consultation confirmed! The client has been notified via in-app alert and email with the Google Meet link.'
@@ -131,6 +138,11 @@ export default function AdminAppointmentDetailScreen() {
     try {
       const res = await appointmentService.rejectAppointment(id, rejectReason);
       if (res.data) {
+        queryClient.invalidateQueries({ queryKey: ['appointments'] });
+        queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['client'] });
+
         Alert.alert('Success', 'Appointment cancelled.');
         setIsRejectMode(false);
         fetchDetail();
@@ -148,6 +160,11 @@ export default function AdminAppointmentDetailScreen() {
     try {
       const res = await appointmentService.completeAppointment(id);
       if (res.data) {
+        queryClient.invalidateQueries({ queryKey: ['appointments'] });
+        queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['client'] });
+
         Alert.alert('Success', 'Session marked as completed.');
         fetchDetail();
       }

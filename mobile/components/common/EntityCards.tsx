@@ -121,6 +121,10 @@ interface AppointmentCardProps {
     duration: number;
     status: string;
     client?: { firstName: string; lastName: string };
+    clientProfile?: {
+      firmName?: string;
+      user?: { firstName: string; lastName: string };
+    };
   };
   onPress?: () => void;
   showClient?: boolean;
@@ -132,14 +136,18 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
   showClient = true,
 }) => {
   const dateToShow = appointment.confirmedDate || appointment.requestedDate;
+  const clientUser = appointment.client || appointment.clientProfile?.user;
+  const clientName = clientUser
+    ? `${clientUser.firstName} ${clientUser.lastName}`
+    : (appointment.clientProfile?.firmName || '');
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.row}>
       <View style={styles.rowLeft}>
         <Text style={styles.primaryText}>{appointment.title}</Text>
-        {showClient && appointment.client && (
+        {showClient && !!clientName && (
           <Text style={styles.secondaryText} numberOfLines={1}>
-            {appointment.client.firstName} {appointment.client.lastName}
+            Client: {clientName}
           </Text>
         )}
         <Text style={styles.metaDate}>
@@ -149,6 +157,9 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
       <View style={styles.rowRight}>
         <AppBadge status={appointment.status} />
+        {appointment.status === 'REQUESTED' && (
+          <Text style={styles.actionPrompt}>Review & Confirm</Text>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -207,6 +218,12 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.monoBold,
     fontSize: Typography.size.md,
     color: Colors.textPrimary,
+  },
+  actionPrompt: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 11,
+    color: Colors.warningDark || '#D97706',
+    marginTop: 2,
   },
 });
 

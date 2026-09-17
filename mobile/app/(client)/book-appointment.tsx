@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
 import { Colors, Typography, Spacing } from '../../constants/theme';
@@ -36,6 +37,7 @@ const PURPOSE_TEMPLATES = [
 
 export default function BookAppointmentScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -75,9 +77,18 @@ export default function BookAppointmentScreen() {
         description: data.description,
         requestedDate: dateObj.toISOString(),
       });
+
+      // Invalidate queries so admin & client views update immediately
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['client'] });
+
       setSubmitted(true);
-    } catch {
-      setSubmitted(true); // graceful fallback for demo
+    } catch (err: any) {
+      console.error('Failed to create appointment:', err);
+      const message = err.response?.data?.message || err.message || 'Failed to schedule consultation. Please try again.';
+      Alert.alert('Booking Error', message);
     } finally {
       setIsLoading(false);
     }

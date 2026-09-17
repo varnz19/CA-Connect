@@ -71,23 +71,77 @@ class DocumentController {
         };
         this.createDocumentRequest = async (req, res, next) => {
             try {
-                const { clientProfileId, name } = req.body;
-                // Prevent duplicate submissions within 15 seconds for identical document name and client
-                if (clientProfileId && name) {
-                    const recentDuplicate = await prisma_1.prisma.documentRequest.findFirst({
-                        where: {
-                            clientProfileId,
-                            name,
-                            createdAt: { gte: new Date(Date.now() - 15000) },
-                        },
-                        include: { documents: true },
+                const { clientProfileId, clientId, name, title, description, dueDate } = req.body;
+                const docName = name || title; // Support both 'name' and 'title' for compatibility
+                const rawId = clientProfileId || clientId;
+                if (!rawId || !docName) {
+                    res.status(400).json({ success: false, message: 'clientProfileId and name are required.' });
+                    return;
+                }
+                // Resolve whether rawId is a ClientProfile.id or User.id
+                let resolvedClientProfileId = rawId;
+                let clientUserId = null;
+                const directProfile = await prisma_1.prisma.clientProfile.findUnique({
+                    where: { id: rawId },
+                    select: { id: true, userId: true },
+                });
+                if (directProfile) {
+                    resolvedClientProfileId = directProfile.id;
+                    clientUserId = directProfile.userId;
+                }
+                else {
+                    const userProfile = await prisma_1.prisma.clientProfile.findUnique({
+                        where: { userId: rawId },
+                        select: { id: true, userId: true },
                     });
-                    if (recentDuplicate) {
-                        res.status(200).json({ success: true, data: recentDuplicate });
+                    if (userProfile) {
+                        resolvedClientProfileId = userProfile.id;
+                        clientUserId = userProfile.userId;
+                    }
+                    else {
+                        res.status(404).json({ success: false, message: 'Client profile not found for the provided ID.' });
                         return;
                     }
                 }
-                const doc = await prisma_1.prisma.documentRequest.create({ data: req.body, include: { documents: true } });
+                // Prevent duplicate submissions within 15 seconds for identical document name and client
+                const recentDuplicate = await prisma_1.prisma.documentRequest.findFirst({
+                    where: {
+                        clientProfileId: resolvedClientProfileId,
+                        name: docName,
+                        createdAt: { gte: new Date(Date.now() - 15000) },
+                    },
+                    include: { documents: true },
+                });
+                if (recentDuplicate) {
+                    res.status(200).json({ success: true, data: recentDuplicate });
+                    return;
+                }
+                const doc = await prisma_1.prisma.documentRequest.create({
+                    data: {
+                        clientProfileId: resolvedClientProfileId,
+                        name: docName,
+                        description: description || null,
+                        dueDate: dueDate ? new Date(dueDate) : null,
+                    },
+                    include: { documents: true },
+                });
+                // Notify the client
+                try {
+                    if (clientUserId) {
+                        await prisma_1.prisma.notification.create({
+                            data: {
+                                userId: clientUserId,
+                                type: 'DOCUMENT_REQUESTED',
+                                title: `Document Requested: ${docName}`,
+                                body: description || `Your CA has requested you to upload: ${docName}`,
+                                data: { documentRequestId: doc.id },
+                            },
+                        });
+                    }
+                }
+                catch (notifErr) {
+                    console.error('Failed to create doc request notification:', notifErr);
+                }
                 res.status(201).json({ success: true, data: doc });
             }
             catch (error) {

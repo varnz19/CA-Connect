@@ -51,6 +51,9 @@ export default function AdminDashboard() {
   );
   const todayAppointments = todayAptsList.length;
 
+  const pendingAptsList = (appointmentsRes?.data || []).filter((a) => a.status === 'REQUESTED');
+  const pendingAppointments = pendingAptsList.length;
+
   const unreadNotifications = (notificationsRes?.data || []).filter((n) => !n.readAt).length;
 
   const onRefresh = async () => {
@@ -75,8 +78,6 @@ export default function AdminDashboard() {
 
   const { width } = useWindowDimensions();
   const isDesktop = width > 768;
-
-  const pendingAppointments = (appointmentsRes?.data || []).filter((a) => a.status === 'REQUESTED').length;
 
   const attentionItems = [
     {
@@ -214,17 +215,40 @@ export default function AdminDashboard() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.metricCard, { backgroundColor: Colors.successLight, borderColor: Colors.successBorder }]}
+            style={[
+              styles.metricCard,
+              pendingAppointments > 0
+                ? { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }
+                : { backgroundColor: Colors.successLight, borderColor: Colors.successBorder },
+            ]}
             activeOpacity={0.8}
             onPress={() => router.push('/(admin)/appointments' as any)}
           >
             <View style={styles.metricTopRow}>
-              <Text style={[styles.metricNumber, { color: Colors.successDark }]}>{todayAppointments}</Text>
-              <View style={[styles.metricIconBox, { backgroundColor: '#D1FAE5' }]}>
-                <MaterialIcons name="event" size={16} color={Colors.successDark} />
+              <Text
+                style={[
+                  styles.metricNumber,
+                  { color: pendingAppointments > 0 ? Colors.warningDark : Colors.successDark },
+                ]}
+              >
+                {pendingAppointments > 0 ? pendingAppointments : todayAppointments}
+              </Text>
+              <View
+                style={[
+                  styles.metricIconBox,
+                  { backgroundColor: pendingAppointments > 0 ? '#FDE68A' : '#D1FAE5' },
+                ]}
+              >
+                <MaterialIcons
+                  name={pendingAppointments > 0 ? 'notification-important' : 'event'}
+                  size={16}
+                  color={pendingAppointments > 0 ? Colors.warningDark : Colors.successDark}
+                />
               </View>
             </View>
-            <Text style={styles.metricLabel}>Today's Meetings</Text>
+            <Text style={styles.metricLabel}>
+              {pendingAppointments > 0 ? 'Consult Requests' : "Today's Meetings"}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -282,6 +306,57 @@ export default function AdminDashboard() {
           ))}
         </View>
 
+        {/* Prominent Pending Consultation Requests Section */}
+        {pendingAppointments > 0 && (
+          <>
+            <View style={[styles.sectionHeaderRow, { marginTop: Spacing.md }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={styles.sectionHeading}>Pending Consultation Requests</Text>
+                <View style={[styles.attentionCountBadge, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }]}>
+                  <Text style={[styles.attentionCount, { color: Colors.warningDark }]}>{pendingAppointments}</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => router.push('/(admin)/appointments' as any)}>
+                <Text style={styles.seeAllLink}>View all ({pendingAppointments})</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.pendingAptsContainer}>
+              {pendingAptsList.slice(0, 3).map((apt) => {
+                const clientObj = apt.clientProfile?.user;
+                const clientName = clientObj
+                  ? `${clientObj.firstName} ${clientObj.lastName}`
+                  : apt.clientProfile?.firmName || 'Client';
+
+                return (
+                  <TouchableOpacity
+                    key={apt.id}
+                    style={styles.pendingAptCard}
+                    onPress={() => router.push(`/(admin)/appointment-detail?id=${apt.id}` as any)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.pendingAptLeft}>
+                      <View style={styles.pendingAptHeaderRow}>
+                        <Text style={styles.pendingAptClient}>{clientName}</Text>
+                        <View style={styles.pendingAptBadge}>
+                          <Text style={styles.pendingAptBadgeText}>Action Required</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.pendingAptTitle} numberOfLines={1}>{apt.title}</Text>
+                      <Text style={styles.pendingAptTime}>
+                        Requested: {format(new Date(apt.requestedDate), 'EEE, dd MMM yyyy · hh:mm a')} ({apt.duration}m)
+                      </Text>
+                    </View>
+                    <View style={styles.pendingAptActionBtn}>
+                      <Text style={styles.pendingAptActionText}>Confirm</Text>
+                      <MaterialIcons name="arrow-forward" size={14} color={Colors.primaryLight} />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
 
         {/* Today's Schedule - Clean, compact section */}
         <View style={[styles.sectionHeaderRow, { marginTop: Spacing.md }]}>
@@ -571,5 +646,77 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.xs,
     color: Colors.textTertiary,
+  },
+
+  // Pending Consultation Requests
+  pendingAptsContainer: {
+    paddingHorizontal: Spacing.xl,
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  pendingAptCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    ...Shadows.sm,
+  },
+  pendingAptLeft: {
+    flex: 1,
+    marginRight: Spacing.sm,
+  },
+  pendingAptHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: 4,
+  },
+  pendingAptClient: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.sm,
+    color: Colors.textPrimary,
+  },
+  pendingAptBadge: {
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  pendingAptBadgeText: {
+    fontFamily: Typography.fontFamily.monoBold,
+    fontSize: 9,
+    color: '#B45309',
+    letterSpacing: 0.3,
+  },
+  pendingAptTitle: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.sm,
+    color: Colors.primary,
+    marginBottom: 2,
+  },
+  pendingAptTime: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: 11,
+    color: Colors.textSecondary,
+  },
+  pendingAptActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.sm,
+    gap: 4,
+  },
+  pendingAptActionText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 12,
+    color: Colors.textLight,
   },
 });

@@ -52,6 +52,7 @@ export default function AdminLayout() {
   const sidebarItems = [
     { name: 'index', label: 'Dashboard', icon: 'dashboard' as const, route: '/' },
     { name: 'clients', label: 'Clients', icon: 'people' as const, route: '/clients' },
+    { name: 'appointments', label: 'Consultations', icon: 'event' as const, route: '/appointments' },
     { name: 'invoices', label: 'Invoices', icon: 'receipt-long' as const, route: '/invoices' },
     { name: 'messages', label: 'Messages', icon: 'chat' as const, route: '/messages' },
     { name: 'settings', label: 'Settings', icon: 'settings' as const, route: '/settings' },
@@ -98,6 +99,17 @@ export default function AdminLayout() {
             }}
           />
           <Tabs.Screen
+            name="appointments"
+            options={{
+              title: 'Consultations',
+              tabBarIcon: ({ color, focused }) => (
+                <TabIcon icon="event" color={color} focused={focused} label="Consults" />
+              ),
+              tabBarActiveTintColor: Colors.secondary,
+              tabBarInactiveTintColor: Colors.textTertiary,
+            }}
+          />
+          <Tabs.Screen
             name="invoices"
             options={{
               title: 'Invoices',
@@ -130,7 +142,6 @@ export default function AdminLayout() {
               tabBarInactiveTintColor: Colors.textTertiary,
             }}
           />
-          <Tabs.Screen name="appointments" options={{ href: null }} />
           <Tabs.Screen name="calendar" options={{ href: null }} />
           <Tabs.Screen name="chat" options={{ href: null }} />
           <Tabs.Screen name="documents" options={{ href: null }} />

@@ -234,20 +234,36 @@ export default function AdminClientDetailScreen() {
 
           {activeTab === 'APPOINTMENTS' && (
             <View style={styles.sectionBody}>
-              <Text style={styles.sectionHeading}>Consultation History</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm }}>
+                <Text style={styles.sectionHeading}>Consultation History ({appointments.length})</Text>
+                <AppButton
+                  title="+ Schedule"
+                  size="sm"
+                  variant="outline"
+                  onPress={() => router.push(`/(admin)/add-appointment?clientId=${profile.id}` as any)}
+                />
+              </View>
               {appointments.length === 0 ? (
-                <Text style={styles.emptyText}>No appointments booked.</Text>
+                <Text style={styles.emptyText}>No appointments booked for this client.</Text>
               ) : (
                 appointments.map((apt: any) => (
-                  <View key={apt.id} style={styles.detailListRow}>
+                  <TouchableOpacity
+                    key={apt.id}
+                    style={[styles.detailListRow, { cursor: 'pointer' as any }]}
+                    onPress={() => router.push(`/(admin)/appointment-detail?id=${apt.id}` as any)}
+                    activeOpacity={0.7}
+                  >
                     <View style={styles.detailListLeft}>
                       <Text style={styles.rowTitle}>{apt.title}</Text>
                       <Text style={styles.rowMeta}>
                         {formatDate(apt.confirmedDate || apt.requestedDate, true)} · {apt.duration}m
                       </Text>
                     </View>
-                    <AppBadge status={apt.status} />
-                  </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <AppBadge status={apt.status} />
+                      <MaterialIcons name="chevron-right" size={18} color={Colors.textTertiary} />
+                    </View>
+                  </TouchableOpacity>
                 ))
               )}
             </View>
