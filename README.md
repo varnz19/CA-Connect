@@ -241,7 +241,7 @@ Make sure the following are installed:
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone ca-connect
 cd CA-Connect
 ```
 
